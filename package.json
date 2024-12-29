@@ -1,0 +1,9 @@
+{
+    "scripts": {
+        "dev": "node core/server/server.mjs",
+        "build": "node core/builder/index.mjs"
+    },
+    "dependencies": {
+        "sass": "^1.83.0"
+    }
+}

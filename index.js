@@ -4,7 +4,7 @@ import './components/Navigation/Navigation.js';
 import './app/_Layout/_Layout.js';
 
 // Import store
-import './Store.js';
+import './context.js';
 
 // Import shared components - with correct path to components folder
 import './components/Counter/Counter.js';

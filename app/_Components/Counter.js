@@ -37,4 +37,3 @@ class Counter extends connect(HTMLElement) {
 }
 
 customElements.define('app-counter', Counter);
-export default 'app-counter';

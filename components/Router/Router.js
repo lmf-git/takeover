@@ -1,5 +1,5 @@
 import template from "./Router.html?raw";
-import store from "../../Store.js";
+import store from "../../context.js";
 import { renderWithExpressions } from "../../template.js";
 
 class Router extends HTMLElement {

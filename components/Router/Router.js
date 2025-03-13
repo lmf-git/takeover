@@ -1,6 +1,6 @@
 import template from "./Router.html?raw";
-import store from "../../app/_Store/Store.js";
-import { renderWithExpressions } from "../../app/_Utils/template.js";
+import store from "../../Store.js";
+import { renderWithExpressions } from "../../template.js";
 
 class Router extends HTMLElement {
   constructor() {

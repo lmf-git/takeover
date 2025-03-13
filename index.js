@@ -4,16 +4,17 @@ import './components/Navigation/Navigation.js';
 import './app/_Layout/_Layout.js';
 
 // Import store
-import './app/_Store/Store.js';
+import './Store.js';
 
-// Import shared components - ensure they're loaded before pages need them
-import './app/_Components/Counter.js';
+// Import shared components - with correct path to components folder
+import './components/Counter/Counter.js';
 
-// The Router will handle loading page components
+// The Router component now handles auto-discovery of routes from app folder.
+// No need for a separate pages/index.js file anymore.
 
 // Wait for DOM before initialization
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Application initialized');
+  console.log('Application initialized with auto-discovered routes');
   
   // Clean up any potential duplicate store provider elements
   const storeProviders = document.querySelectorAll('store-provider');

@@ -1,5 +1,5 @@
 import template from './Counter.html?raw';
-import store, { connect } from '../../app/_Store/Store.js';
+import store, { connect } from '../../Store.js';
 
 class Counter extends connect(HTMLElement) {
   constructor() {

@@ -50,7 +50,7 @@ class Router extends HTMLElement {
 
   initializePageModules() {
     // Get references to page modules but don't load them yet (lazy: true is default)
-    this.pageModules = import.meta.glob('../../app/**/*.html', { as: 'raw' });
+    this.pageModules = import.meta.glob('../../app/**/*.html', { query: '?raw', import: 'default' });
     
     // Pre-register route paths based on file structure
     Object.keys(this.pageModules).forEach(path => {

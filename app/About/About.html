@@ -27,22 +27,36 @@
     background-color: #e9ecef;
     border-radius: 5px;
   }
+  .counter-doubled {
+    font-weight: bold;
+    color: #e76f51;
+  }
+  .timestamp {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 15px;
+    font-style: italic;
+  }
 </style>
 <section>
-  <h1>About Page</h1>
+  <h1>{{title}}</h1>
   <p>This is the about page of our application using vanilla web components and client-side routing.</p>
   
   <div class="state-demo">
     <h2>Global State Access</h2>
     <p>The counter value persists across pages:</p>
     <app-counter></app-counter>
-    <p>Last visited path: <span id="last-route"></span></p>
+    <p>Current counter: {{counter}}</p>
+    <p>Counter doubled: <span class="counter-doubled">{{counter * 2}}</span></p>
+    <p>Last visited path: {{lastRoute || 'None'}}</p>
   </div>
   
   <div class="page-navigation">
-    <p>You are currently on the About page.</p>
-    <p>Navigate to: <a href="/" route>Home Page</a></p>
+    <p>You are currently on the {{path === '/about' ? 'About' : 'Unknown'}} page.</p>
+    <p>Navigate to: <a href="/" route>Home Page</a> | <a href="/contact" route>Contact Page</a></p>
   </div>
+  
+  <p class="timestamp">Page rendered at: {{timestamp}}</p>
 </section>
 <script>
   // Access store directly from the page

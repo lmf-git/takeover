@@ -27,20 +27,28 @@
     background-color: #e9ecef;
     border-radius: 5px;
   }
+  .timestamp {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 15px;
+    font-style: italic;
+  }
 </style>
 <section>
-  <h1>Home Page</h1>
+  <h1>{{title}}</h1>
   <p>Welcome to the home page of our web component application!</p>
   
   <div class="state-demo">
     <h2>Global State Demo</h2>
     <p>This counter is shared across all components:</p>
     <app-counter></app-counter>
-    <p>Current value: <span id="counter-value">0</span></p>
+    <p>Current counter value: {{counter}}</p>
   </div>
   
   <div class="page-navigation">
-    <p>You are currently on the Home page.</p>
-    <p>Navigate to: <a href="/about" route>About Page</a></p>
+    <p>You are currently on the path: {{path}}</p>
+    <p>Navigate to: <a href="/about" route>About Page</a> | <a href="/contact" route>Contact Page</a></p>
   </div>
+  
+  <p class="timestamp">Page rendered at: {{timestamp}}</p>
 </section>

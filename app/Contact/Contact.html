@@ -48,9 +48,21 @@
   button:hover {
     background-color: #187789;
   }
+  .timestamp {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 15px;
+    font-style: italic;
+  }
+  .stats {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+  }
 </style>
 <section>
-  <h1>Contact Page</h1>
+  <h1>{{title}}</h1>
   <p>Get in touch with us using the form below.</p>
   
   <div class="contact-form">
@@ -69,11 +81,19 @@
     <button type="button">Send Message</button>
   </div>
   
+  <div class="stats">
+    <h3>App Stats</h3>
+    <p>Counter value: {{counter}}</p>
+    <p>You've clicked the counter {{counter === 1 ? 'once' : counter + ' times'}}</p>
+  </div>
+  
   <div class="page-navigation">
-    <p>You are currently on the Contact page.</p>
+    <p>You are currently on the {{title.split(' ')[0]}} page.</p>
     <p>Navigate to: 
       <a href="/" route>Home Page</a> | 
       <a href="/about" route>About Page</a>
     </p>
   </div>
+  
+  <p class="timestamp">Page rendered at: {{timestamp}}</p>
 </section>

@@ -1,5 +1,6 @@
 import template from "./Router.html?raw";
 import store from "../../app/_Store/Store.js";
+import { renderWithExpressions } from "../../app/_Utils/template.js";
 
 class Router extends HTMLElement {
   constructor() {
@@ -7,6 +8,8 @@ class Router extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this.routes = new Map();
     this.pageModules = null;
+    this.currentPath = null;
+    this.isNavigating = false; // Flag to prevent concurrent navigation
   }
 
   connectedCallback() {
@@ -85,27 +88,51 @@ class Router extends HTMLElement {
     this.routes.set(path, routeInfo);
   }
 
-  navigate(path) {
+  async navigate(path) {
+    // Prevent navigating to the current path
+    if (this.currentPath === path) {
+      console.log(`Already on path: ${path}, navigation skipped`);
+      return;
+    }
+
     console.log(`Navigate to: ${path}`);
     history.pushState(null, null, path);
     this.route();
   }
 
   async route() {
+    // Prevent concurrent routing operations
+    if (this.isNavigating) {
+      console.log('Navigation already in progress, queueing...');
+      // Queue up this navigation to occur after the current one
+      setTimeout(() => this.route(), 50);
+      return;
+    }
+
+    this.isNavigating = true;
     const path = window.location.pathname;
     console.log(`Routing: ${path}`);
     
-    // Update the current route in the global store
-    store.set({ lastRoute: path });
-    
-    // Try to match the exact route or fall back to the wildcard route
-    let routeInfo = this.routes.get(path) || this.routes.get('*');
-    
-    if (routeInfo) {
-      console.log(`Match: ${routeInfo.component}`);
+    try {
+      // Update the current route in the global store
+      store.set({ lastRoute: path });
       
-      try {
-        // Clear the container
+      // If we're already on this path, don't re-render
+      if (this.currentPath === path) {
+        console.log(`Already on path: ${path}, render skipped`);
+        return;
+      }
+      
+      // Remember the current path
+      this.currentPath = path;
+      
+      // Try to match the exact route or fall back to the wildcard route
+      let routeInfo = this.routes.get(path) || this.routes.get('*');
+      
+      if (routeInfo) {
+        console.log(`Match: ${routeInfo.component}`);
+        
+        // Clear the container first
         this.container.innerHTML = '';
         
         // If the component hasn't been loaded yet, load it now
@@ -113,50 +140,108 @@ class Router extends HTMLElement {
           await this.loadComponent(routeInfo);
         }
         
-        // Create the component instance
+        // Generate props for the page
+        const pageProps = {
+          path,
+          title: this.getPageTitle(path),
+          timestamp: new Date().toLocaleString(),
+          // Add any other common props here
+          ...store.get() // Add store state as props
+        };
+        
+        // Create the component instance with props
         const component = document.createElement(routeInfo.component);
-        this.container.appendChild(component);
-        console.log(`Component ${routeInfo.component} mounted`);
-      } catch (error) {
-        console.error(`Failed to load or create component:`, error);
+        component.pageProps = pageProps; // Pass props to the component
+        
+        // Wait a frame before appending to ensure DOM stability
+        requestAnimationFrame(() => {
+          this.container.appendChild(component);
+          console.log(`Component ${routeInfo.component} mounted with props`);
+        });
+      } else {
+        console.warn(`No route for: ${path}`);
       }
-    } else {
-      console.warn(`No route for: ${path}`);
+    } catch (error) {
+      console.error(`Failed to load or create component:`, error);
+    } finally {
+      // Release the navigation lock
+      this.isNavigating = false;
     }
+  }
+  
+  getPageTitle(path) {
+    // Extract page name from path
+    const pageName = path === '/' ? 'Home' : 
+      path.substring(1).charAt(0).toUpperCase() + path.substring(2);
+    return `${pageName} Page`;
   }
   
   async loadComponent(routeInfo) {
     try {
+      // Check if the component is already defined to avoid duplicate registration
+      if (customElements.get(routeInfo.component)) {
+        console.log(`Component ${routeInfo.component} already defined, skipping definition`);
+        routeInfo.loaded = true;
+        return;
+      }
+      
       // Load the HTML template
       const templateContent = await routeInfo.loader();
-      
-      // Skip if the component is already defined
+            
+      // Double-check that the component still isn't defined
+      // (could have been defined while we were waiting for the template)
       if (customElements.get(routeInfo.component)) {
+        console.log(`Component ${routeInfo.component} was defined while loading template`);
         routeInfo.loaded = true;
         return;
       }
       
       // Create the component class
       class DynamicPage extends HTMLElement {
+        static isPageComponent = true;
+        
         constructor() {
           super();
           this.attachShadow({ mode: "open" });
+          this.pageProps = {}; // Will be set when component is created
+          this._mounted = false;
         }
 
         connectedCallback() {
-          this.shadowRoot.innerHTML = templateContent;
+          // Prevent duplicate rendering if already mounted
+          if (this._mounted) {
+            console.log(`Component ${routeInfo.component} already mounted, skipping render`);
+            return;
+          }
+          
+          // Render the template with props
+          const renderedTemplate = renderWithExpressions(templateContent, this.pageProps);
+          this.shadowRoot.innerHTML = renderedTemplate;
           
           // Add click handlers for route links
           const links = this.shadowRoot.querySelectorAll('a[route]');
           links.forEach(link => {
             link.addEventListener('click', (event) => {
               event.preventDefault();
-              const path = event.target.getAttribute('href');
+              const linkPath = event.target.getAttribute('href');
               window.dispatchEvent(new CustomEvent('navigate', {
-                detail: { path }
+                detail: { path: linkPath }
               }));
             });
           });
+          
+          // Mark as mounted to prevent duplicate renders
+          this._mounted = true;
+          
+          // If the component has an onMount method, call it
+          if (typeof this.onMount === 'function') {
+            this.onMount();
+          }
+        }
+        
+        disconnectedCallback() {
+          // Clean up any resources or event listeners
+          this._mounted = false;
         }
       }
       

@@ -1,4 +1,5 @@
 import template from "./Router.html?raw";
+import store from "../../app/_Store/Store.js";
 
 class Router extends HTMLElement {
   constructor() {
@@ -93,6 +94,9 @@ class Router extends HTMLElement {
   async route() {
     const path = window.location.pathname;
     console.log(`Routing: ${path}`);
+    
+    // Update the current route in the global store
+    store.set({ lastRoute: path });
     
     // Try to match the exact route or fall back to the wildcard route
     let routeInfo = this.routes.get(path) || this.routes.get('*');

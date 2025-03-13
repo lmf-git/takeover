@@ -3,6 +3,8 @@ import './components/Router/Router.js';
 import './components/Navigation/Navigation.js';
 import './app/_Layout/_Layout.js';
 
-// The Router component automatically imports page components from the app folder
+// Import store and shared components
+import './app/_Store/Store.js';
+import './components/Counter/Counter.js';
 
 console.log('Application initialized');

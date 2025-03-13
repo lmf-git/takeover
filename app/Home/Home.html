@@ -21,10 +21,23 @@
   a:hover {
     text-decoration: underline;
   }
+  .state-demo {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+  }
 </style>
 <section>
   <h1>Home Page</h1>
   <p>Welcome to the home page of our web component application!</p>
+  
+  <div class="state-demo">
+    <h2>Global State Demo</h2>
+    <p>This counter is shared across all components:</p>
+    <app-counter></app-counter>
+    <p>Current value: <span id="counter-value">0</span></p>
+  </div>
   
   <div class="page-navigation">
     <p>You are currently on the Home page.</p>

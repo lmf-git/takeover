@@ -21,13 +21,44 @@
   a:hover {
     text-decoration: underline;
   }
+  .state-demo {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+  }
 </style>
 <section>
   <h1>About Page</h1>
   <p>This is the about page of our application using vanilla web components and client-side routing.</p>
+  
+  <div class="state-demo">
+    <h2>Global State Access</h2>
+    <p>The counter value persists across pages:</p>
+    <app-counter></app-counter>
+    <p>Last visited path: <span id="last-route"></span></p>
+  </div>
   
   <div class="page-navigation">
     <p>You are currently on the About page.</p>
     <p>Navigate to: <a href="/" route>Home Page</a></p>
   </div>
 </section>
+<script>
+  // Access store directly from the page
+  import('/Users/lmf/Downloads/latest/app/_Store/Store.js').then(module => {
+    const store = module.default;
+    // Show the last route
+    const lastRouteEl = document.querySelector('#last-route');
+    if (lastRouteEl) {
+      lastRouteEl.textContent = store.get('lastRoute') || 'None';
+    }
+    
+    // Subscribe to store changes
+    store.subscribe((state) => {
+      if (lastRouteEl) {
+        lastRouteEl.textContent = state.lastRoute || 'None';
+      }
+    }, ['lastRoute']);
+  });
+</script>

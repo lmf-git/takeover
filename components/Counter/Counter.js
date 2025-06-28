@@ -1,5 +1,5 @@
 import template from './Counter.html?raw';
-import store, { connect } from '../../context.js';
+import store, { connect } from '../../lib/context.js';
 
 class Counter extends connect(HTMLElement) {
   constructor() {

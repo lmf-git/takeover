@@ -1,5 +1,6 @@
 import template from './Counter.html?raw';
 import store, { connect } from '../../lib/context.js';
+import styles from './Counter.css?raw';
 
 class Counter extends connect(HTMLElement) {
   constructor() {
@@ -8,7 +9,7 @@ class Counter extends connect(HTMLElement) {
   }
 
   connectedCallback() {
-    this.shadowRoot.innerHTML = template;
+    this.shadowRoot.innerHTML = `<style>${styles}</style>` + template;
     
     // Connect to store and listen for counter changes
     this.connectStore(['counter'], this.updateCounter.bind(this));

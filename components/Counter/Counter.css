@@ -1,0 +1,32 @@
+/* Counter component styles */
+:host {
+  display: block;
+  padding: 15px;
+  background-color: #ea2323;
+  border-radius: 5px;
+  margin: 10px 0;
+}
+.counter {
+  display: flex;
+  align-items: center;
+}
+button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 0 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 5em;
+  font-size: 16px;
+}
+button.decrement {
+  background-color: #f44336;
+}
+span {
+  font-size: 18px;
+  margin: 0 10px;
+  min-width: 30px;
+  text-align: center;
+}

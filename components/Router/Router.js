@@ -40,6 +40,9 @@ class Router extends HTMLElement {
     // Get page modules without loading them yet
     const pageModules = import.meta.glob('../../app/**/*.html', { query: '?raw', import: 'default' });
     
+    // Define protected routes that require authentication
+    const protectedRoutes = ['/dashboard'];
+    
     // Register routes based on file paths
     Object.keys(pageModules).forEach(path => {
       if (path.includes('/_')) return; // Skip utility folders
@@ -53,7 +56,8 @@ class Router extends HTMLElement {
         this.registerRoute(routePath, {
           component: componentName,
           loader: pageModules[path],
-          loaded: false
+          loaded: false,
+          requiresAuth: protectedRoutes.includes(routePath)
         });
       }
     });
@@ -91,6 +95,19 @@ class Router extends HTMLElement {
       const routeInfo = this.routes.get(path) || this.routes.get('*');
       
       if (routeInfo) {
+        // Check authentication for protected routes
+        if (routeInfo.requiresAuth) {
+          const { isAuthenticated } = store.get();
+          if (!isAuthenticated) {
+            // Redirect to login with return path
+            const loginPath = `/login?from=${encodeURIComponent(path)}`;
+            history.replaceState(null, null, loginPath);
+            this.currentPath = null; // Reset so we re-route to login
+            setTimeout(() => this.route(), 10);
+            return;
+          }
+        }
+        
         this.container.innerHTML = '';
         
         if (!routeInfo.loaded) {

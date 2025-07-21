@@ -1,0 +1,375 @@
+<style>
+  :host {
+    color: var(--text-color);
+  }
+  
+  section {
+    padding: 20px;
+    background-color: var(--bg-secondary);
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  h1 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+  }
+  
+  .user-card {
+    background: var(--bg-color);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .user-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid var(--primary-color);
+  }
+  
+  .user-details h3 {
+    margin: 0 0 5px 0;
+    color: var(--text-color);
+  }
+  
+  .user-details p {
+    margin: 5px 0;
+    color: var(--text-secondary);
+  }
+  
+  .protected-content {
+    background: linear-gradient(135deg, var(--success-color), var(--info-color));
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+  }
+  
+  .stat-card {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .stat-value {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 5px 0;
+  }
+  
+  .stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+  }
+  
+  /* Todo List Styles */
+  .todo-section {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 25px;
+    margin: 25px 0;
+    box-shadow: var(--shadow);
+  }
+  
+  .todo-form {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  
+  .todo-input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-color);
+    font-size: 16px;
+    transition: var(--transition);
+  }
+  
+  .todo-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+  }
+  
+  .add-btn {
+    padding: 12px 20px;
+    background: var(--success-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: var(--transition);
+  }
+  
+  .add-btn:hover:not(:disabled) {
+    background: #157a4c;
+    transform: translateY(-1px);
+  }
+  
+  .add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .todo-filters {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  
+  .filter-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .filter-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+  
+  .filter-btn:hover:not(.active) {
+    background: var(--hover-bg);
+  }
+  
+  .clear-btn {
+    padding: 8px 16px;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .clear-btn:hover {
+    background: #b02a37;
+  }
+  
+  .todo-list {
+    min-height: 100px;
+    margin: 20px 0;
+  }
+  
+  .todo-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    margin: 8px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: var(--transition);
+  }
+  
+  .todo-item:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .todo-item.completed {
+    opacity: 0.7;
+    background: var(--hover-bg);
+  }
+  
+  .todo-item.completed .todo-text {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
+  
+  .todo-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+  }
+  
+  .todo-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  .todo-text {
+    flex: 1;
+    color: var(--text-color);
+    font-size: 16px;
+  }
+  
+  .todo-priority {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .priority-high {
+    background: var(--danger-color);
+    color: white;
+  }
+  
+  .priority-medium {
+    background: var(--warning-color);
+    color: black;
+  }
+  
+  .priority-low {
+    background: var(--success-color);
+    color: white;
+  }
+  
+  .todo-delete {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .todo-delete:hover {
+    background: #b02a37;
+    transform: scale(1.1);
+  }
+  
+  .todo-stats {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    padding: 15px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-top: 20px;
+    color: var(--text-secondary);
+    font-weight: bold;
+  }
+</style>
+
+<section>
+  <h1>🛡️ Protected Dashboard</h1>
+  <p>This is a protected page that requires authentication. You can only see this content because you're logged in!</p>
+  
+  <div class="user-card">
+    <img class="user-avatar" src="{{user.avatar}}" alt="{{user.username}}">
+    <div class="user-details">
+      <h3>Welcome back, {{user.username}}!</h3>
+      <p><strong>Email:</strong> {{user.email}}</p>
+      <p><strong>Role:</strong> {{user.role}}</p>
+      <p><strong>User ID:</strong> {{user.id}}</p>
+    </div>
+  </div>
+  
+  <div class="protected-content">
+    <h3>🔒 Secret Information</h3>
+    <p>This content is only visible to authenticated users. Your session is secure and persistent across page refreshes.</p>
+  </div>
+  
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">42</div>
+      <div class="stat-label">Projects</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">1,337</div>
+      <div class="stat-label">Points</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{user.role === 'admin' ? '∞' : '5'}}</div>
+      <div class="stat-label">Access Level</div>
+    </div>
+  </div>
+  
+  {{#if user.role === 'admin'}}
+  <div style="background: var(--warning-color); color: black; padding: 15px; border-radius: 8px; margin: 20px 0;">
+    <h4>👑 Admin Features</h4>
+    <p>You have administrator privileges. Special admin-only content and features are available to you.</p>
+  </div>
+  {{/if}}
+  
+  <!-- Reactive Todo List Section -->
+  <div class="todo-section">
+    <h3>📝 My Tasks</h3>
+    <p>A reactive todo list with local component state management</p>
+    
+    <!-- Add Todo Form -->
+    <div class="todo-form">
+      <input type="text" 
+             id="new-todo-input" 
+             placeholder="Add a new task..." 
+             class="todo-input">
+      <button id="add-todo" class="add-btn">➕ Add</button>
+    </div>
+    
+    <!-- Filter Buttons -->
+    <div class="todo-filters">
+      <button id="filter-all" class="filter-btn active">All</button>
+      <button id="filter-active" class="filter-btn">Active</button>
+      <button id="filter-completed" class="filter-btn">Completed</button>
+      <button id="clear-completed" class="clear-btn">🗑️ Clear Completed</button>
+    </div>
+    
+    <!-- Todo List -->
+    <div id="todo-list" class="todo-list">
+      {{#if filteredTodos.length}}
+        {{#each filteredTodos}}
+          <div class="todo-item {{#if completed}}completed{{/if}}" data-priority="{{priority}}">
+            <div class="todo-content">
+              <input type="checkbox" 
+                     class="todo-checkbox" 
+                     data-todo-id="{{id}}"
+                     {{#if completed}}checked{{/if}}>
+              <span class="todo-text">{{text}}</span>
+              <span class="todo-priority priority-{{priority}}">{{priority}}</span>
+            </div>
+            <button class="todo-delete" data-todo-id="{{id}}">
+              🗑️
+            </button>
+          </div>
+        {{/each}}
+      {{else}}
+        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+          {{#if filterMessage}}{{filterMessage}}{{else}}No todos yet!{{/if}}
+        </div>
+      {{/if}}
+    </div>
+    
+    <!-- Stats -->
+    <div id="todo-stats" class="todo-stats"></div>
+  </div>
+  
+  <p style="color: var(--text-secondary); font-size: 0.9em; margin-top: 30px;">
+    Try logging out and visiting this page again - you'll be redirected to login!
+  </p>
+</section>

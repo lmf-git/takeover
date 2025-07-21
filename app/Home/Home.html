@@ -45,6 +45,30 @@
     <p>Current counter value: {{counter}}</p>
   </div>
   
+  <div class="state-demo">
+    <h2>Auth Context Demo</h2>
+    <div id="auth-status">
+      {{#if isAuthenticated}}
+        <p>✅ Logged in as: <strong>{{user.username}}</strong></p>
+        <p>Email: {{user.email}} | Role: {{user.role}}</p>
+        <img src="{{user.avatar}}" alt="Avatar" style="width: 64px; height: 64px; border-radius: 50%; margin: 10px 0;">
+        <br>
+        <button onclick="window.store.logout()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
+          Logout
+        </button>
+      {{else}}
+        <p>❌ Not logged in</p>
+        <button onclick="window.store.login()" style="background: #198754; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
+          Quick Login
+        </button>
+        <button onclick="window.store.login({username: 'admin', email: 'admin@test.com'})" style="background: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
+          Login as Admin
+        </button>
+      {{/if}}
+    </div>
+    <p><small>Authentication state persists across page refreshes!</small></p>
+  </div>
+  
   <div class="page-navigation">
     <p>You are currently on the path: {{path}}</p>
     <p>Navigate to: <a href="/about" route>About Page</a> | <a href="/contact" route>Contact Page</a></p>

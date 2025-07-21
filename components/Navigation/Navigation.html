@@ -1,32 +1,103 @@
 <style>
   nav {
-    background-color: #264653;
+    background-color: var(--primary-color, #264653);
     padding: 15px 0;
     margin-bottom: 20px;
+    transition: var(--transition);
   }
+  
+  .nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
   ul {
     display: flex;
     list-style: none;
     margin: 0;
     padding: 0;
   }
+  
   li {
     margin: 0 15px;
   }
+  
   a {
     color: white;
     text-decoration: none;
     font-weight: bold;
     font-size: 18px;
+    transition: var(--transition);
   }
+  
   a:hover {
-    color: #e9c46a;
+    color: var(--warning-color, #e9c46a);
+  }
+  
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .user-info {
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+  
+  .auth-btn {
+    background: var(--success-color, #198754);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: var(--transition);
+  }
+  
+  .auth-btn:hover {
+    background: var(--primary-hover, #0b5ed7);
+  }
+  
+  .auth-btn.logout {
+    background: var(--danger-color, #dc3545);
   }
 </style>
+
 <nav>
-  <ul>
-    <li><a href="/" route>Home</a></li>
-    <li><a href="/about" route>About</a></li>
-    <li><a href="/contact" route>Contact</a></li>
-  </ul>
+  <div class="nav-container">
+    <ul>
+      <li><a href="/" route>Home</a></li>
+      <li><a href="/about" route>About</a></li>
+      <li><a href="/contact" route>Contact</a></li>
+      <li><a href="/dashboard" route>Dashboard</a></li>
+    </ul>
+    
+    <div class="nav-actions">
+      <theme-toggle></theme-toggle>
+      
+      <div id="auth-section">
+        <div class="user-info" id="user-info" style="display: none;">
+          <img class="user-avatar" id="user-avatar" src="" alt="User">
+          <span id="username"></span>
+        </div>
+        <button class="auth-btn" id="auth-btn">Login</button>
+      </div>
+    </div>
+  </div>
 </nav>

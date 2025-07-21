@@ -1,0 +1,209 @@
+<style>
+  :host {
+    color: var(--text-color);
+  }
+  
+  section {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+  
+  h1 {
+    color: var(--primary-color);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 30px 0;
+  }
+  
+  .form-group {
+    text-align: left;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--text-color);
+  }
+  
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 16px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    box-sizing: border-box;
+    transition: var(--transition);
+  }
+  
+  input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+  }
+  
+  .login-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
+  }
+  
+  button {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .btn-primary {
+    background: var(--primary-color);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+  }
+  
+  .btn-quick {
+    background: var(--success-color);
+    color: white;
+  }
+  
+  .btn-quick:hover {
+    background: #157a4c;
+    transform: translateY(-2px);
+  }
+  
+  .divider {
+    margin: 20px 0;
+    color: var(--text-secondary);
+    position: relative;
+  }
+  
+  .divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border-color);
+  }
+  
+  .divider span {
+    background: var(--bg-secondary);
+    padding: 0 15px;
+  }
+  
+  .error {
+    background: var(--danger-color);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 5px 0;
+    font-size: 14px;
+  }
+  
+  .redirect-info {
+    background: var(--info-color);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .redirect-info strong {
+    display: block;
+    margin-bottom: 5px;
+  }
+</style>
+
+<section>
+  <div id="redirect-info" class="redirect-info" style="display: none;">
+    <strong>🛡️ Login Required</strong>
+    <span id="redirect-message">You need to login to access that page.</span>
+  </div>
+
+  <h1>
+    <span>🔐</span>
+    Login
+  </h1>
+  
+  <p style="color: var(--text-secondary); margin-bottom: 30px;">
+    Enter your credentials or use quick login to access protected areas
+  </p>
+  
+  <div class="login-form">
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" id="username" placeholder="Enter your username" />
+    </div>
+    
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" placeholder="Enter your email" />
+    </div>
+    
+    <div id="error-container" style="display: none; margin: 15px 0;"></div>
+    
+    <div class="login-buttons">
+      <button class="btn-primary" id="custom-login">
+        Login with Custom Info
+      </button>
+      
+      <button class="btn-secondary" id="clear-form" style="background: var(--warning-color); color: black; margin: 10px 0;">
+        🗑️ Clear Form
+      </button>
+      
+      <div class="divider">
+        <span>or</span>
+      </div>
+      
+      <button class="btn-quick" id="quick-login">
+        Quick Login (Random User)
+      </button>
+    </div>
+    
+    <div id="attempt-counter" style="display: none; color: var(--text-secondary); font-size: 0.9em; margin-top: 15px;"></div>
+  </div>
+  
+  <p style="color: var(--text-secondary); font-size: 0.9em; margin-top: 30px;">
+    This is a demo - any credentials will work!
+  </p>
+</section>
+
+<script>
+  // This will be replaced by proper component logic
+  document.addEventListener('DOMContentLoaded', () => {
+    // Show redirect info if redirected from protected page
+    const urlParams = new URLSearchParams(window.location.search);
+    const from = urlParams.get('from');
+    if (from) {
+      const redirectInfo = document.getElementById('redirect-info');
+      const redirectMessage = document.getElementById('redirect-message');
+      redirectInfo.style.display = 'block';
+      redirectMessage.textContent = `You were redirected from ${from}. Please login to continue.`;
+    }
+  });
+</script>

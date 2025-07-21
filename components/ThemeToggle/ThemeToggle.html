@@ -1,0 +1,39 @@
+<style>
+  :host {
+    display: inline-block;
+  }
+  
+  .theme-toggle {
+    background: none;
+    border: 2px solid var(--border-color, #ccc);
+    border-radius: 20px;
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-color, #333);
+    transition: all 0.2s ease;
+  }
+  
+  .theme-toggle:hover {
+    background: var(--hover-bg, #f0f0f0);
+    transform: scale(1.05);
+  }
+  
+  .icon {
+    font-size: 16px;
+    transition: transform 0.2s ease;
+  }
+  
+  .theme-toggle:hover .icon {
+    transform: rotate(180deg);
+  }
+</style>
+
+<button class="theme-toggle" id="toggle-btn">
+  <span class="icon" id="icon">🌙</span>
+  <span id="label">Dark</span>
+</button>

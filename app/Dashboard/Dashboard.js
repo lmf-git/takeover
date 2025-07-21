@@ -64,13 +64,18 @@ class DashboardPage extends HTMLElement {
     const filterMessage = this.state.filter === 'all' ? 
       null : `No ${this.state.filter} todos`;
     
-    // Render template with current state
-    this.shadowRoot.innerHTML = renderWithExpressions(template, {
+    const templateData = {
       ...this.pageProps,
       filteredTodos,
       filterMessage,
       user: this.pageProps?.user || { username: 'User', role: 'user' }
-    });
+    };
+    
+    console.log('Template data:', templateData);
+    console.log('filteredTodos.length:', filteredTodos.length);
+    
+    // Render template with current state
+    this.shadowRoot.innerHTML = renderWithExpressions(template, templateData);
   }
   
   setupEventListeners() {

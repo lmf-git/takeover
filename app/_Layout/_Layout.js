@@ -1,14 +1,12 @@
-import template from "./_Layout.html?raw";
+import { Component } from '../../core/index.js';
+import template from './_Layout.html?raw';
 
-class Layout extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-  }
+class Layout extends Component {
+  static template = template;
 
-  connectedCallback() {
-    this.shadowRoot.innerHTML = template;
+  get props() {
+    return { ...super.props, year: new Date().getFullYear() };
   }
 }
 
-customElements.define("app-layout", Layout);
+customElements.define('app-layout', Layout);

@@ -1,29 +1,19 @@
-import template from "./ThemeToggle.html?raw";
-import store, { connect } from "../../lib/context.js";
+import { Component, store } from '../../core/index.js';
+import template from './ThemeToggle.html?raw';
 
-class ThemeToggle extends connect(HTMLElement) {
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-  }
+class ThemeToggle extends Component {
+  static template = template;
+  static store = ['theme'];
 
-  connectedCallback() {
-    this.shadowRoot.innerHTML = template;
-    
-    const button = this.shadowRoot.getElementById('toggle-btn');
-    const icon = this.shadowRoot.getElementById('icon');
-    const label = this.shadowRoot.getElementById('label');
-    
-    button.addEventListener('click', () => {
-      store.toggleTheme();
-    });
-    
-    this.connectStore(['theme'], (state) => {
-      const isDark = state.theme === 'dark';
-      icon.textContent = isDark ? '☀️' : '🌙';
-      label.textContent = isDark ? 'Light' : 'Dark';
-    });
+  bind() {
+    this.on('#toggle-btn', 'click', () => store.toggleTheme());
+
+    const isDark = this.state.theme === 'dark';
+    const icon = this.$('#icon');
+    const label = this.$('#label');
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    if (label) label.textContent = isDark ? 'Light' : 'Dark';
   }
 }
 
-customElements.define("theme-toggle", ThemeToggle);
+customElements.define('theme-toggle', ThemeToggle);

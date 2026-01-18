@@ -1,41 +1,16 @@
+import { Component, store } from '../../core/index.js';
 import template from './Counter.html?raw';
-import store, { connect } from '../../lib/context.js';
-import styles from './Counter.css?raw';
+import styles from './Counter.module.css?raw';
 
-class Counter extends connect(HTMLElement) {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-  }
+class Counter extends Component {
+  static template = template;
+  static styles = styles;
+  static store = ['counter'];
 
-  connectedCallback() {
-    this.shadowRoot.innerHTML = `<style>${styles}</style>` + template;
-    
-    // Connect to store and listen for counter changes
-    this.connectStore(['counter'], this.updateCounter.bind(this));
-    
-    // Initial render
-    this.updateCounter(store.get());
-    
-    // Add event listeners
-    this.shadowRoot.querySelector('.increment').addEventListener('click', () => {
-      const currentValue = store.get('counter') || 0;
-      store.set({ counter: currentValue + 1 });
-    });
-    
-    this.shadowRoot.querySelector('.decrement').addEventListener('click', () => {
-      const currentValue = store.get('counter') || 0;
-      store.set({ counter: Math.max(0, currentValue - 1) });
-    });
-  }
-  
-  updateCounter(state) {
-    const valueEl = this.shadowRoot.querySelector('#value');
-    if (valueEl) {
-      valueEl.textContent = state.counter;
-    }
+  bind() {
+    this.on('.increment', 'click', () => store.set({ counter: (store.get('counter') || 0) + 1 }));
+    this.on('.decrement', 'click', () => store.set({ counter: Math.max(0, (store.get('counter') || 0) - 1) }));
   }
 }
 
 customElements.define('app-counter', Counter);
-export default 'app-counter';

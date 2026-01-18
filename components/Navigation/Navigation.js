@@ -1,68 +1,35 @@
-import template from "./Navigation.html?raw";
-import store, { connect } from "../../lib/context.js";
+import { Component, store } from '../../core/index.js';
+import template from './Navigation.html?raw';
 
-class Navigation extends connect(HTMLElement) {
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-  }
+class Navigation extends Component {
+  static template = template;
+  static store = ['user', 'isAuthenticated', 'theme'];
 
-  connectedCallback() {
-    this.shadowRoot.innerHTML = template;
-    
-    // Add click event listeners for navigation
-    const links = this.shadowRoot.querySelectorAll('a[route]');
-    links.forEach(link => {
-      link.addEventListener('click', this.linkClick);
+  bind() {
+    this.on('#auth-btn', 'click', () => {
+      store.get('isAuthenticated') ? store.logout() : store.login();
     });
-    
-    // Auth button functionality
-    const authBtn = this.shadowRoot.getElementById('auth-btn');
-    authBtn.addEventListener('click', this.handleAuth.bind(this));
-    
-    // Connect to store for auth and theme updates
-    this.connectStore(['user', 'isAuthenticated', 'theme'], this.updateAuthUI.bind(this));
+
+    this.updateAuth();
   }
-  
-  linkClick(event) {
-    event.preventDefault();
-    const path = event.target.getAttribute('href');
-    
-    window.dispatchEvent(new CustomEvent('navigate', {
-      detail: { path }
-    }));
-  }
-  
-  handleAuth() {
-    const { isAuthenticated } = store.get();
-    
-    if (isAuthenticated) {
-      store.logout();
-    } else {
-      const username = prompt('Enter username (optional):') || undefined;
-      const email = prompt('Enter email (optional):') || undefined;
-      store.login({ username, email });
+
+  updateAuth() {
+    const { isAuthenticated, user } = this.state;
+    const info = this.$('#user-info');
+    const btn = this.$('#auth-btn');
+
+    if (info) info.style.display = isAuthenticated ? 'flex' : 'none';
+    if (isAuthenticated && user) {
+      const avatar = this.$('#user-avatar');
+      const name = this.$('#username');
+      if (avatar) avatar.src = user.avatar;
+      if (name) name.textContent = user.username;
     }
-  }
-  
-  updateAuthUI(state) {
-    const userInfo = this.shadowRoot.getElementById('user-info');
-    const userAvatar = this.shadowRoot.getElementById('user-avatar');
-    const username = this.shadowRoot.getElementById('username');
-    const authBtn = this.shadowRoot.getElementById('auth-btn');
-    
-    if (state.isAuthenticated && state.user) {
-      userInfo.style.display = 'flex';
-      userAvatar.src = state.user.avatar;
-      username.textContent = state.user.username;
-      authBtn.textContent = 'Logout';
-      authBtn.className = 'auth-btn logout';
-    } else {
-      userInfo.style.display = 'none';
-      authBtn.textContent = 'Login';
-      authBtn.className = 'auth-btn';
+    if (btn) {
+      btn.textContent = isAuthenticated ? 'Logout' : 'Login';
+      btn.className = `auth-btn${isAuthenticated ? ' logout' : ''}`;
     }
   }
 }
 
-customElements.define("app-navigation", Navigation);
+customElements.define('app-navigation', Navigation);

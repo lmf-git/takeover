@@ -1,0 +1,15 @@
+[build]
+  command = "yarn build" # Builds both client and server bundles
+  publish = "dist/client" # Serves the static client assets
+  functions = "netlify/functions" # Directory where our serverless function will live
+
+# Redirect all requests not matching a static file to our SSR function
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/ssr"
+  status = 200 # Important for SSR
+
+# Optional: Configure Node.js version for Netlify Functions
+[functions]
+  node_bundler = "esbuild"
+  node_version = "18" # Or higher, depending on your needs

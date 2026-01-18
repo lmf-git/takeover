@@ -1,11 +1,16 @@
 <style>
-  h1 {
-    color: #e76f51;
-  }
+  /* These styles are scoped to the AboutPage component's shadow DOM */
   section {
     padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 5px;
+    background-color: #fefae0; /* A different background to show this style is applied */
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  h1 {
+    color: #e76f51;
+    border-bottom: 2px solid #e76f51;
+    padding-bottom: 10px;
   }
   .page-navigation {
     margin-top: 20px;
@@ -41,6 +46,7 @@
 <section>
   <h1>{{title}}</h1>
   <p>This is the about page of our application using vanilla web components and client-side routing.</p>
+  <p>This component demonstrates using both a &lt;style&gt; tag in the HTML and a separate <span class="{{styles.highlight}}">CSS Module file</span>.</p>
   
   <div class="state-demo">
     <h2>Global State Access</h2>
@@ -58,21 +64,3 @@
   
   <p class="timestamp">Page rendered at: {{timestamp}}</p>
 </section>
-<script>
-  // Access store directly from the page
-  import('/Users/lmf/Downloads/latest/app/_Store/Store.js').then(module => {
-    const store = module.default;
-    // Show the last route
-    const lastRouteEl = document.querySelector('#last-route');
-    if (lastRouteEl) {
-      lastRouteEl.textContent = store.get('lastRoute') || 'None';
-    }
-    
-    // Subscribe to store changes
-    store.subscribe((state) => {
-      if (lastRouteEl) {
-        lastRouteEl.textContent = state.lastRoute || 'None';
-      }
-    }, ['lastRoute']);
-  });
-</script>

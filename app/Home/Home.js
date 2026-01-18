@@ -1,57 +1,23 @@
-import template from "./Home.html?raw";
-import store, { connect } from "../../lib/context.js";
-import { renderWithExpressions } from "../../lib/template.js";
+import { Component, store } from '../../core/index.js';
+import template from './Home.html?raw';
 
-class HomePage extends connect(HTMLElement) {
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
+class HomePage extends Component {
+  static template = template;
+  static store = ['counter', 'theme', 'user', 'isAuthenticated'];
+
+  mount() {
+    this.setMeta({
+      title: 'Home - Web Components App',
+      description: 'Welcome to our web components application.',
+      ogTitle: 'Web Components Home'
+    });
   }
 
-  connectedCallback() {
-    console.log('HomePage connected');
-    this.render();
-    this.setupEventListeners();
-    
-    // Connect to global store for reactive updates
-    this.connectStore(['counter', 'theme', 'user', 'isAuthenticated'], (state) => {
-      this.render(); // Re-render when global state changes
-    });
-  }
-  
-  render() {
-    // Get current global state
-    const globalState = store.get();
-    
-    // Render with current page props and global state
-    this.shadowRoot.innerHTML = renderWithExpressions(template, {
-      ...this.pageProps,
-      ...globalState
-    });
-    
-    // Re-attach event listeners after render
-    this.setupEventListeners();
-  }
-  
-  setupEventListeners() {
-    // Handle navigation links
-    const links = this.shadowRoot.querySelectorAll('a[route]');
-    links.forEach(link => {
-      link.addEventListener('click', this.linkClick);
-    });
-  }
-  
-  linkClick(event) {
-    event.preventDefault();
-    const path = this.getAttribute('href');
-    console.log(`Page link: ${path}`);
-    
-    window.dispatchEvent(new CustomEvent('navigate', {
-      detail: { path }
-    }));
+  bind() {
+    this.on('.logout-button', 'click', () => store.logout());
+    this.on('.login-button', 'click', () => store.login());
+    this.on('.login-admin-button', 'click', () => store.login({ username: 'admin', email: 'admin@test.com' }));
   }
 }
 
-customElements.define("home-page", HomePage);
-
-export default "home-page";
+customElements.define('home-page', HomePage);

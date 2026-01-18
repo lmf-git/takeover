@@ -1,14 +1,11 @@
 /* Counter component styles */
-:host {
-  display: block;
+.counter {
+  display: flex;
+  align-items: center;
   padding: 15px;
   background-color: #ea2323;
   border-radius: 5px;
   margin: 10px 0;
-}
-.counter {
-  display: flex;
-  align-items: center;
 }
 button {
   background-color: #4caf50;

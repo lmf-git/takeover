@@ -1,0 +1,30 @@
+<style>
+  section {
+    padding: 20px;
+    background-color: #e0f2f7; /* Light blue background */
+    border-left: 5px solid #00acc1; /* Teal border */
+    border-radius: 5px;
+    margin: 20px 0;
+  }
+  h1 {
+    color: #00acc1; /* Teal color */
+  }
+  .user-info {
+    font-size: 1.1em;
+    line-height: 1.6;
+  }
+  .user-id {
+    font-weight: bold;
+    color: #00838f; /* Darker teal */
+  }
+</style>
+<section>
+  <h1>User Profile</h1>
+  <p class="user-info">
+    You are currently viewing the profile for user with ID: <span class="user-id">{{params.id}}</span>
+  </p>
+  <p>This is a dynamic route example, where the ID is extracted from the URL.</p>
+  <p>
+    <a href="/" route>Go back to Home</a>
+  </p>
+</section>

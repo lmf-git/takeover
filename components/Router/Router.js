@@ -1,187 +1,104 @@
-import template from "./Router.html?raw";
-import store from "../../lib/context.js";
-import { renderWithExpressions } from "../../lib/template.js";
+import template from './Router.html?raw';
+import { store, renderWithExpressions, buildRoutesFromGlob, matchRoute } from '../../core/index.js';
 
 class Router extends HTMLElement {
+  routes = [];
+  currentPath = null;
+
   constructor() {
     super();
-    this.attachShadow({ mode: "open" });
-    this.routes = new Map();
-    this.currentPath = null;
-    this.isNavigating = false;
+    this.attachShadow({ mode: 'open' });
   }
 
   connectedCallback() {
     this.shadowRoot.innerHTML = template;
-    this.container = this.shadowRoot.querySelector('#outlet');
-    if (!this.container) return console.error('Router outlet not found');
-    
-    // Event listeners
-    window.addEventListener('popstate', () => this.route());
-    window.addEventListener('navigate', (e) => this.navigate(e.detail.path));
-    document.addEventListener('click', this.handleLinkClick.bind(this));
-    
-    // Initialize routes and handle initial URL
-    this.discoverRoutes();
-    this.route();
-  }
+    this.outlet = this.shadowRoot.querySelector('#outlet');
 
-  handleLinkClick(e) {
-    const anchor = e.composedPath().find(el => 
-      el.tagName === 'A' && el.hasAttribute && el.hasAttribute('route'));
-    
-    if (anchor) {
-      e.preventDefault();
-      this.navigate(anchor.getAttribute('href'));
-    }
-  }
+    this.routes = buildRoutesFromGlob(
+      import.meta.glob('../../app/**/*.html', { query: '?raw', import: 'default' }),
+      '../../app/'
+    );
 
-  discoverRoutes() {
-    // Get page modules without loading them yet
-    const pageModules = import.meta.glob('../../app/**/*.html', { query: '?raw', import: 'default' });
-    
-    // Define protected routes that require authentication
-    const protectedRoutes = ['/dashboard'];
-    
-    // Register routes based on file paths
-    Object.keys(pageModules).forEach(path => {
-      if (path.includes('/_')) return; // Skip utility folders
-      
-      const match = path.match(/\.\.\/\.\.\/app\/(.+?)\/\1\.html$/i);
-      if (match) {
-        const pageName = match[1];
-        const componentName = pageName.toLowerCase() + '-page';
-        const routePath = '/' + (pageName === 'Home' ? '' : pageName.toLowerCase());
-        
-        this.registerRoute(routePath, {
-          component: componentName,
-          loader: pageModules[path],
-          loaded: false,
-          requiresAuth: protectedRoutes.includes(routePath)
-        });
-      }
+    addEventListener('popstate', () => this.navigate());
+    addEventListener('navigate', e => this.go(e.detail.path));
+
+    document.addEventListener('click', e => {
+      const a = e.composedPath().find(el => el.tagName === 'A' && el.hasAttribute?.('route'));
+      if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
     });
-    
-    // Set fallback route
-    if (!this.routes.has('*') && this.routes.has('/')) {
-      this.routes.set('*', this.routes.get('/'));
+
+    this.navigate();
+  }
+
+  go(path) {
+    if (this.currentPath !== path) {
+      history.pushState(null, '', path);
+      this.navigate();
     }
   }
 
-  registerRoute(path, routeInfo) {
-    this.routes.set(path, routeInfo);
-  }
+  async navigate() {
+    const path = location.pathname;
+    const result = matchRoute(this.routes, path);
 
-  navigate(path) {
-    if (this.currentPath === path) return;
-    history.pushState(null, null, path);
-    this.route();
-  }
-
-  async route() {
-    // Prevent concurrent routing
-    if (this.isNavigating) {
-      return setTimeout(() => this.route(), 50);
-    }
-    
-    this.isNavigating = true;
-    const path = window.location.pathname;
-    
-    try {
-      store.set({ lastRoute: path });
-      if (this.currentPath === path) return;
-      
-      this.currentPath = path;
-      const routeInfo = this.routes.get(path) || this.routes.get('*');
-      
-      if (routeInfo) {
-        // Check authentication for protected routes
-        if (routeInfo.requiresAuth) {
-          const { isAuthenticated } = store.get();
-          if (!isAuthenticated) {
-            // Redirect to login with return path
-            const loginPath = `/login?from=${encodeURIComponent(path)}`;
-            history.replaceState(null, null, loginPath);
-            this.currentPath = null; // Reset so we re-route to login
-            setTimeout(() => this.route(), 10);
-            return;
-          }
-        }
-        
-        this.container.innerHTML = '';
-        
-        if (!routeInfo.loaded) {
-          await this.loadComponent(routeInfo);
-        }
-        
-        const pageProps = {
-          path,
-          title: path === '/' ? 'Home Page' : 
-            path.substring(1).charAt(0).toUpperCase() + path.substring(2) + ' Page',
-          timestamp: new Date().toLocaleString(),
-          ...store.get()
-        };
-        
-        const component = document.createElement(routeInfo.component);
-        component.pageProps = pageProps;
-        
-        requestAnimationFrame(() => {
-          this.container.appendChild(component);
-        });
-      }
-    } finally {
-      this.isNavigating = false;
-    }
-  }
-  
-  async loadComponent(routeInfo) {
-    if (customElements.get(routeInfo.component)) {
-      routeInfo.loaded = true;
+    if (!result) {
+      this.outlet.innerHTML = '<h1>404</h1>';
       return;
     }
-    
-    const templateContent = await routeInfo.loader();
-    
-    // Double-check to prevent race conditions
-    if (customElements.get(routeInfo.component)) {
-      routeInfo.loaded = true;
+
+    const { route, params } = result;
+
+    if (route.requiresAuth && !store.get('isAuthenticated')) {
+      history.replaceState(null, '', `/login?from=${encodeURIComponent(path)}`);
+      return this.navigate();
+    }
+
+    this.currentPath = path;
+    scrollTo(0, 0);
+    store.set({ lastRoute: path });
+
+    if (!route.loaded && route.loader) {
+      await this.loadDynamic(route);
+    }
+
+    const el = document.createElement(route.component);
+    el.pageProps = {
+      path,
+      params,
+      query: Object.fromEntries(new URLSearchParams(location.search)),
+      ...store.get()
+    };
+
+    this.outlet.replaceChildren(el);
+  }
+
+  async loadDynamic(route) {
+    if (customElements.get(route.component)) {
+      route.loaded = true;
       return;
     }
-    
-    class DynamicPage extends HTMLElement {
+
+    const html = await route.loader();
+
+    customElements.define(route.component, class extends HTMLElement {
+      pageProps = {};
+
       constructor() {
         super();
-        this.attachShadow({ mode: "open" });
-        this.pageProps = {};
-        this._mounted = false;
+        this.attachShadow({ mode: 'open' });
       }
 
       connectedCallback() {
-        if (this._mounted) return;
-        
-        this.shadowRoot.innerHTML = renderWithExpressions(templateContent, this.pageProps);
-        
-        this.shadowRoot.querySelectorAll('a[route]').forEach(link => {
-          link.addEventListener('click', (event) => {
-            event.preventDefault();
-            window.dispatchEvent(new CustomEvent('navigate', {
-              detail: { path: event.target.getAttribute('href') }
-            }));
-          });
+        this.shadowRoot.innerHTML = renderWithExpressions(html, this.pageProps);
+        this.shadowRoot.addEventListener('click', e => {
+          const a = e.target.closest('a[route]');
+          if (a) { e.preventDefault(); dispatchEvent(new CustomEvent('navigate', { detail: { path: a.getAttribute('href') } })); }
         });
-        
-        this._mounted = true;
-        if (typeof this.onMount === 'function') this.onMount();
       }
-      
-      disconnectedCallback() {
-        this._mounted = false;
-      }
-    }
-    
-    customElements.define(routeInfo.component, DynamicPage);
-    routeInfo.loaded = true;
+    });
+
+    route.loaded = true;
   }
 }
 
-customElements.define("app-router", Router);
+customElements.define('app-router', Router);

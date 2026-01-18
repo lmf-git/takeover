@@ -1,33 +1,14 @@
-import template from "./About.html?raw";
+import { Component } from '../../core/index.js';
+import template from './About.html?raw';
+import styles from './About.module.css?raw';
 
-class AboutPage extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: "open" });
-  }
+class AboutPage extends Component {
+  static template = template;
+  static styles = styles;
 
-  connectedCallback() {
-    console.log('AboutPage connected');
-    this.shadowRoot.innerHTML = template;
-    
-    // Handle navigation links
-    const links = this.shadowRoot.querySelectorAll('a[route]');
-    links.forEach(link => {
-      link.addEventListener('click', this.linkClick);
-    });
-  }
-  
-  linkClick(event) {
-    event.preventDefault();
-    const path = this.getAttribute('href');
-    console.log(`Page link: ${path}`);
-    
-    window.dispatchEvent(new CustomEvent('navigate', {
-      detail: { path }
-    }));
+  mount() {
+    this.setMeta({ title: 'About', description: 'Learn more about our application.' });
   }
 }
 
-customElements.define("about-page", AboutPage);
-
-export default "about-page";
+customElements.define('about-page', AboutPage);

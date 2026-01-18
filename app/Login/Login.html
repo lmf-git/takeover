@@ -192,18 +192,3 @@
     This is a demo - any credentials will work!
   </p>
 </section>
-
-<script>
-  // This will be replaced by proper component logic
-  document.addEventListener('DOMContentLoaded', () => {
-    // Show redirect info if redirected from protected page
-    const urlParams = new URLSearchParams(window.location.search);
-    const from = urlParams.get('from');
-    if (from) {
-      const redirectInfo = document.getElementById('redirect-info');
-      const redirectMessage = document.getElementById('redirect-message');
-      redirectInfo.style.display = 'block';
-      redirectMessage.textContent = `You were redirected from ${from}. Please login to continue.`;
-    }
-  });
-</script>

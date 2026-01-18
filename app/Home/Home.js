@@ -4,14 +4,7 @@ import template from './Home.html?raw';
 class HomePage extends Component {
   static template = template;
   static store = ['counter', 'theme', 'user', 'isAuthenticated'];
-
-  mount() {
-    this.setMeta({
-      title: 'Home - Web Components App',
-      description: 'Welcome to our web components application.',
-      ogTitle: 'Web Components Home'
-    });
-  }
+  static metadata = { title: 'Home - Web Components App', description: 'Welcome to our web components application.' };
 
   bind() {
     this.on('.logout-button', 'click', () => store.logout());

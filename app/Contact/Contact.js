@@ -3,10 +3,7 @@ import template from './Contact.html?raw';
 
 class ContactPage extends Component {
   static template = template;
-
-  mount() {
-    this.setMeta({ title: 'Contact', description: 'Get in touch with us.' });
-  }
+  static metadata = { title: 'Contact', description: 'Get in touch with us.' };
 
   bind() {
     this.on('button', 'click', () => alert('Message sent!'));

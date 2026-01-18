@@ -140,10 +140,12 @@
 </style>
 
 <section>
-  <div id="redirect-info" class="redirect-info" style="display: none;">
+  {{#if redirectFrom}}
+  <div class="redirect-info">
     <strong>🛡️ Login Required</strong>
-    <span id="redirect-message">You need to login to access that page.</span>
+    <span>Redirected from {{redirectFrom}}. Please login.</span>
   </div>
+  {{/if}}
 
   <h1>
     <span>🔐</span>
@@ -165,27 +167,37 @@
       <input type="email" id="email" placeholder="Enter your email" />
     </div>
     
-    <div id="error-container" style="display: none; margin: 15px 0;"></div>
-    
+    {{#if hasErrors}}
+    <div style="margin: 15px 0;">
+      {{#each errorMessages}}
+      <div class="error">{{this}}</div>
+      {{/each}}
+    </div>
+    {{/if}}
+
     <div class="login-buttons">
-      <button class="btn-primary" id="custom-login">
-        Login with Custom Info
+      <button class="btn-primary" id="custom-login" style="opacity: {{canSubmit ? '1' : '0.6'}}">
+        {{#if isLoading}}Logging in...{{else}}Login with Custom Info{{/if}}
       </button>
-      
+
       <button class="btn-secondary" id="clear-form" style="background: var(--warning-color); color: black; margin: 10px 0;">
         🗑️ Clear Form
       </button>
-      
+
       <div class="divider">
         <span>or</span>
       </div>
-      
+
       <button class="btn-quick" id="quick-login">
         Quick Login (Random User)
       </button>
     </div>
-    
-    <div id="attempt-counter" style="display: none; color: var(--text-secondary); font-size: 0.9em; margin-top: 15px;"></div>
+
+    {{#if attempts}}
+    <div style="color: var(--text-secondary); font-size: 0.9em; margin-top: 15px;">
+      Attempts: {{attempts}}
+    </div>
+    {{/if}}
   </div>
   
   <p style="color: var(--text-secondary); font-size: 0.9em; margin-top: 30px;">

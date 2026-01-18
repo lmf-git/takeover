@@ -1,8 +1,7 @@
 <style>
-  /* These styles are scoped to the AboutPage component's shadow DOM */
   section {
     padding: 20px;
-    background-color: #fefae0; /* A different background to show this style is applied */
+    background-color: #fefae0;
     border: 1px solid #e9ecef;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -18,35 +17,22 @@
     background-color: #e9ecef;
     border-radius: 5px;
   }
-  a {
-    color: #e76f51;
-    text-decoration: none;
-    font-weight: bold;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
+  a { color: #e76f51; text-decoration: none; font-weight: bold; }
+  a:hover { text-decoration: underline; }
   .state-demo {
     margin: 20px 0;
     padding: 15px;
     background-color: #e9ecef;
     border-radius: 5px;
   }
-  .counter-doubled {
-    font-weight: bold;
-    color: #e76f51;
-  }
-  .timestamp {
-    color: #6c757d;
-    font-size: 12px;
-    margin-top: 15px;
-    font-style: italic;
-  }
+  .counter-doubled { font-weight: bold; color: #e76f51; }
+  .highlight { color: white; background: #e76f51; padding: 2px 6px; border-radius: 4px; }
+  .timestamp { color: #6c757d; font-size: 12px; margin-top: 15px; font-style: italic; }
 </style>
 <section>
   <h1>{{title}}</h1>
   <p>This is the about page of our application using vanilla web components and client-side routing.</p>
-  <p>This component demonstrates using both a &lt;style&gt; tag in the HTML and a separate <span class="{{styles.highlight}}">CSS Module file</span>.</p>
+  <p>This component demonstrates scoped styles using Shadow DOM with a <span class="highlight">highlighted</span> example.</p>
   
   <div class="state-demo">
     <h2>Global State Access</h2>

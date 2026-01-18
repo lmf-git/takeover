@@ -1,18 +1,10 @@
 {
-    "name": "my-web-component-project",
-    "version": "1.0.0",
-    "type": "module",
-    "scripts": {
-        "dev": "node server/index.js",
-        "start": "NODE_ENV=production node server/index.js",
-        "build": "vite build --outDir dist/client && vite build --ssr server/entry-server.js --outDir dist/server",
-        "dev-spa": "vite",
-        "build-spa": "vite build",
-        "preview-spa": "vite preview"
-    },
-    "dependencies": {},
-    "devDependencies": {
-        "vite": "^5.0.0"
-    },
-    "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "name": "takeover",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node core/server/index.js",
+    "build": "node core/server/build.js",
+    "start": "NODE_ENV=production node core/server/index.js"
+  }
 }

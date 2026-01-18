@@ -3,21 +3,29 @@ import template from './Login.html?raw';
 
 class LoginPage extends Component {
   static template = template;
+  static metadata = { title: 'Login', description: 'Login to access your dashboard.' };
 
   constructor() {
     super();
     Object.assign(this.local, { username: '', email: '', isLoading: false, errors: {}, attempts: 0 });
   }
 
-  mount() {
-    this.setMeta({ title: 'Login', description: 'Login to access your dashboard.' });
-    this.from = new URLSearchParams(location.search).get('from');
-    if (this.from) {
-      const info = this.$('#redirect-info');
-      const msg = this.$('#redirect-message');
-      if (info) info.style.display = 'block';
-      if (msg) msg.textContent = `Redirected from ${this.from}. Please login.`;
-    }
+  onLocalChange() {
+    this.update();
+  }
+
+  get props() {
+    const { username, email, errors, isLoading, attempts } = this.local;
+    const errorMessages = Object.values(errors);
+    return {
+      ...super.props,
+      isLoading,
+      attempts,
+      hasErrors: errorMessages.length > 0,
+      errorMessages,
+      canSubmit: username.length > 0 && errorMessages.length === 0,
+      redirectFrom: typeof location !== 'undefined' ? new URLSearchParams(location.search).get('from') : null
+    };
   }
 
   bind() {
@@ -31,7 +39,6 @@ class LoginPage extends Component {
   updateField(field, value) {
     this.local[field] = value;
     this.validate();
-    this.updateUI();
   }
 
   validate() {
@@ -40,52 +47,19 @@ class LoginPage extends Component {
     if (username && username.length < 2) errors.username = 'Min 2 characters';
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Invalid email';
     this.local.errors = errors;
-    this.local.canSubmit = username.length > 0 && !Object.keys(errors).length;
   }
 
   async login(creds = {}) {
     this.local.isLoading = true;
     this.local.attempts++;
-    this.updateUI();
 
     await new Promise(r => setTimeout(r, 600));
     store.login(creds);
-    navigate(this.from || '/dashboard');
+    navigate(this.props.redirectFrom || '/dashboard');
   }
 
   clearForm() {
     Object.assign(this.local, { username: '', email: '', errors: {}, attempts: 0 });
-    ['#username', '#email'].forEach(s => { const el = this.$(s); if (el) el.value = ''; });
-    this.updateUI();
-  }
-
-  updateUI() {
-    const { errors, isLoading, canSubmit, attempts } = this.local;
-    const btn = this.$('#custom-login');
-    const counter = this.$('#attempt-counter');
-    const errorBox = this.$('#error-container');
-
-    ['username', 'email'].forEach(f => {
-      const el = this.$(`#${f}`);
-      if (el) el.style.borderColor = errors[f] ? 'var(--danger-color)' : '';
-    });
-
-    if (btn) {
-      btn.disabled = isLoading;
-      btn.textContent = isLoading ? 'Logging in...' : 'Login';
-      btn.style.opacity = canSubmit ? '1' : '0.6';
-    }
-
-    if (counter) {
-      counter.textContent = `Attempts: ${attempts}`;
-      counter.style.display = attempts ? 'block' : 'none';
-    }
-
-    if (errorBox) {
-      const errs = Object.values(errors);
-      errorBox.innerHTML = errs.map(e => `<div class="error">${e}</div>`).join('');
-      errorBox.style.display = errs.length ? 'block' : 'none';
-    }
   }
 }
 

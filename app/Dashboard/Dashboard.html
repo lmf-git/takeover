@@ -334,10 +334,10 @@
     
     <!-- Filter Buttons -->
     <div class="todo-filters">
-      <button id="filter-all" class="filter-btn active">All</button>
-      <button id="filter-active" class="filter-btn">Active</button>
-      <button id="filter-completed" class="filter-btn">Completed</button>
-      <button id="clear-completed" class="clear-btn">🗑️ Clear Completed</button>
+      <button data-filter="all" class="filter-btn {{#if filter === 'all'}}active{{/if}}">All</button>
+      <button data-filter="active" class="filter-btn {{#if filter === 'active'}}active{{/if}}">Active</button>
+      <button data-filter="completed" class="filter-btn {{#if filter === 'completed'}}active{{/if}}">Completed</button>
+      <button class="clear-btn" id="clear-completed">🗑️ Clear Completed</button>
     </div>
     
     <!-- Todo List -->
@@ -366,7 +366,11 @@
     </div>
     
     <!-- Stats -->
-    <div id="todo-stats" class="todo-stats"></div>
+    <div class="todo-stats">
+      <span>Total: {{todoCount}}</span>
+      <span>Active: {{activeCount}}</span>
+      <span>Completed: {{completedCount}}</span>
+    </div>
   </div>
   
   <p style="color: var(--text-secondary); font-size: 0.9em; margin-top: 30px;">

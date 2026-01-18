@@ -1,13 +1,12 @@
 import { Component } from '../../core/index.js';
 import template from './About.html?raw';
-import styles from './About.module.css?raw';
 
 class AboutPage extends Component {
   static template = template;
-  static styles = styles;
+  static metadata = { title: 'About', description: 'Learn more about our application.' };
 
-  mount() {
-    this.setMeta({ title: 'About', description: 'Learn more about our application.' });
+  get props() {
+    return { ...super.props, title: 'About Us', timestamp: new Date().toLocaleString() };
   }
 }
 

@@ -4,6 +4,8 @@ import template from './Dashboard.html?raw';
 class DashboardPage extends Component {
   static template = template;
   static store = ['user', 'isAuthenticated'];
+  static requiresAuth = true;
+  static metadata = { title: 'Dashboard', description: 'Protected dashboard area' };
 
   constructor() {
     super();
@@ -26,14 +28,16 @@ class DashboardPage extends Component {
   get props() {
     const { todos, filter } = this.local;
     const filtered = filter === 'all' ? todos : todos.filter(t => filter === 'completed' ? t.completed : !t.completed);
-    return { ...super.props, filteredTodos: filtered, filterMessage: filtered.length ? null : `No ${filter} todos` };
-  }
-
-  mount() {
-    this.setMeta({
-      title: 'Dashboard',
-      description: this.state.user ? `Dashboard for ${this.state.user.username}` : 'Protected dashboard'
-    });
+    const completed = todos.filter(t => t.completed).length;
+    return {
+      ...super.props,
+      filteredTodos: filtered,
+      filter,
+      filterMessage: filtered.length ? null : `No ${filter} todos`,
+      todoCount: todos.length,
+      activeCount: todos.length - completed,
+      completedCount: completed
+    };
   }
 
   bind() {
@@ -54,8 +58,6 @@ class DashboardPage extends Component {
       const cb = e.target.closest('.todo-checkbox');
       if (cb) this.toggleTodo(+cb.dataset.todoId);
     });
-
-    this.updateUI();
   }
 
   addTodo() {
@@ -76,18 +78,6 @@ class DashboardPage extends Component {
 
   clearCompleted() {
     this.local.todos = this.local.todos.filter(t => !t.completed);
-  }
-
-  updateUI() {
-    const { todos, filter } = this.local;
-    const completed = todos.filter(t => t.completed).length;
-
-    const stats = this.$('#todo-stats');
-    if (stats) stats.innerHTML = `<span>Total: ${todos.length}</span><span>Active: ${todos.length - completed}</span><span>Completed: ${completed}</span>`;
-
-    this.$$('.filter-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.filter === filter);
-    });
   }
 }
 

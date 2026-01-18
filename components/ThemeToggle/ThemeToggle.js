@@ -7,12 +7,6 @@ class ThemeToggle extends Component {
 
   bind() {
     this.on('#toggle-btn', 'click', () => store.toggleTheme());
-
-    const isDark = this.state.theme === 'dark';
-    const icon = this.$('#icon');
-    const label = this.$('#label');
-    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-    if (label) label.textContent = isDark ? 'Light' : 'Dark';
   }
 }
 

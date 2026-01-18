@@ -92,11 +92,15 @@
       <theme-toggle></theme-toggle>
       
       <div id="auth-section">
-        <div class="user-info" id="user-info" style="display: none;">
-          <img class="user-avatar" id="user-avatar" src="" alt="User">
-          <span id="username"></span>
+        {{#if isAuthenticated}}
+        <div class="user-info">
+          <img class="user-avatar" src="{{user.avatar}}" alt="{{user.username}}">
+          <span>{{user.username}}</span>
         </div>
-        <button class="auth-btn" id="auth-btn">Login</button>
+        {{/if}}
+        <button class="auth-btn{{#if isAuthenticated}} logout{{/if}}" id="auth-btn">
+          {{#if isAuthenticated}}Logout{{else}}Login{{/if}}
+        </button>
       </div>
     </div>
   </div>

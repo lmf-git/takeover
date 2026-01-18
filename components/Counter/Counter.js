@@ -1,10 +1,8 @@
 import { Component, store } from '../../core/index.js';
 import template from './Counter.html?raw';
-import styles from './Counter.module.css?raw';
 
 class Counter extends Component {
   static template = template;
-  static styles = styles;
   static store = ['counter'];
 
   bind() {

@@ -34,6 +34,6 @@
 </style>
 
 <button class="theme-toggle" id="toggle-btn">
-  <span class="icon" id="icon">🌙</span>
-  <span id="label">Dark</span>
+  <span class="icon">{{theme === 'dark' ? '☀️' : '🌙'}}</span>
+  <span>{{theme === 'dark' ? 'Light' : 'Dark'}}</span>
 </button>

@@ -61,6 +61,33 @@ async function serveRaw(filePath, res) {
   }
 }
 
+// Extract <script> from HTML and serve as JS module
+// Falls back to separate .js file if no embedded script
+async function serveScript(filePath, res) {
+  try {
+    const content = await readFile(filePath, 'utf-8');
+    const scriptMatch = content.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
+    if (scriptMatch) {
+      res.writeHead(200, { 'Content-Type': 'text/javascript' });
+      res.end(scriptMatch[1]);
+    } else {
+      // Fall back to separate .js file
+      const jsPath = filePath.replace('.html', '.js');
+      try {
+        const jsContent = await readFile(jsPath, 'utf-8');
+        res.writeHead(200, { 'Content-Type': 'text/javascript' });
+        res.end(jsContent);
+      } catch {
+        res.writeHead(404);
+        res.end('No script found in HTML and no .js file exists');
+      }
+    }
+  } catch {
+    res.writeHead(404);
+    res.end('Not found');
+  }
+}
+
 async function serveStatic(filePath, res) {
   try {
     const stats = await stat(filePath);
@@ -98,7 +125,16 @@ async function renderSSR(url, res) {
     console.log('[SSR] Importing entry-server.js...');
     const { render } = await import(`./entry-server.js${cacheBuster}`);
     console.log('[SSR] render function loaded');
-    const { appHtml, initialStateScript, headMeta, scopedStyles } = await render(url);
+    const result = await render(url);
+
+    // Handle redirects (e.g., auth required)
+    if (result.redirect) {
+      res.writeHead(302, { 'Location': result.redirect });
+      res.end();
+      return;
+    }
+
+    const { appHtml, initialStateScript, headMeta, scopedStyles } = result;
 
     let html = template
       .replace('<!--head-meta-->', (headMeta || '') + (scopedStyles || ''))
@@ -130,6 +166,9 @@ async function handler(req, res) {
 
   // ?raw imports
   if (query === 'raw') return serveRaw(join(root, url), res);
+
+  // ?script - extract script from HTML as JS module
+  if (query === 'script') return serveScript(join(root, url), res);
 
   // Check if this looks like a static file request (has extension)
   const ext = extname(url);

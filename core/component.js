@@ -17,8 +17,10 @@ async function loadTemplate(url) {
     const res = await fetch(url);
     if (!res.ok) return '';
     const html = await res.text();
-    templateCache.set(url, html);
-    return html;
+    // Strip <script> tags - template only needs HTML/CSS
+    const template = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').trim();
+    templateCache.set(url, template);
+    return template;
   } catch {
     return '';
   }
@@ -105,14 +107,9 @@ export class Component extends BaseElement {
     const { template, templateUrl, cssModule } = this.constructor;
     this.#template = template || (templateUrl ? await loadTemplate(templateUrl) : '');
 
-    // Load CSS module if specified (or auto-detect from templateUrl)
-    let moduleUrl = cssModule;
-    if (!moduleUrl && templateUrl) {
-      moduleUrl = templateUrl.replace(/\.html$/, '.module.css');
-    }
-
-    if (moduleUrl && this.constructor._cssClasses === null) {
-      const { css, classes } = await loadCSSModule(moduleUrl, this.tagName.toLowerCase());
+    // Load CSS module only if explicitly specified
+    if (cssModule && this.constructor._cssClasses === null) {
+      const { css, classes } = await loadCSSModule(cssModule, this.tagName.toLowerCase());
       this.constructor._cssClasses = classes;
       this.constructor._moduleCss = css;
     }
@@ -148,8 +145,13 @@ export class Component extends BaseElement {
     this.mount?.();
 
     // Exit hydration mode AFTER mount completes
-    // This blocks all updates during the hydration/mount phase
     this.#hydrated = false;
+
+    // If local state was initialized during mount, re-render to apply it
+    // (SSR doesn't know about local state, so we need a client render)
+    if (Object.keys(this.#local).length > 0) {
+      this.update();
+    }
   }
 
   disconnectedCallback() {
@@ -194,6 +196,32 @@ export class Component extends BaseElement {
         navigate(a.getAttribute('href'));
       }
     }, { signal: this.signal });
+
+    // Declarative event binding: @click="methodName" or @click="store.method()"
+    const eventAttrs = ['click', 'submit', 'input', 'change', 'keydown', 'keyup'];
+    eventAttrs.forEach(eventName => {
+      this.shadowRoot.querySelectorAll(`[\\@${eventName}]`).forEach(el => {
+        const handler = el.getAttribute(`@${eventName}`);
+        if (!handler) return;
+
+        el.addEventListener(eventName, e => {
+          // Handle store.method() calls
+          if (handler.startsWith('store.')) {
+            const method = handler.slice(6).replace(/\(\)$/, '');
+            if (typeof store[method] === 'function') {
+              store[method]();
+            }
+          }
+          // Handle this.method() or just method
+          else {
+            const methodName = handler.replace(/\(\)$/, '');
+            if (typeof this[methodName] === 'function') {
+              this[methodName](e);
+            }
+          }
+        }, { signal: this.signal });
+      });
+    });
   }
 
   get props() {

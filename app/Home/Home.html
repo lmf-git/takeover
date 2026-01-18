@@ -1,78 +1,129 @@
 <style>
-  h1 {
-    color: #2a9d8f;
+  /* Inline styles work alongside CSS modules */
+  :host {
+    display: block;
   }
-  section {
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-  }
-  .page-navigation {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #e9ecef;
-    border-radius: 5px;
-  }
-  a {
-    color: #2a9d8f;
-    text-decoration: none;
+  .counter-value {
+    font-size: 1.2em;
     font-weight: bold;
+    color: #2a9d8f;
   }
-  a:hover {
-    text-decoration: underline;
+  .local-demo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 10px 0;
   }
-  .state-demo {
-    margin: 20px 0;
-    padding: 15px;
-    background-color: #e9ecef;
-    border-radius: 5px;
-  }
-  .timestamp {
-    color: #6c757d;
-    font-size: 12px;
-    margin-top: 15px;
-    font-style: italic;
+  input[type="text"] {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+    width: 250px;
   }
 </style>
-<section>
+
+<div class="{{$css.hero}}">
   <h1>{{title}}</h1>
   <p>Welcome to the home page of our web component application!</p>
-  
-  <div class="state-demo">
-    <h2>Global State Demo</h2>
-    <p>This counter is shared across all components:</p>
-    <app-counter></app-counter>
-    <p>Current counter value: {{counter}}</p>
+</div>
+
+<div class="{{$css.card}}">
+  <h2>Local State Demo</h2>
+  <p>This state is local to this component only:</p>
+  <div class="local-demo">
+    <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="decrement">-</button>
+    <span class="counter-value">{{localCount}}</span>
+    <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="increment">+</button>
   </div>
-  
-  <div class="state-demo">
-    <h2>Auth Context Demo</h2>
-    <div id="auth-status">
-      {{#if isAuthenticated}}
-        <p>✅ Logged in as: <strong>{{user.username}}</strong></p>
-        <p>Email: {{user.email}} | Role: {{user.role}}</p>
-        <img src="{{user.avatar}}" alt="Avatar" style="width: 64px; height: 64px; border-radius: 50%; margin: 10px 0;">
-        <br>
-        <button class="logout-button" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
-          Logout
-        </button>
-      {{else}}
-        <p>❌ Not logged in</p>
-        <button class="login-button" style="background: #198754; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
-          Quick Login
-        </button>
-        <button class="login-admin-button" style="background: #0d6efd; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px;">
-          Login as Admin
-        </button>
-      {{/if}}
-    </div>
-    <p><small>Authentication state persists across page refreshes!</small></p>
+  <p>
+    <input type="text" placeholder="Type something..." @input="updateMessage" value="{{message}}">
+  </p>
+  <p>You typed: <strong>{{message}}</strong></p>
+</div>
+
+<div class="{{$css.card}}">
+  <h2>Global State Demo</h2>
+  <p>This counter is shared across all components:</p>
+  <app-counter></app-counter>
+  <p>Current counter value: <span class="counter-value">{{counter}}</span></p>
+</div>
+
+<div class="{{$css.card}}">
+  <h2>Auth Context Demo</h2>
+  <div id="auth-status">
+    {{#if isAuthenticated}}
+      <p>Logged in as: <strong>{{user.username}}</strong></p>
+      <p>Email: {{user.email}} | Role: {{user.role}}</p>
+      <img class="{{$css.avatar}}" src="{{user.avatar}}" alt="Avatar">
+      <br>
+      <button class="{{$css.button}} {{$css.buttonDanger}}" @click="store.logout()">Logout</button>
+    {{else}}
+      <p>Not logged in</p>
+      <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="store.login()">Quick Login</button>
+      <button class="{{$css.button}} {{$css.buttonInfo}}" @click="loginAsAdmin">Login as Admin</button>
+    {{/if}}
   </div>
-  
-  <div class="page-navigation">
-    <p>You are currently on the path: {{path}}</p>
-    <p>Navigate to: <a href="/about" route>About Page</a> | <a href="/contact" route>Contact Page</a></p>
-  </div>
-  
-  <p class="timestamp">Page rendered at: {{timestamp}}</p>
-</section>
+  <p><small>Authentication state persists across page refreshes!</small></p>
+</div>
+
+<div class="{{$css.nav}}">
+  <p>You are currently on the path: {{path}}</p>
+  <p>Navigate to: <a href="/about" route>About Page</a> | <a href="/contact" route>Contact Page</a></p>
+</div>
+
+<p class="{{$css.timestamp}}">Page rendered at: {{timestamp}}</p>
+
+<script>
+import { Component, store, define } from '/core/index.js';
+
+export default class HomePage extends Component {
+  static templateUrl = '/app/Home/Home.html';
+  static cssModule = '/app/Home/Home.module.css';
+  static store = ['counter', 'theme', 'user', 'isAuthenticated'];
+  static metadata = { title: 'Home - Web Components App', description: 'Welcome to our web components application.' };
+  static ssrProps = { title: 'Welcome Home', localCount: 0, message: '' };
+
+  // Initialize local state
+  mount() {
+    this.local.localCount = 0;
+    this.local.message = '';
+  }
+
+  // Re-render when local state changes
+  onLocalChange(prop, value) {
+    this.update();
+  }
+
+  get props() {
+    return {
+      ...super.props,
+      title: 'Welcome Home',
+      timestamp: new Date().toLocaleString(),
+      // Include local state in props for template
+      localCount: this.local.localCount ?? 0,
+      message: this.local.message ?? ''
+    };
+  }
+
+  // Local state methods
+  increment() {
+    this.local.localCount++;
+  }
+
+  decrement() {
+    this.local.localCount--;
+  }
+
+  updateMessage(e) {
+    this.local.message = e.target.value;
+  }
+
+  // Global state method
+  loginAsAdmin() {
+    store.login({ username: 'admin', email: 'admin@test.com' });
+  }
+}
+
+define('home-page', HomePage);
+</script>

@@ -45,6 +45,11 @@
   --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
 }
 
+/* Prevent layout shift from scrollbar appearing/disappearing */
+html {
+  overflow-y: scroll;
+}
+
 /* Global body styles */
 body {
   background-color: var(--bg-color);

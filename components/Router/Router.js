@@ -32,11 +32,24 @@ export default class Router extends HTMLElement {
       if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
     });
 
-    // Skip initial navigation if SSR page already exists (has shadow root from DSD)
+    // Check if SSR page exists
     const existingPage = this.outlet.firstElementChild;
     if (existingPage?.shadowRoot) {
+      // SSR page exists - but still need to check auth
+      const route = matchRoute(this.routes, location.pathname);
+      if (route) {
+        // Load module to check requiresAuth
+        const mod = await import(route.route.module);
+        const ComponentClass = mod.default || Object.values(mod).find(v => typeof v === 'function');
+
+        if (ComponentClass?.requiresAuth && !store.get('isAuthenticated')) {
+          // Not authenticated - redirect to login
+          history.replaceState(null, '', `/login?from=${encodeURIComponent(location.pathname)}`);
+          return this.navigate();
+        }
+      }
       this.currentPath = location.pathname;
-      console.log('[Router] SSR page detected, skipping initial navigation');
+      console.log('[Router] SSR page detected, hydrating');
     } else {
       this.navigate();
     }

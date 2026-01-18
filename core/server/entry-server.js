@@ -34,8 +34,10 @@ async function loadTemplate(tag) {
 
   try {
     const html = await readFile(filePath, 'utf-8');
-    templateCache.set(tag, html);
-    return html;
+    // Strip <script> tags - template only needs HTML/CSS
+    const template = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').trim();
+    templateCache.set(tag, template);
+    return template;
   } catch {
     templateCache.set(tag, null);
     return null;
@@ -160,6 +162,17 @@ async function renderComponents(html, props) {
   return result;
 }
 
+// Extract template from HTML (everything except <script> and keep <style>)
+function extractTemplate(html) {
+  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').trim();
+}
+
+// Extract script content from HTML
+function extractScript(html) {
+  const match = html.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
+  return match ? match[1] : null;
+}
+
 // Build routes
 async function buildRoutes() {
   const files = await scanDir(appDir, '.html');
@@ -172,32 +185,50 @@ async function buildRoutes() {
     if (!routePath) continue;
 
     const html = await readFile(filePath, 'utf-8');
+    const template = extractTemplate(html);
     const dynamic = routePath.includes(':');
-    const jsPath = filePath.replace('.html', '.js');
 
     let ssrProps = {};
     let metadata = null;
-    const jsUrl = pathToFileURL(jsPath).href;
 
-    try {
-      const mod = await import(jsUrl);
-      const ComponentClass = mod.default || Object.values(mod).find(v => typeof v === 'function');
-      if (ComponentClass) {
-        ssrProps = ComponentClass.ssrProps || {};
-        metadata = ComponentClass.metadata;
+    // Try to extract ssrProps, metadata, and requiresAuth from script
+    let script = extractScript(html);
+    let requiresAuth = false;
+
+    // If no embedded script, try loading separate .js file
+    if (!script) {
+      const jsPath = filePath.replace('.html', '.js');
+      try {
+        script = await readFile(jsPath, 'utf-8');
+      } catch {
+        // No .js file either
       }
-    } catch (e) {
-      console.log(`[SSR] Failed to load ${jsUrl}:`, e.message);
+    }
+
+    if (script) {
+      // Parse static properties from script content
+      const ssrPropsMatch = script.match(/static\s+ssrProps\s*=\s*(\{[^}]+\})/);
+      const metadataMatch = script.match(/static\s+metadata\s*=\s*(\{[^}]+\})/);
+      const requiresAuthMatch = script.match(/static\s+requiresAuth\s*=\s*(true|false)/);
+
+      try {
+        if (ssrPropsMatch) ssrProps = eval(`(${ssrPropsMatch[1]})`);
+        if (metadataMatch) metadata = eval(`(${metadataMatch[1]})`);
+        if (requiresAuthMatch) requiresAuth = requiresAuthMatch[1] === 'true';
+      } catch (e) {
+        console.log(`[SSR] Failed to parse static props from ${relative}:`, e.message);
+      }
     }
 
     routes.push({
       path: routePath,
       component: relative.split('/').pop().replace('.html', '').toLowerCase() + '-page',
-      html,
+      html: template,
       dynamic,
       matcher: dynamic ? createMatcher(routePath) : null,
       ssrProps,
-      metadata
+      metadata,
+      requiresAuth
     });
   }
 
@@ -224,6 +255,11 @@ export async function render(url) {
 
   const { route, params } = result;
   const state = store.get();
+
+  // Check auth - redirect if route requires auth and user isn't authenticated
+  if (route.requiresAuth && !state.isAuthenticated) {
+    return { redirect: `/login?from=${encodeURIComponent(path)}` };
+  }
 
   const ssrProps = typeof route.ssrProps === 'function'
     ? route.ssrProps({ path: url, params })

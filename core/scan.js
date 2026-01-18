@@ -25,23 +25,25 @@ export async function scanDir(dir, ext = '.js') {
 }
 
 export async function scanRoutes(appDir) {
-  const files = await scanDir(appDir, '.js');
+  // Scan for HTML files (single-file components)
+  const htmlFiles = await scanDir(appDir, '.html');
 
-  return files
+  return htmlFiles
     .filter(f => !f.relative.startsWith('_'))
-    .map(({ relative }) => {
-      const path = pathFromFile(relative, '');
-      if (!path) return null;
+    .map(({ path: filePath, relative }) => {
+      const routePath = pathFromFile(relative.replace('.html', '.js'), '');
+      if (!routePath) return null;
 
-      const dynamic = path.includes(':');
-      const component = relative.split('/').pop().replace('.js', '').toLowerCase() + '-page';
+      const dynamic = routePath.includes(':');
+      const component = relative.split('/').pop().replace('.html', '').toLowerCase() + '-page';
 
       return {
-        path,
+        path: routePath,
         component,
-        module: `/app/${relative}`,
+        // Use ?script to extract JS from HTML, or fall back to .js file
+        module: `/app/${relative}?script`,
         dynamic,
-        matcher: dynamic ? createMatcher(path) : null
+        matcher: dynamic ? createMatcher(routePath) : null
       };
     })
     .filter(Boolean);

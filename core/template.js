@@ -57,6 +57,81 @@ function safeEvaluate(expression, props) {
     return parts.some(part => safeEvaluate(part, props));
   }
 
+  // Handle arithmetic operators: *, /, -, + (for numbers)
+  const arithmeticMatch = trimmed.match(/^(.+?)\s*([\*\/])\s*(.+)$/);
+  if (arithmeticMatch) {
+    const [, left, op, right] = arithmeticMatch;
+    const leftVal = safeEvaluate(left.trim(), props);
+    const rightVal = safeEvaluate(right.trim(), props);
+    if (typeof leftVal === 'number' && typeof rightVal === 'number') {
+      switch (op) {
+        case '*': return leftVal * rightVal;
+        case '/': return rightVal !== 0 ? leftVal / rightVal : 0;
+      }
+    }
+    return undefined;
+  }
+
+  // Handle + and - (could be string concat or arithmetic)
+  const addSubMatch = trimmed.match(/^(.+?)\s*([\+\-])\s*(.+)$/);
+  if (addSubMatch) {
+    const [, left, op, right] = addSubMatch;
+    const leftVal = safeEvaluate(left.trim(), props);
+    const rightVal = safeEvaluate(right.trim(), props);
+
+    // If both are numbers, do arithmetic
+    if (typeof leftVal === 'number' && typeof rightVal === 'number') {
+      return op === '+' ? leftVal + rightVal : leftVal - rightVal;
+    }
+    // Otherwise concatenate for +
+    if (op === '+') {
+      return String(leftVal ?? '') + String(rightVal ?? '');
+    }
+    return undefined;
+  }
+
+  // Handle method calls: str.split(' ')[0], str.toUpperCase(), etc.
+  const methodMatch = trimmed.match(/^(.+?)\.(\w+)\(([^)]*)\)(\[\d+\])?$/);
+  if (methodMatch) {
+    const [, objPath, method, args, indexAccess] = methodMatch;
+    const obj = safeEvaluate(objPath.trim(), props);
+    if (obj == null) return undefined;
+
+    // Whitelist of safe methods
+    const safeMethods = ['split', 'join', 'slice', 'toUpperCase', 'toLowerCase', 'trim', 'charAt', 'substring', 'replace'];
+    if (!safeMethods.includes(method)) return undefined;
+
+    // Parse argument (simple string or number)
+    let arg = undefined;
+    if (args) {
+      const argTrimmed = args.trim();
+      if (argTrimmed.match(/^(['"])(.*)(\1)$/)) {
+        arg = argTrimmed.slice(1, -1);
+      } else if (/^-?\d+$/.test(argTrimmed)) {
+        arg = parseInt(argTrimmed, 10);
+      }
+    }
+
+    let result = arg !== undefined ? obj[method](arg) : obj[method]();
+
+    // Handle array index access like [0]
+    if (indexAccess && Array.isArray(result)) {
+      const idx = parseInt(indexAccess.slice(1, -1), 10);
+      result = result[idx];
+    }
+
+    return result;
+  }
+
+  // Handle array index access: arr[0], str[0]
+  const indexMatch = trimmed.match(/^(.+?)\[(\d+)\]$/);
+  if (indexMatch) {
+    const [, arrPath, index] = indexMatch;
+    const arr = safeEvaluate(arrPath.trim(), props);
+    if (arr == null) return undefined;
+    return arr[parseInt(index, 10)];
+  }
+
   // Handle string literals: 'value' or "value"
   const stringMatch = trimmed.match(/^(['"])(.*)(\1)$/);
   if (stringMatch) {

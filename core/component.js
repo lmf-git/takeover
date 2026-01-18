@@ -1,14 +1,11 @@
-// Reactive Component - Proxy, EventTarget, AbortController
-// Uses scoped styles with data attributes (like Vue) instead of Shadow DOM
-// Supports CSS modules and scoped <style> tags (scoped styles override modules)
+// Reactive Component with Declarative Shadow DOM
+// Supports CSS modules and inline <style> blocks
 import store from '../lib/store.js';
 import { renderWithExpressions } from './template.js';
 
 const isBrowser = typeof window !== 'undefined';
 const templateCache = new Map();
-const styleCache = new Map();
-const moduleCache = new Map(); // Cache for CSS modules
-let scopeId = 0;
+const moduleCache = new Map();
 
 export const navigate = path => isBrowser && dispatchEvent(new CustomEvent('navigate', { detail: { path } }));
 
@@ -48,102 +45,47 @@ async function loadCSSModule(url, scope) {
 // Process CSS module: extract class names and scope them
 function processCSSModule(css, scope) {
   const classes = {};
-  const scopeAttr = `[data-v-${scope}]`;
-
-  // Find all class selectors and create mappings
+  // Generate scoped class names
   const processed = css.replace(/\.([a-zA-Z_][\w-]*)/g, (match, className) => {
-    // Generate scoped class name
     const scopedName = `${className}_${scope}`;
     classes[className] = scopedName;
     return `.${scopedName}`;
   });
-
-  // Add scope attribute to all selectors for proper scoping
-  const scoped = processed.replace(/([^{}]+)(\{[^}]*\})/g, (_, selectors, rules) => {
-    const scopedSels = selectors.split(',').map(sel => {
-      sel = sel.trim();
-      if (!sel || sel.startsWith('@') || sel.startsWith('from') || sel.startsWith('to') || /^\d/.test(sel)) return sel;
-      return sel + scopeAttr;
-    }).join(', ');
-    return scopedSels + rules;
-  });
-
-  return { css: scoped, classes };
+  return { css: processed, classes };
 }
 
-// Extract <style> from template and scope it
-function extractAndScopeStyles(html, scope) {
+// Extract <style> from template (returns raw CSS, no scoping needed for shadow DOM)
+function extractStyles(html) {
   const styleRegex = /<style>([\s\S]*?)<\/style>/gi;
   let styles = '';
   const content = html.replace(styleRegex, (_, css) => {
-    styles += scopeCSS(css, scope);
+    styles += css;
     return '';
   });
   return { content, styles };
 }
 
-// Add scope attribute to CSS selectors (Vue-style: selector[data-v-scope])
-function scopeCSS(css, scope) {
-  const attr = `[data-v-${scope}]`;
-  return css.replace(/([^{}]+)(\{[^}]*\})/g, (_, selectors, rules) => {
-    const scoped = selectors.split(',').map(sel => {
-      sel = sel.trim();
-      if (!sel || sel.startsWith('@') || sel.startsWith('from') || sel.startsWith('to') || /^\d/.test(sel)) return sel;
-      if (sel.includes(':host')) return sel.replace(/:host/g, attr);
-      // Append scope to selector (handles tags, classes, ids, etc.)
-      // For "div .class" -> "div .class[data-v-scope]"
-      return sel + attr;
-    }).join(', ');
-    return scoped + rules;
-  });
-}
-
-// Inject scoped styles into document head (once per scope)
-function injectStyles(styles, scope) {
-  if (!isBrowser || styleCache.has(scope)) return;
-  // Check if SSR already injected this style
-  if (document.querySelector(`style[data-v-style="${scope}"]`)) {
-    styleCache.set(scope, true);
-    return;
-  }
-  styleCache.set(scope, true);
-  const style = document.createElement('style');
-  style.setAttribute('data-v-style', scope);
-  style.textContent = styles;
-  document.head.appendChild(style);
-}
-
-// Add scope attribute to all elements
-function addScopeToElements(container, scope) {
-  container.querySelectorAll('*').forEach(el => el.setAttribute(`data-v-${scope}`, ''));
-}
-
 export class Component extends BaseElement {
   static template = '';
   static templateUrl = '';
-  static cssModule = ''; // Path to CSS module file
+  static cssModule = '';
   static store = [];
   static metadata = null;
   static requiresAuth = false;
-  static _scope = null;
-  static _cssClasses = null; // Cached CSS module classes
+  static _cssClasses = null;
+  static _moduleCss = null;
 
   #unsubs = [];
   #ac = null;
   #local = {};
   #template = '';
-  #scope = '';
   #cssClasses = {};
+  #moduleCss = '';
+  #hydrated = false;
 
   constructor() {
     super();
     this.state = store.get();
-    // Use class-level scope (shared across instances of same component)
-    if (!this.constructor._scope) {
-      this.constructor._scope = this.tagName.toLowerCase();
-    }
-    this.#scope = this.constructor._scope;
-
     this.local = new Proxy(this.#local, {
       set: (target, prop, value) => {
         if (target[prop] === value) return true;
@@ -159,7 +101,6 @@ export class Component extends BaseElement {
 
   async connectedCallback() {
     this.#ac = new AbortController();
-    this.setAttribute(`data-v-${this.#scope}`, '');
 
     const { template, templateUrl, cssModule } = this.constructor;
     this.#template = template || (templateUrl ? await loadTemplate(templateUrl) : '');
@@ -167,18 +108,34 @@ export class Component extends BaseElement {
     // Load CSS module if specified (or auto-detect from templateUrl)
     let moduleUrl = cssModule;
     if (!moduleUrl && templateUrl) {
-      // Auto-detect: /components/Counter/Counter.html -> /components/Counter/Counter.module.css
       moduleUrl = templateUrl.replace(/\.html$/, '.module.css');
     }
 
-    if (moduleUrl && !this.constructor._cssClasses) {
-      const { css, classes } = await loadCSSModule(moduleUrl, this.#scope);
+    if (moduleUrl && this.constructor._cssClasses === null) {
+      const { css, classes } = await loadCSSModule(moduleUrl, this.tagName.toLowerCase());
       this.constructor._cssClasses = classes;
-      // Inject module styles (before scoped styles so they can be overridden)
-      if (css) injectStyles(css, `${this.#scope}-module`);
+      this.constructor._moduleCss = css;
     }
     this.#cssClasses = this.constructor._cssClasses || {};
+    this.#moduleCss = this.constructor._moduleCss || '';
 
+    this.state = store.get();
+    if (this.constructor.metadata) this.setMeta(this.constructor.metadata);
+
+    // Check if Declarative Shadow DOM already exists (from SSR)
+    const hasSSRContent = !!this.shadowRoot;
+    if (hasSSRContent) {
+      // Hydration: shadow root exists from DSD, just bind events
+      this.#hydrated = true;
+      this.#bindEvents();
+      this.bind?.();
+    } else {
+      // Client-side only: create shadow root and render
+      this.attachShadow({ mode: 'open' });
+      this.update();
+    }
+
+    // Set up store subscriptions AFTER hydration check
     if (this.constructor.store.length) {
       this.constructor.store.forEach(path => {
         this.#unsubs.push(store.on(path, () => {
@@ -188,25 +145,11 @@ export class Component extends BaseElement {
       });
     }
 
-    this.state = store.get();
-    if (this.constructor.metadata) this.setMeta(this.constructor.metadata);
-
-    // Skip initial render if SSR content exists (has data-ssr attribute)
-    if (!this.hasAttribute('data-ssr')) {
-      this.update();
-    } else {
-      // Just add scope attributes to existing SSR content and bind events
-      this.removeAttribute('data-ssr');
-      addScopeToElements(this, this.#scope);
-      if (isBrowser) {
-        this.addEventListener('click', e => {
-          const a = e.target.closest('a[route]');
-          if (a) { e.preventDefault(); navigate(a.getAttribute('href')); }
-        }, { signal: this.signal });
-        this.bind?.();
-      }
-    }
     this.mount?.();
+
+    // Exit hydration mode AFTER mount completes
+    // This blocks all updates during the hydration/mount phase
+    this.#hydrated = false;
   }
 
   disconnectedCallback() {
@@ -217,28 +160,40 @@ export class Component extends BaseElement {
   }
 
   update() {
+    if (!this.shadowRoot) return;
+
+    // In hydration mode, skip updates to preserve DSD content
+    // Hydration mode ends after mount() completes in connectedCallback
+    if (this.#hydrated) return;
+
+    // Don't render if template isn't loaded yet
     if (!this.#template) {
-      this.innerHTML = '';
+      this.shadowRoot.innerHTML = '';
       return;
     }
 
-    console.log(`[Component] ${this.tagName} update() props:`, Object.keys(this.props));
     const rendered = renderWithExpressions(this.#template, this.props);
-    console.log(`[Component] ${this.tagName} rendered contains {{:`, rendered.includes('{{'));
-    const { content, styles } = extractAndScopeStyles(rendered, this.#scope);
+    const { content, styles } = extractStyles(rendered);
 
-    injectStyles(styles, this.#scope);
-    this.innerHTML = content;
-    addScopeToElements(this, this.#scope);
+    // Build combined styles: CSS module + inline styles
+    const allStyles = (this.#moduleCss || '') + (styles || '');
 
-    if (isBrowser) {
-      this.addEventListener('click', e => {
-        const a = e.target.closest('a[route]');
-        if (a) { e.preventDefault(); navigate(a.getAttribute('href')); }
-      }, { signal: this.signal });
+    this.shadowRoot.innerHTML = (allStyles ? `<style>${allStyles}</style>` : '') + content;
+    this.#bindEvents();
+    this.bind?.();
+  }
 
-      this.bind?.();
-    }
+  #bindEvents() {
+    if (!isBrowser || !this.shadowRoot) return;
+
+    // Route link handling
+    this.shadowRoot.addEventListener('click', e => {
+      const a = e.target.closest('a[route]');
+      if (a) {
+        e.preventDefault();
+        navigate(a.getAttribute('href'));
+      }
+    }, { signal: this.signal });
   }
 
   get props() {
@@ -247,12 +202,12 @@ export class Component extends BaseElement {
       ...this.#local,
       ...this.pageProps,
       path: isBrowser ? location.pathname : '',
-      $css: this.#cssClasses // CSS module class mappings
+      $css: this.#cssClasses
     };
   }
 
-  $(sel) { return this.querySelector(sel); }
-  $$(sel) { return [...this.querySelectorAll(sel)]; }
+  $(sel) { return this.shadowRoot?.querySelector(sel); }
+  $$(sel) { return [...(this.shadowRoot?.querySelectorAll(sel) || [])]; }
 
   on(target, event, handler, opts = {}) {
     const el = typeof target === 'string' ? this.$(target) : target;

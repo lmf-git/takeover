@@ -32,12 +32,11 @@ export default class Router extends HTMLElement {
       if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
     });
 
-    // Skip initial navigation if SSR page already exists
-    const ssrPage = this.outlet.querySelector('[data-ssr]');
-    if (ssrPage) {
+    // Skip initial navigation if SSR page already exists (has shadow root from DSD)
+    const existingPage = this.outlet.firstElementChild;
+    if (existingPage?.shadowRoot) {
       this.currentPath = location.pathname;
-      // Just bind events on existing page
-      ssrPage.removeAttribute('data-ssr');
+      console.log('[Router] SSR page detected, skipping initial navigation');
     } else {
       this.navigate();
     }

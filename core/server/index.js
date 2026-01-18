@@ -131,12 +131,23 @@ async function handler(req, res) {
   // ?raw imports
   if (query === 'raw') return serveRaw(join(root, url), res);
 
+  // Check if this looks like a static file request (has extension)
+  const ext = extname(url);
+  const isStaticFileRequest = ext && ext !== '.html';
+
   // Static files
   if (url !== '/' && !url.endsWith('/')) {
     if (await serveStatic(join(root, url), res)) return;
+
+    // If it was a static file request but file not found, return 404
+    if (isStaticFileRequest) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
   }
 
-  // SSR
+  // SSR (only for HTML routes)
   await renderSSR(req.url, res);
 }
 

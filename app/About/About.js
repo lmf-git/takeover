@@ -2,6 +2,7 @@ import { Component, define } from '../../core/index.js';
 
 export default class AboutPage extends Component {
   static templateUrl = '/app/About/About.html';
+  static store = ['counter'];
   static metadata = { title: 'About', description: 'Learn more about our application.' };
   static ssrProps = { title: 'About Us' };
 

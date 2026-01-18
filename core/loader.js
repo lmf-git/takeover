@@ -35,11 +35,36 @@ function check(node) {
   if (tag?.includes('-') && !customElements.get(tag) && !tag.endsWith('-page')) {
     load(tag);
   }
+  // Check children
   node.querySelectorAll?.('*').forEach(check);
+  // Also check inside shadow DOM
+  if (node.shadowRoot) {
+    node.shadowRoot.querySelectorAll('*').forEach(check);
+  }
 }
 
 new MutationObserver(mutations => {
   mutations.flatMap(m => [...m.addedNodes]).filter(n => n.nodeType === 1).forEach(check);
 }).observe(document, { childList: true, subtree: true });
 
-document.querySelectorAll('*').forEach(check);
+// Initial scan of document and any existing shadow roots (from DSD)
+function scanAll(root) {
+  root.querySelectorAll('*').forEach(el => {
+    check(el);
+    if (el.shadowRoot) scanAll(el.shadowRoot);
+  });
+}
+scanAll(document);
+
+// Also observe shadow roots when they're created
+const origAttachShadow = Element.prototype.attachShadow;
+Element.prototype.attachShadow = function(init) {
+  const shadow = origAttachShadow.call(this, init);
+  // Check elements in new shadow root after a tick
+  setTimeout(() => shadow.querySelectorAll('*').forEach(check), 0);
+  // Observe the shadow root for future additions
+  new MutationObserver(mutations => {
+    mutations.flatMap(m => [...m.addedNodes]).filter(n => n.nodeType === 1).forEach(check);
+  }).observe(shadow, { childList: true, subtree: true });
+  return shadow;
+};

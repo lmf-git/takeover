@@ -77,3 +77,77 @@ To deploy the SPA version:
     *   **Build command**: `yarn build-spa`
     *   **Publish directory**: `dist/client`
     *   **Fallback/Redirects**: Add a `_redirects` file or Netlify UI rule to redirect all unmatched paths to `index.html` (for client-side routing).
+
+### Deploying SSR on Netlify
+
+This project is pre-configured for Netlify SSR deployment using [Netlify Functions](https://docs.netlify.com/functions/overview/).
+
+#### Project Structure
+
+```
+netlify/
+  functions/
+    ssr.mjs      # SSR handler function
+    routes.mjs   # Routes API function
+netlify.toml     # Netlify configuration
+```
+
+#### How It Works
+
+1. **Build**: `yarn build` outputs to:
+   - `dist/client/` - Static assets (HTML, JS, CSS, components)
+   - `dist/server/` - Server-side code for SSR
+
+2. **Static Assets**: Requests to `/core/*`, `/lib/*`, `/components/*`, `/app/*` are served directly from `dist/client/`
+
+3. **SSR**: All other routes go through the `ssr` function which:
+   - Renders the page server-side
+   - Handles auth redirects (302)
+   - Returns fully rendered HTML
+
+4. **Routes API**: `/api/routes` is handled by the `routes` function
+
+#### Deploy Steps
+
+1. Connect your repository to Netlify
+2. Netlify auto-detects `netlify.toml` configuration:
+   - **Build command**: `yarn build`
+   - **Publish directory**: `dist/client`
+   - **Functions directory**: `netlify/functions`
+3. Push to trigger deployment
+
+#### Configuration Files
+
+**`netlify.toml`**:
+```toml
+[build]
+  command = "yarn build"
+  publish = "dist/client"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Static assets served directly
+[[redirects]]
+  from = "/core/*"
+  to = "/core/:splat"
+  status = 200
+
+# ... more static redirects ...
+
+# SSR for all other routes
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/ssr"
+  status = 200
+```
+
+#### Local Testing
+
+To test the Netlify setup locally, install the Netlify CLI:
+
+```bash
+npm install -g netlify-cli
+netlify dev
+```

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { renderWithExpressions, matchRoute, createMatcher, pathFromFile } from '../index.js';
-import { scanDir } from '../scan.js';
+import { scanDir, scanRoutes } from '../scan.js';
 import store from '../../lib/store.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -316,4 +316,9 @@ export async function render(url) {
     headMeta,
     scopedStyles: '' // Styles now in shadow DOM
   };
+}
+
+// Export routes for client-side Router (used by /api/routes endpoint)
+export async function getClientRoutes() {
+  return scanRoutes(appDir);
 }

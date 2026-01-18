@@ -72,8 +72,12 @@ async function transformJS(content, filePath) {
 async function build() {
   console.log('Building...');
 
+  const clientDist = join(dist, 'client');
+  const serverDist = join(dist, 'server');
+
   // Clean dist
-  await ensureDir(dist);
+  await ensureDir(clientDist);
+  await ensureDir(serverDist);
 
   // Copy and transform source files
   const transform = async (content, path, ext) => {
@@ -81,22 +85,27 @@ async function build() {
     return content;
   };
 
-  // Copy app files
-  await copyDir(join(root, 'app'), join(dist, 'app'), transform);
-  await copyDir(join(root, 'components'), join(dist, 'components'), transform);
-  await copyDir(join(root, 'core'), join(dist, 'core'), transform);
-  await copyDir(join(root, 'lib'), join(dist, 'lib'), transform);
+  // Copy client files (app, components, core, lib)
+  await copyDir(join(root, 'app'), join(clientDist, 'app'), transform);
+  await copyDir(join(root, 'components'), join(clientDist, 'components'), transform);
+  await copyDir(join(root, 'core'), join(clientDist, 'core'), transform);
+  await copyDir(join(root, 'lib'), join(clientDist, 'lib'), transform);
 
   // Copy and process index.html
   let indexHtml = await readFile(join(root, 'index.html'), 'utf-8');
-  await writeFile(join(dist, 'index.html'), indexHtml);
+  await writeFile(join(clientDist, 'index.html'), indexHtml);
 
   // Copy static assets
   try {
-    await copyDir(join(root, 'public'), join(dist, 'public'));
+    await copyDir(join(root, 'public'), join(clientDist, 'public'));
   } catch {}
 
-  console.log('Build complete! Output in dist/');
+  // Copy server files
+  await copyDir(join(root, 'core'), join(serverDist, 'core'), transform);
+  await copyDir(join(root, 'lib'), join(serverDist, 'lib'), transform);
+  await copyDir(join(root, 'app'), join(serverDist, 'app'), transform);
+
+  console.log('Build complete! Output in dist/client and dist/server');
 }
 
 build().catch(console.error);

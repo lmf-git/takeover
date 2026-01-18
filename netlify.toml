@@ -1,15 +1,46 @@
 [build]
-  command = "yarn build" # Builds both client and server bundles
-  publish = "dist/client" # Serves the static client assets
-  functions = "netlify/functions" # Directory where our serverless function will live
+  command = "yarn build"
+  publish = "dist/client"
+  functions = "netlify/functions"
 
-# Redirect all requests not matching a static file to our SSR function
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["dist/server/**", "dist/client/index.html"]
+
+# Serve static assets directly (not through SSR)
+[[redirects]]
+  from = "/core/*"
+  to = "/core/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/lib/*"
+  to = "/lib/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/components/*"
+  to = "/components/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/app/*"
+  to = "/app/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
+# API routes (if needed)
+[[redirects]]
+  from = "/api/routes"
+  to = "/.netlify/functions/routes"
+  status = 200
+
+# All other routes go to SSR function
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/ssr"
-  status = 200 # Important for SSR
-
-# Optional: Configure Node.js version for Netlify Functions
-[functions]
-  node_bundler = "esbuild"
-  node_version = "18" # Or higher, depending on your needs
+  status = 200

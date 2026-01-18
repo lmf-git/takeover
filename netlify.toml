@@ -33,10 +33,10 @@
   to = "/assets/:splat"
   status = 200
 
-# API routes (if needed)
+# API routes - serve static JSON generated at build time
 [[redirects]]
   from = "/api/routes"
-  to = "/.netlify/functions/routes"
+  to = "/routes.json"
   status = 200
 
 # All other routes go to SSR function

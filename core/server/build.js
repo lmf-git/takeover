@@ -59,6 +59,76 @@ async function transformJS(content, filePath) {
   return result;
 }
 
+// Generate routes.json from app directory
+async function generateRoutesJson() {
+  const appPath = join(root, 'app');
+  const routes = [];
+
+  async function scanForRoutes(dir, base = '') {
+    const items = await readdir(dir, { withFileTypes: true });
+    for (const item of items) {
+      const itemPath = join(dir, item.name);
+      const relative = base ? `${base}/${item.name}` : item.name;
+
+      if (item.isDirectory() && !item.name.startsWith('_') && !item.name.startsWith('.')) {
+        await scanForRoutes(itemPath, relative);
+      } else if (item.isFile() && item.name.endsWith('.html') && !item.name.startsWith('_')) {
+        // Convert file path to route path
+        const routePath = fileToRoutePath(relative.replace('.html', '.js'));
+        if (routePath) {
+          const dynamic = routePath.includes(':');
+          const component = relative.split('/').pop().replace('.html', '').toLowerCase() + '-page';
+          routes.push({
+            path: routePath,
+            component,
+            module: `/app/${relative}?script`,
+            dynamic
+          });
+        }
+      }
+    }
+  }
+
+  await scanForRoutes(appPath);
+  return routes;
+}
+
+// Convert file path to route path (same logic as pathFromFile)
+function fileToRoutePath(file) {
+  // file is like "Home/Home.js", "About/About.js", "Users/[id]/User.js"
+  const parts = file.split('/');
+  const fileName = parts.pop().replace('.js', ''); // e.g., "Home", "About", "User"
+
+  // parts now contains the directories, e.g., ["Home"], ["About"], ["Users", "[id]"]
+  // For normal pages like "Home/Home.js", the directory name matches the file name
+  // For nested routes like "Users/[id]/User.js", we need to build the path from directories
+
+  // Build route path from all directory parts
+  const routeSegments = parts.map(p => {
+    if (p.startsWith('[') && p.endsWith(']')) {
+      return ':' + p.slice(1, -1);
+    }
+    return p.toLowerCase();
+  });
+
+  // Check if the filename matches the last directory (standard pattern like Home/Home.js)
+  const lastDir = parts[parts.length - 1];
+  const fileMatchesDir = lastDir && fileName.toLowerCase() === lastDir.toLowerCase();
+
+  // For User.html in [id] folder, fileName doesn't match directory but we should still skip it
+  // Validate: only accept if filename matches directory, or if last dir is a param folder
+  const lastDirIsParam = lastDir?.startsWith('[') && lastDir?.endsWith(']');
+  if (!fileMatchesDir && !lastDirIsParam) return null;
+
+  // Handle special case for Home -> root route "/"
+  if (fileName.toLowerCase() === 'home' && routeSegments.length === 1 && routeSegments[0] === 'home') {
+    return '/';
+  }
+
+  const routePath = '/' + routeSegments.join('/');
+  return routePath || '/';
+}
+
 async function build() {
   console.log('Building...');
 
@@ -94,6 +164,11 @@ async function build() {
   await copyDir(join(root, 'core'), join(serverDist, 'core'), transform);
   await copyDir(join(root, 'lib'), join(serverDist, 'lib'), transform);
   await copyDir(join(root, 'app'), join(serverDist, 'app'), transform);
+
+  // Generate routes.json for client-side routing
+  const routes = await generateRoutesJson();
+  await writeFile(join(clientDist, 'routes.json'), JSON.stringify(routes, null, 2));
+  console.log('[Build] Generated routes.json:', routes.map(r => r.path).join(', '));
 
   console.log('Build complete! Output in dist/client and dist/server');
 }

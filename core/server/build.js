@@ -1,14 +1,11 @@
 // Production build script - no dependencies
-import { readFile, writeFile, readdir, mkdir, copyFile, stat } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
-import { join, dirname, extname, relative } from 'node:path';
+import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
+import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../..');
 const dist = join(root, 'dist');
-
-const hash = content => createHash('md5').update(content).digest('hex').slice(0, 8);
 
 async function ensureDir(dir) {
   try { await mkdir(dir, { recursive: true }); } catch {}
@@ -34,15 +31,8 @@ async function copyDir(src, dest, transform) {
         content = await transform(content.toString(), srcPath, ext);
       }
 
-      // Add hash to JS/CSS filenames (except entry points)
-      let finalPath = destPath;
-      if (['.js', '.css'].includes(ext) && !entry.name.includes('index') && !entry.name.includes('entry')) {
-        const h = hash(content);
-        finalPath = destPath.replace(ext, `.${h}${ext}`);
-      }
-
-      await ensureDir(dirname(finalPath));
-      await writeFile(finalPath, content);
+      await ensureDir(dirname(destPath));
+      await writeFile(destPath, content);
     }
   }
 }

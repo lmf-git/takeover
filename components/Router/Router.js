@@ -1,18 +1,18 @@
-import template from './Router.html?raw';
-import { store, matchRoute, createMatcher } from '../../core/index.js';
+import { store, matchRoute, createMatcher, define } from '../../core/index.js';
 
-class Router extends HTMLElement {
+export default class Router extends HTMLElement {
   routes = [];
   currentPath = null;
 
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-  }
-
   async connectedCallback() {
-    this.shadowRoot.innerHTML = template;
-    this.outlet = this.shadowRoot.querySelector('#outlet');
+    // Check for SSR content
+    const existingOutlet = this.querySelector('#outlet');
+    if (existingOutlet) {
+      this.outlet = existingOutlet;
+    } else {
+      this.innerHTML = '<div id="outlet"></div>';
+      this.outlet = this.querySelector('#outlet');
+    }
 
     // Fetch routes from server
     const routes = await fetch('/api/routes').then(r => r.json());
@@ -32,7 +32,15 @@ class Router extends HTMLElement {
       if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
     });
 
-    this.navigate();
+    // Skip initial navigation if SSR page already exists
+    const ssrPage = this.outlet.querySelector('[data-ssr]');
+    if (ssrPage) {
+      this.currentPath = location.pathname;
+      // Just bind events on existing page
+      ssrPage.removeAttribute('data-ssr');
+    } else {
+      this.navigate();
+    }
   }
 
   go(path) {
@@ -44,17 +52,21 @@ class Router extends HTMLElement {
 
   async navigate() {
     const path = location.pathname;
+    console.log(`[Router] Navigating to: ${path}`);
     const result = matchRoute(this.routes, path);
 
     if (!result) {
+      console.log(`[Router] No route match for: ${path}`);
       this.outlet.innerHTML = '<h1>404</h1>';
       return;
     }
 
     const { route, params } = result;
+    console.log(`[Router] Matched route:`, route.path, route.module);
 
     // Dynamically import the page module
     const mod = await import(route.module);
+    console.log(`[Router] Page module loaded:`, route.component);
     const ComponentClass = mod.default || Object.values(mod).find(v => typeof v === 'function');
 
     // Check auth
@@ -72,4 +84,4 @@ class Router extends HTMLElement {
   }
 }
 
-customElements.define('app-router', Router);
+define('app-router', Router);

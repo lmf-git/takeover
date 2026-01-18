@@ -18,6 +18,16 @@ function safeEvaluate(expression, props) {
     return !safeEvaluate(inner, props);
   }
 
+  // Handle ternary operator FIRST: condition ? trueVal : falseVal
+  // Must check before comparisons since condition may contain ===, etc.
+  const ternaryMatch = trimmed.match(/^(.+?)\s*\?\s*(.+?)\s*:\s*(.+)$/);
+  if (ternaryMatch) {
+    const [, condition, trueVal, falseVal] = ternaryMatch;
+    return safeEvaluate(condition.trim(), props)
+      ? safeEvaluate(trueVal.trim(), props)
+      : safeEvaluate(falseVal.trim(), props);
+  }
+
   // Handle comparison operators: ==, ===, !=, !==, >, <, >=, <=
   const comparisonMatch = trimmed.match(/^(.+?)\s*(===|==|!==|!=|>=|<=|>|<)\s*(.+)$/);
   if (comparisonMatch) {
@@ -45,15 +55,6 @@ function safeEvaluate(expression, props) {
   if (trimmed.includes('||')) {
     const parts = trimmed.split('||').map(p => p.trim());
     return parts.some(part => safeEvaluate(part, props));
-  }
-
-  // Handle ternary operator: condition ? trueVal : falseVal
-  const ternaryMatch = trimmed.match(/^(.+?)\s*\?\s*(.+?)\s*:\s*(.+)$/);
-  if (ternaryMatch) {
-    const [, condition, trueVal, falseVal] = ternaryMatch;
-    return safeEvaluate(condition.trim(), props)
-      ? safeEvaluate(trueVal.trim(), props)
-      : safeEvaluate(falseVal.trim(), props);
   }
 
   // Handle string literals: 'value' or "value"

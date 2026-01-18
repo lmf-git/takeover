@@ -1,10 +1,14 @@
-import { Component, store } from '../../core/index.js';
-import template from './Home.html?raw';
+import { Component, store, define } from '../../core/index.js';
 
-class HomePage extends Component {
-  static template = template;
+export default class HomePage extends Component {
+  static templateUrl = '/app/Home/Home.html';
   static store = ['counter', 'theme', 'user', 'isAuthenticated'];
   static metadata = { title: 'Home - Web Components App', description: 'Welcome to our web components application.' };
+  static ssrProps = { title: 'Welcome Home' };
+
+  get props() {
+    return { ...super.props, title: 'Welcome Home', timestamp: new Date().toLocaleString() };
+  }
 
   bind() {
     this.on('.logout-button', 'click', () => store.logout());
@@ -13,4 +17,4 @@ class HomePage extends Component {
   }
 }
 
-customElements.define('home-page', HomePage);
+define('home-page', HomePage);

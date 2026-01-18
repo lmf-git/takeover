@@ -1,9 +1,8 @@
-import { Component } from '../../core/index.js';
-import template from './NotFound.html?raw';
+import { Component, define } from '../../core/index.js';
 
-class NotFoundPage extends Component {
-  static template = template;
+export default class NotFoundPage extends Component {
+  static templateUrl = '/app/NotFound/NotFound.html';
   static metadata = { title: '404 - Not Found', description: 'Page not found.' };
 }
 
-customElements.define('notfound-page', NotFoundPage);
+define('notfound-page', NotFoundPage);

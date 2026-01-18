@@ -1,8 +1,7 @@
-import { Component } from '../../core/index.js';
-import template from './Contact.html?raw';
+import { Component, define } from '../../core/index.js';
 
-class ContactPage extends Component {
-  static template = template;
+export default class ContactPage extends Component {
+  static templateUrl = '/app/Contact/Contact.html';
   static metadata = { title: 'Contact', description: 'Get in touch with us.' };
 
   bind() {
@@ -10,4 +9,4 @@ class ContactPage extends Component {
   }
 }
 
-customElements.define('contact-page', ContactPage);
+define('contact-page', ContactPage);

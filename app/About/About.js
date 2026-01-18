@@ -1,13 +1,13 @@
-import { Component } from '../../core/index.js';
-import template from './About.html?raw';
+import { Component, define } from '../../core/index.js';
 
-class AboutPage extends Component {
-  static template = template;
+export default class AboutPage extends Component {
+  static templateUrl = '/app/About/About.html';
   static metadata = { title: 'About', description: 'Learn more about our application.' };
+  static ssrProps = { title: 'About Us' };
 
   get props() {
     return { ...super.props, title: 'About Us', timestamp: new Date().toLocaleString() };
   }
 }
 
-customElements.define('about-page', AboutPage);
+define('about-page', AboutPage);

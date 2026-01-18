@@ -1,4 +1,4 @@
-// Directory scanner for routes and components - Node.js only
+// Directory scanner for routes - Node.js only
 import { readdir, readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { createMatcher, pathFromFile } from './routes.js';
@@ -45,25 +45,4 @@ export async function scanRoutes(appDir) {
       };
     })
     .filter(Boolean);
-}
-
-export async function scanTemplates(appDir) {
-  const files = await scanDir(appDir, '.html');
-  const templates = {};
-
-  for (const { path, relative } of files) {
-    if (!relative.startsWith('_')) {
-      const routePath = pathFromFile(relative.replace('.html', '.js'), '');
-      if (routePath) {
-        templates[routePath] = await readFile(path, 'utf-8');
-      }
-    }
-  }
-
-  return templates;
-}
-
-export async function scanComponents(componentsDir) {
-  const files = await scanDir(componentsDir, '.js');
-  return files.map(({ relative }) => `/components/${relative}`);
 }

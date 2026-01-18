@@ -1,8 +1,7 @@
-import { Component } from '../../core/index.js';
-import template from './Dashboard.html?raw';
+import { Component, define } from '../../core/index.js';
 
-class DashboardPage extends Component {
-  static template = template;
+export default class DashboardPage extends Component {
+  static templateUrl = '/app/Dashboard/Dashboard.html';
   static store = ['user', 'isAuthenticated'];
   static requiresAuth = true;
   static metadata = { title: 'Dashboard', description: 'Protected dashboard area' };
@@ -81,4 +80,4 @@ class DashboardPage extends Component {
   }
 }
 
-customElements.define('dashboard-page', DashboardPage);
+define('dashboard-page', DashboardPage);

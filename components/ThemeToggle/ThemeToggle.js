@@ -1,8 +1,7 @@
-import { Component, store } from '../../core/index.js';
-import template from './ThemeToggle.html?raw';
+import { Component, store, define } from '../../core/index.js';
 
-class ThemeToggle extends Component {
-  static template = template;
+export default class ThemeToggle extends Component {
+  static templateUrl = '/components/ThemeToggle/ThemeToggle.html';
   static store = ['theme'];
 
   bind() {
@@ -10,4 +9,4 @@ class ThemeToggle extends Component {
   }
 }
 
-customElements.define('theme-toggle', ThemeToggle);
+define('theme-toggle', ThemeToggle);

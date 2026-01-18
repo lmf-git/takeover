@@ -1,8 +1,7 @@
-import { Component, store, navigate } from '../../core/index.js';
-import template from './Login.html?raw';
+import { Component, store, navigate, define } from '../../core/index.js';
 
-class LoginPage extends Component {
-  static template = template;
+export default class LoginPage extends Component {
+  static templateUrl = '/app/Login/Login.html';
   static metadata = { title: 'Login', description: 'Login to access your dashboard.' };
 
   constructor() {
@@ -63,4 +62,4 @@ class LoginPage extends Component {
   }
 }
 
-customElements.define('login-page', LoginPage);
+define('login-page', LoginPage);

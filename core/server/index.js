@@ -4,7 +4,7 @@ import { createReadStream, watch, existsSync } from 'node:fs';
 import { join, extname, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from './ws.js';
-import { scanRoutes, scanComponents } from '../scan.js';
+import { scanRoutes } from '../scan.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '../..');
@@ -18,18 +18,12 @@ const mime = {
   '.woff': 'font/woff', '.woff2': 'font/woff2'
 };
 
-// Cache for scanned data
+// Cache for scanned routes
 let routesCache = null;
-let componentsCache = null;
 
 async function getRoutes() {
   if (!routesCache) routesCache = await scanRoutes(join(root, 'app'));
   return routesCache;
-}
-
-async function getComponents() {
-  if (!componentsCache) componentsCache = await scanComponents(join(root, 'components'));
-  return componentsCache;
 }
 
 // WebSocket for HMR
@@ -48,9 +42,7 @@ function setupWatcher() {
       if (!filename) return;
       const ext = extname(filename);
       if (['.js', '.html', '.css'].includes(ext)) {
-        // Clear caches on file change
         routesCache = null;
-        componentsCache = null;
         console.log(`[HMR] ${filename}`);
         broadcast('reload', { file: filename });
       }
@@ -98,12 +90,18 @@ ws.onopen = () => console.log('[HMR] Connected');
 
 async function renderSSR(url, res) {
   try {
+    console.log('[SSR] renderSSR called for:', url);
     let template = await readFile(join(root, 'index.html'), 'utf-8');
-    const { render } = await import('./entry-server.js');
-    const { appHtml, initialStateScript, headMeta } = await render(url);
+
+    // In dev, bust ESM cache with query param
+    const cacheBuster = isProd ? '' : `?t=${Date.now()}`;
+    console.log('[SSR] Importing entry-server.js...');
+    const { render } = await import(`./entry-server.js${cacheBuster}`);
+    console.log('[SSR] render function loaded');
+    const { appHtml, initialStateScript, headMeta, scopedStyles } = await render(url);
 
     let html = template
-      .replace('<!--head-meta-->', headMeta || '')
+      .replace('<!--head-meta-->', (headMeta || '') + (scopedStyles || ''))
       .replace('<!--app-html-->', appHtml)
       .replace('<!--initial-state-->', initialStateScript);
 
@@ -129,7 +127,6 @@ async function handler(req, res) {
 
   // API endpoints
   if (url === '/api/routes') return json(res, await getRoutes());
-  if (url === '/api/components') return json(res, await getComponents());
 
   // ?raw imports
   if (query === 'raw') return serveRaw(join(root, url), res);

@@ -1,8 +1,7 @@
-import { Component, store } from '../../core/index.js';
-import template from './Navigation.html?raw';
+import { Component, store, define } from '../../core/index.js';
 
-class Navigation extends Component {
-  static template = template;
+export default class Navigation extends Component {
+  static templateUrl = '/components/Navigation/Navigation.html';
   static store = ['user', 'isAuthenticated', 'theme'];
 
   bind() {
@@ -12,4 +11,4 @@ class Navigation extends Component {
   }
 }
 
-customElements.define('app-navigation', Navigation);
+define('app-navigation', Navigation);

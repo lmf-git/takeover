@@ -12,12 +12,21 @@ export function pathFromFile(filePath, basePath = '') {
   const segments = filePath.replace(basePath, '').replace(/\.(html|js)$/, '').split('/').filter(Boolean);
   if (!segments.length) return null;
 
+  // Remove filename if it matches parent folder (About/About.js -> About)
+  if (segments.length >= 2) {
+    const last = segments[segments.length - 1].toLowerCase();
+    const parent = segments[segments.length - 2].toLowerCase().replace(/^\[(.+)\]$/, '$1');
+    if (last === parent) {
+      segments.pop();
+    }
+  }
+
   const routePath = '/' + segments.map(s => {
     const match = s.match(/^\[(.+)\]$/);
     return match ? `:${match[1]}` : s.toLowerCase();
   }).join('/');
 
-  return routePath.replace(/^\/(home\/)?home$/, '/');
+  return routePath.replace(/^\/home$/, '/');
 }
 
 export function matchRoute(routes, pathname) {

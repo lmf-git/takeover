@@ -1,8 +1,7 @@
-import { Component, store } from '../../core/index.js';
-import template from './Counter.html?raw';
+import { Component, store, define } from '../../core/index.js';
 
-class Counter extends Component {
-  static template = template;
+export default class Counter extends Component {
+  static templateUrl = '/components/Counter/Counter.html';
   static store = ['counter'];
 
   bind() {
@@ -11,4 +10,4 @@ class Counter extends Component {
   }
 }
 
-customElements.define('app-counter', Counter);
+define('app-counter', Counter);

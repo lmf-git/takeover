@@ -1,8 +1,7 @@
-import { Component } from '../../../core/index.js';
-import template from './User.html?raw';
+import { Component, define } from '../../../core/index.js';
 
-class UserPage extends Component {
-  static template = template;
+export default class UserPage extends Component {
+  static templateUrl = '/app/Users/[id]/User.html';
   static store = ['user', 'isAuthenticated'];
 
   mount() {
@@ -11,4 +10,4 @@ class UserPage extends Component {
   }
 }
 
-customElements.define('user-page', UserPage);
+define('user-page', UserPage);

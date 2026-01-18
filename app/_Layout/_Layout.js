@@ -1,12 +1,11 @@
-import { Component } from '../../core/index.js';
-import template from './_Layout.html?raw';
+import { Component, define } from '../../core/index.js';
 
-class Layout extends Component {
-  static template = template;
+export default class Layout extends Component {
+  static templateUrl = '/app/_Layout/_Layout.html';
 
   get props() {
     return { ...super.props, year: new Date().getFullYear() };
   }
 }
 
-customElements.define('app-layout', Layout);
+define('app-layout', Layout);

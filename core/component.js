@@ -1,11 +1,13 @@
 // Reactive Component - Proxy, EventTarget, AbortController
 // Uses scoped styles with data attributes (like Vue) instead of Shadow DOM
+// Supports CSS modules and scoped <style> tags (scoped styles override modules)
 import store from '../lib/store.js';
 import { renderWithExpressions } from './template.js';
 
 const isBrowser = typeof window !== 'undefined';
 const templateCache = new Map();
 const styleCache = new Map();
+const moduleCache = new Map(); // Cache for CSS modules
 let scopeId = 0;
 
 export const navigate = path => isBrowser && dispatchEvent(new CustomEvent('navigate', { detail: { path } }));
@@ -23,6 +25,50 @@ async function loadTemplate(url) {
   } catch {
     return '';
   }
+}
+
+// Load and process CSS module - returns { css, classes }
+async function loadCSSModule(url, scope) {
+  const cacheKey = `${url}:${scope}`;
+  if (moduleCache.has(cacheKey)) return moduleCache.get(cacheKey);
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return { css: '', classes: {} };
+    const rawCss = await res.text();
+    const { css, classes } = processCSSModule(rawCss, scope);
+    const result = { css, classes };
+    moduleCache.set(cacheKey, result);
+    return result;
+  } catch {
+    return { css: '', classes: {} };
+  }
+}
+
+// Process CSS module: extract class names and scope them
+function processCSSModule(css, scope) {
+  const classes = {};
+  const scopeAttr = `[data-v-${scope}]`;
+
+  // Find all class selectors and create mappings
+  const processed = css.replace(/\.([a-zA-Z_][\w-]*)/g, (match, className) => {
+    // Generate scoped class name
+    const scopedName = `${className}_${scope}`;
+    classes[className] = scopedName;
+    return `.${scopedName}`;
+  });
+
+  // Add scope attribute to all selectors for proper scoping
+  const scoped = processed.replace(/([^{}]+)(\{[^}]*\})/g, (_, selectors, rules) => {
+    const scopedSels = selectors.split(',').map(sel => {
+      sel = sel.trim();
+      if (!sel || sel.startsWith('@') || sel.startsWith('from') || sel.startsWith('to') || /^\d/.test(sel)) return sel;
+      return sel + scopeAttr;
+    }).join(', ');
+    return scopedSels + rules;
+  });
+
+  return { css: scoped, classes };
 }
 
 // Extract <style> from template and scope it
@@ -75,16 +121,19 @@ function addScopeToElements(container, scope) {
 export class Component extends BaseElement {
   static template = '';
   static templateUrl = '';
+  static cssModule = ''; // Path to CSS module file
   static store = [];
   static metadata = null;
   static requiresAuth = false;
   static _scope = null;
+  static _cssClasses = null; // Cached CSS module classes
 
   #unsubs = [];
   #ac = null;
   #local = {};
   #template = '';
   #scope = '';
+  #cssClasses = {};
 
   constructor() {
     super();
@@ -112,8 +161,23 @@ export class Component extends BaseElement {
     this.#ac = new AbortController();
     this.setAttribute(`data-v-${this.#scope}`, '');
 
-    const { template, templateUrl } = this.constructor;
+    const { template, templateUrl, cssModule } = this.constructor;
     this.#template = template || (templateUrl ? await loadTemplate(templateUrl) : '');
+
+    // Load CSS module if specified (or auto-detect from templateUrl)
+    let moduleUrl = cssModule;
+    if (!moduleUrl && templateUrl) {
+      // Auto-detect: /components/Counter/Counter.html -> /components/Counter/Counter.module.css
+      moduleUrl = templateUrl.replace(/\.html$/, '.module.css');
+    }
+
+    if (moduleUrl && !this.constructor._cssClasses) {
+      const { css, classes } = await loadCSSModule(moduleUrl, this.#scope);
+      this.constructor._cssClasses = classes;
+      // Inject module styles (before scoped styles so they can be overridden)
+      if (css) injectStyles(css, `${this.#scope}-module`);
+    }
+    this.#cssClasses = this.constructor._cssClasses || {};
 
     if (this.constructor.store.length) {
       this.constructor.store.forEach(path => {
@@ -178,7 +242,13 @@ export class Component extends BaseElement {
   }
 
   get props() {
-    return { ...this.state, ...this.#local, ...this.pageProps, path: isBrowser ? location.pathname : '' };
+    return {
+      ...this.state,
+      ...this.#local,
+      ...this.pageProps,
+      path: isBrowser ? location.pathname : '',
+      $css: this.#cssClasses // CSS module class mappings
+    };
   }
 
   $(sel) { return this.querySelector(sel); }

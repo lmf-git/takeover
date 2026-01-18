@@ -14,8 +14,10 @@ export default class Router extends HTMLElement {
       this.outlet = this.querySelector('#outlet');
     }
 
-    // Fetch routes from server
-    const routes = await fetch('/api/routes').then(r => r.json());
+    // Fetch routes - try static file first (prod), then API (dev)
+    let res = await fetch('/routes.json');
+    if (!res.ok) res = await fetch('/api/routes');
+    const routes = await res.json();
     this.routes = routes.map(r => ({
       ...r,
       matcher: r.dynamic ? createMatcher(r.path) : null

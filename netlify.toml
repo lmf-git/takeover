@@ -39,8 +39,9 @@
   to = "/routes.json"
   status = 200
 
-# All other routes go to SSR function
+# All other routes go to SSR function (force overrides static index.html)
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/ssr"
   status = 200
+  force = true

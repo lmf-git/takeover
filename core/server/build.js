@@ -59,6 +59,30 @@ async function transformJS(content, filePath) {
   return result;
 }
 
+// Extract script from HTML and write as separate .js file
+async function extractScripts(srcDir, destDir) {
+  const entries = await readdir(srcDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = join(srcDir, entry.name);
+    const destPath = join(destDir, entry.name);
+
+    if (entry.isDirectory() && !entry.name.startsWith('.')) {
+      await extractScripts(srcPath, destPath);
+    } else if (entry.isFile() && entry.name.endsWith('.html')) {
+      const html = await readFile(srcPath, 'utf-8');
+      const scriptMatch = html.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
+
+      if (scriptMatch) {
+        // Write extracted script as .script.js
+        const scriptPath = destPath.replace('.html', '.script.js');
+        await ensureDir(dirname(scriptPath));
+        await writeFile(scriptPath, scriptMatch[1].trim());
+      }
+    }
+  }
+}
+
 // Generate routes.json from app directory
 async function generateRoutesJson() {
   const appPath = join(root, 'app');
@@ -78,10 +102,18 @@ async function generateRoutesJson() {
         if (routePath) {
           const dynamic = routePath.includes(':');
           const component = relative.split('/').pop().replace('.html', '').toLowerCase() + '-page';
+
+          // Check if HTML has embedded script or separate .js file
+          const html = await readFile(itemPath, 'utf-8');
+          const hasEmbeddedScript = /<script\b[^>]*>[\s\S]*?<\/script>/i.test(html);
+
           routes.push({
             path: routePath,
             component,
-            module: `/app/${relative}?script`,
+            // Use .script.js for embedded scripts, .js for separate files
+            module: hasEmbeddedScript
+              ? `/app/${relative.replace('.html', '.script.js')}`
+              : `/app/${relative.replace('.html', '.js')}`,
             dynamic
           });
         }
@@ -150,6 +182,10 @@ async function build() {
   await copyDir(join(root, 'components'), join(clientDist, 'components'), transform);
   await copyDir(join(root, 'core'), join(clientDist, 'core'), transform);
   await copyDir(join(root, 'lib'), join(clientDist, 'lib'), transform);
+
+  // Extract scripts from HTML files for static serving
+  await extractScripts(join(root, 'app'), join(clientDist, 'app'));
+  await extractScripts(join(root, 'components'), join(clientDist, 'components'));
 
   // Copy and process index.html
   let indexHtml = await readFile(join(root, 'index.html'), 'utf-8');

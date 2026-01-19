@@ -1,9 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '../..');
+// Netlify bundles functions to /var/task, included_files are relative to that
+const root = process.cwd();
 const clientDist = path.join(root, 'dist/client');
 const serverDist = path.join(root, 'dist/server');
 

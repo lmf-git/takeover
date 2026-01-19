@@ -201,6 +201,9 @@ async function build() {
   await copyDir(join(root, 'lib'), join(serverDist, 'lib'), transform);
   await copyDir(join(root, 'app'), join(serverDist, 'app'), transform);
 
+  // Add package.json to mark server files as ES modules
+  await writeFile(join(serverDist, 'package.json'), JSON.stringify({ type: 'module' }, null, 2));
+
   // Generate routes.json for client-side routing
   const routes = await generateRoutesJson();
   await writeFile(join(clientDist, 'routes.json'), JSON.stringify(routes, null, 2));

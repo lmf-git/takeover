@@ -5,8 +5,9 @@ import { renderWithExpressions, matchRoute, createMatcher, pathFromFile } from '
 import { scanDir, scanRoutes } from '../scan.js';
 import store from '../../lib/store.js';
 
+// Use SSR_ROOT env var (set by Netlify function) or fall back to import.meta.url
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = resolve(__dirname, '../..');
+const root = process.env.SSR_ROOT || resolve(__dirname, '../..');
 const appDir = resolve(root, 'app');
 const componentsDir = resolve(root, 'components');
 

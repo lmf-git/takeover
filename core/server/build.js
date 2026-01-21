@@ -1,5 +1,5 @@
 // Production build script - no dependencies
-import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdir, rm } from 'node:fs/promises';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,21 +7,25 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../..');
 const dist = join(root, 'dist');
 
+async function cleanDir(dir) {
+  try { await rm(dir, { recursive: true, force: true }); } catch {}
+}
+
 async function ensureDir(dir) {
   try { await mkdir(dir, { recursive: true }); } catch {}
 }
 
-async function copyDir(src, dest, transform) {
+async function copyDir(src, dest, transform, renameJsToMjs = false) {
   await ensureDir(dest);
   const entries = await readdir(src, { withFileTypes: true });
 
   for (const entry of entries) {
     const srcPath = join(src, entry.name);
-    const destPath = join(dest, entry.name);
+    let destPath = join(dest, entry.name);
 
     if (entry.isDirectory()) {
       if (!entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'dist') {
-        await copyDir(srcPath, destPath, transform);
+        await copyDir(srcPath, destPath, transform, renameJsToMjs);
       }
     } else if (entry.isFile()) {
       const ext = extname(entry.name);
@@ -29,6 +33,16 @@ async function copyDir(src, dest, transform) {
 
       if (['.js', '.html'].includes(ext) && transform) {
         content = await transform(content.toString(), srcPath, ext);
+      }
+
+      // Rename .js to .mjs for server files (ES modules)
+      if (renameJsToMjs && ext === '.js') {
+        destPath = destPath.replace(/\.js$/, '.mjs');
+        // Also update imports in the content to use .mjs
+        if (typeof content === 'string') {
+          content = content.replace(/from\s+['"]([^'"]+)\.js['"]/g, "from '$1.mjs'");
+          content = content.replace(/import\s+['"]([^'"]+)\.js['"]/g, "import '$1.mjs'");
+        }
       }
 
       await ensureDir(dirname(destPath));
@@ -196,13 +210,10 @@ async function build() {
     await copyDir(join(root, 'public'), join(clientDist, 'public'));
   } catch {}
 
-  // Copy server files
-  await copyDir(join(root, 'core'), join(serverDist, 'core'), transform);
-  await copyDir(join(root, 'lib'), join(serverDist, 'lib'), transform);
-  await copyDir(join(root, 'app'), join(serverDist, 'app'), transform);
-
-  // Add package.json to mark server files as ES modules
-  await writeFile(join(serverDist, 'package.json'), JSON.stringify({ type: 'module' }, null, 2));
+  // Copy server files (rename .js to .mjs for ES module compatibility)
+  await copyDir(join(root, 'core'), join(serverDist, 'core'), transform, true);
+  await copyDir(join(root, 'lib'), join(serverDist, 'lib'), transform, true);
+  await copyDir(join(root, 'app'), join(serverDist, 'app'), transform, true);
 
   // Generate routes.json for client-side routing
   const routes = await generateRoutesJson();

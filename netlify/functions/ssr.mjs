@@ -12,7 +12,7 @@ process.env.SSR_ROOT = serverDist;
 
 export async function handler(event) {
   const template = fs.readFileSync(path.join(clientDist, 'index.html'), 'utf-8');
-  const entryPath = path.join(serverDist, 'core/server/entry-server.js');
+  const entryPath = path.join(serverDist, 'core/server/entry-server.mjs');
   const { render } = await import(pathToFileURL(entryPath).href);
 
   const url = event.path + (event.rawQuery ? `?${event.rawQuery}` : '');

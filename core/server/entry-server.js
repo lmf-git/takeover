@@ -152,6 +152,8 @@ async function renderComponents(html, props) {
       const component = await renderComponent(tag, props);
       if (component) {
         result = result.replace(fullMatch, component.html);
+      } else {
+        console.warn(`[SSR] Component '${tag}' could not be rendered. Its empty tag will persist.`);
       }
     }
   }

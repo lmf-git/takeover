@@ -1,11 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
-// Use __dirname equivalent for ESM - this is where the bundled function lives
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// In Netlify, included_files are relative to the function directory's parent
-const root = path.resolve(__dirname, '..');
+const root = process.cwd();
 const clientDist = path.join(root, 'dist/client');
 const serverDist = path.join(root, 'dist/server');
 

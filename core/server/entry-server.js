@@ -198,13 +198,13 @@ async function buildRoutes() {
     let script = extractScript(html);
     let requiresAuth = false;
 
-    // If no embedded script, try loading separate .js file
+    // If no embedded script, try loading separate .js/.mjs file
     if (!script) {
-      const jsPath = filePath.replace('.html', '.js');
-      try {
-        script = await readFile(jsPath, 'utf-8');
-      } catch {
-        // No .js file either
+      for (const ext of ['.mjs', '.js']) {
+        try {
+          script = await readFile(filePath.replace('.html', ext), 'utf-8');
+          break;
+        } catch {}
       }
     }
 

@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 
-// Netlify bundles functions to /var/task, included_files are relative to that
-const root = process.cwd();
+// Use __dirname equivalent for ESM - this is where the bundled function lives
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// In Netlify, included_files are relative to the function directory's parent
+const root = path.resolve(__dirname, '..');
 const clientDist = path.join(root, 'dist/client');
 const serverDist = path.join(root, 'dist/server');
 
@@ -11,7 +13,7 @@ const serverDist = path.join(root, 'dist/server');
 process.env.SSR_ROOT = serverDist;
 
 export async function handler(event) {
-  const template = fs.readFileSync(path.join(clientDist, 'index.html'), 'utf-8');
+  const template = fs.readFileSync(path.join(clientDist, '_template.html'), 'utf-8');
   const entryPath = path.join(serverDist, 'core/server/entry-server.mjs');
   const { render } = await import(pathToFileURL(entryPath).href);
 

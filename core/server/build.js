@@ -202,9 +202,9 @@ async function build() {
   await extractScripts(join(root, 'app'), join(clientDist, 'app'));
   await extractScripts(join(root, 'components'), join(clientDist, 'components'));
 
-  // Copy and process index.html
+  // Copy index.html as template (not index.html to avoid Netlify serving it directly)
   let indexHtml = await readFile(join(root, 'index.html'), 'utf-8');
-  await writeFile(join(clientDist, 'index.html'), indexHtml);
+  await writeFile(join(clientDist, '_template.html'), indexHtml);
 
   // Copy static assets
   try {

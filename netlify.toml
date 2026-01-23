@@ -5,7 +5,7 @@
 
 [functions]
   node_bundler = "esbuild"
-  included_files = ["dist/server/**", "dist/client/index.html"]
+  included_files = ["dist/server/**/*", "dist/client/_template.html"]
 
 # Serve static assets directly (not through SSR)
 [[redirects]]
@@ -33,15 +33,8 @@
   to = "/assets/:splat"
   status = 200
 
-# API routes - serve static JSON generated at build time
-[[redirects]]
-  from = "/api/routes"
-  to = "/routes.json"
-  status = 200
-
-# All other routes go to SSR function (force overrides static index.html)
+# All other routes go to SSR function
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/ssr"
   status = 200
-  force = true

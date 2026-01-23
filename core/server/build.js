@@ -181,7 +181,8 @@ async function build() {
   const clientDist = join(dist, 'client');
   const serverDist = join(dist, 'server');
 
-  // Clean dist
+  // Clean and recreate dist directories
+  await cleanDir(dist);
   await ensureDir(clientDist);
   await ensureDir(serverDist);
 

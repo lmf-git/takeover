@@ -11,7 +11,7 @@ export const navigate = path => isBrowser && dispatchEvent(new CustomEvent('navi
 
 const BaseElement = isBrowser ? HTMLElement : class {};
 
-async function loadTemplate(url) {
+export async function loadTemplate(url) {
   if (templateCache.has(url)) return templateCache.get(url);
   try {
     const res = await fetch(url);

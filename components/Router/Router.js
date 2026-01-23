@@ -1,4 +1,4 @@
-import { store, matchRoute, createMatcher, define } from '../../core/index.js';
+import { store, matchRoute, createMatcher, define, loadTemplate } from '../../core/index.js';
 
 export default class Router extends HTMLElement {
   routes = [];
@@ -88,6 +88,11 @@ export default class Router extends HTMLElement {
     if (ComponentClass?.requiresAuth && !store.get('isAuthenticated')) {
       history.replaceState(null, '', `/login?from=${encodeURIComponent(path)}`);
       return this.navigate();
+    }
+
+    // Preload template before showing the page (caches it for the component)
+    if (ComponentClass?.templateUrl) {
+      await loadTemplate(ComponentClass.templateUrl);
     }
 
     this.currentPath = path;

@@ -20,6 +20,10 @@ export default class Router extends HTMLElement {
       const a = e.composedPath().find(el => el.tagName === 'A' && el.hasAttribute?.('route'));
       if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
     });
+    document.addEventListener('pointerenter', e => {
+      const a = e.target.closest?.('a[route]');
+      if (a) this.preload(a.getAttribute('href'));
+    }, true);
 
     const page = this.outlet.firstElementChild;
     if (page?.shadowRoot) {
@@ -43,6 +47,14 @@ export default class Router extends HTMLElement {
       history.pushState(null, '', path);
       this.navigate();
     }
+  }
+
+  async preload(path) {
+    const result = matchRoute(this.routes, path);
+    if (!result) return;
+    const mod = await import(result.route.module);
+    const Cls = mod.default || Object.values(mod).find(v => typeof v === 'function');
+    if (Cls?.templateUrl) await loadTemplate(Cls.templateUrl);
   }
 
   async navigate() {
@@ -80,9 +92,9 @@ export default class Router extends HTMLElement {
   async waitForComponents(root, timeout = 3000) {
     const start = Date.now();
     const getPending = el => {
-      const all = [el, ...(el.shadowRoot?.querySelectorAll('*') || [])];
-      const nested = all.filter(e => e.shadowRoot).flatMap(e => getPending(e));
-      return [...all.filter(e => e.tagName?.includes('-') && !e.shadowRoot), ...nested];
+      if (!el.shadowRoot) return el.tagName?.includes('-') ? [el] : [];
+      const children = [...el.shadowRoot.querySelectorAll('*')];
+      return children.flatMap(getPending);
     };
     while (getPending(root).length && Date.now() - start < timeout)
       await new Promise(r => setTimeout(r, 10));

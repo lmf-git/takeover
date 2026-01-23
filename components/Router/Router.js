@@ -61,12 +61,31 @@ export default class Router extends HTMLElement {
 
     if (Cls?.templateUrl) await loadTemplate(Cls.templateUrl);
 
-    this.currentPath = path;
-    scrollTo(0, 0);
-
     const el = document.createElement(route.component);
     el.pageProps = { path, params, query: Object.fromEntries(new URLSearchParams(location.search)) };
+
+    // Render offscreen, wait for nested components, then show
+    const staging = document.createElement('div');
+    staging.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
+    document.body.appendChild(staging);
+    staging.appendChild(el);
+    await this.waitForComponents(el);
+    staging.remove();
+
+    this.currentPath = path;
+    scrollTo(0, 0);
     this.outlet.replaceChildren(el);
+  }
+
+  async waitForComponents(root, timeout = 3000) {
+    const start = Date.now();
+    const getPending = el => {
+      const all = [el, ...(el.shadowRoot?.querySelectorAll('*') || [])];
+      const nested = all.filter(e => e.shadowRoot).flatMap(e => getPending(e));
+      return [...all.filter(e => e.tagName?.includes('-') && !e.shadowRoot), ...nested];
+    };
+    while (getPending(root).length && Date.now() - start < timeout)
+      await new Promise(r => setTimeout(r, 10));
   }
 }
 

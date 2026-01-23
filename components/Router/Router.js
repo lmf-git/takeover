@@ -5,27 +5,14 @@ export default class Router extends HTMLElement {
   currentPath = null;
 
   async connectedCallback() {
-    // Check for SSR content
-    const existingOutlet = this.querySelector('#outlet');
-    if (existingOutlet) {
-      this.outlet = existingOutlet;
-    } else {
-      this.innerHTML = '<div id="outlet"></div>';
-      this.outlet = this.querySelector('#outlet');
-    }
+    this.outlet = this.querySelector('#outlet') || (this.innerHTML = '<div id="outlet"></div>', this.querySelector('#outlet'));
 
-    // Fetch routes - try static file first (prod), then API (dev)
     let res = await fetch('/routes.json');
     if (!res.ok) res = await fetch('/api/routes');
-    const routes = await res.json();
-    this.routes = routes.map(r => ({
-      ...r,
-      matcher: r.dynamic ? createMatcher(r.path) : null
-    }));
+    this.routes = (await res.json()).map(r => ({ ...r, matcher: r.dynamic ? createMatcher(r.path) : null }));
 
-    // Add 404 wildcard
     const notFound = this.routes.find(r => r.component === 'notfound-page');
-    if (notFound) this.routes.push({ ...notFound, path: '*', dynamic: false, matcher: null });
+    if (notFound) this.routes.push({ ...notFound, path: '*' });
 
     addEventListener('popstate', () => this.navigate());
     addEventListener('navigate', e => this.go(e.detail.path));
@@ -34,25 +21,18 @@ export default class Router extends HTMLElement {
       if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
     });
 
-    // Check if SSR page exists
-    const existingPage = this.outlet.firstElementChild;
-    console.log('[Router] SSR check:', existingPage?.tagName, 'shadowRoot:', !!existingPage?.shadowRoot);
-    if (existingPage?.shadowRoot) {
-      // SSR page exists - but still need to check auth
+    const page = this.outlet.firstElementChild;
+    if (page?.shadowRoot) {
       const route = matchRoute(this.routes, location.pathname);
       if (route) {
-        // Load module to check requiresAuth
         const mod = await import(route.route.module);
-        const ComponentClass = mod.default || Object.values(mod).find(v => typeof v === 'function');
-
-        if (ComponentClass?.requiresAuth && !store.get('isAuthenticated')) {
-          // Not authenticated - redirect to login
+        const Cls = mod.default || Object.values(mod).find(v => typeof v === 'function');
+        if (Cls?.requiresAuth && !store.get('isAuthenticated')) {
           history.replaceState(null, '', `/login?from=${encodeURIComponent(location.pathname)}`);
           return this.navigate();
         }
       }
       this.currentPath = location.pathname;
-      console.log('[Router] SSR page detected, hydrating');
     } else {
       this.navigate();
     }
@@ -67,33 +47,19 @@ export default class Router extends HTMLElement {
 
   async navigate() {
     const path = location.pathname;
-    console.log(`[Router] Navigating to: ${path}`);
     const result = matchRoute(this.routes, path);
-
-    if (!result) {
-      console.log(`[Router] No route match for: ${path}`);
-      this.outlet.innerHTML = '<h1>404</h1>';
-      return;
-    }
+    if (!result) return this.outlet.innerHTML = '<h1>404</h1>';
 
     const { route, params } = result;
-    console.log(`[Router] Matched route:`, route.path, route.module);
-
-    // Dynamically import the page module
     const mod = await import(route.module);
-    console.log(`[Router] Page module loaded:`, route.component);
-    const ComponentClass = mod.default || Object.values(mod).find(v => typeof v === 'function');
+    const Cls = mod.default || Object.values(mod).find(v => typeof v === 'function');
 
-    // Check auth
-    if (ComponentClass?.requiresAuth && !store.get('isAuthenticated')) {
+    if (Cls?.requiresAuth && !store.get('isAuthenticated')) {
       history.replaceState(null, '', `/login?from=${encodeURIComponent(path)}`);
       return this.navigate();
     }
 
-    // Preload template before showing the page (caches it for the component)
-    if (ComponentClass?.templateUrl) {
-      await loadTemplate(ComponentClass.templateUrl);
-    }
+    if (Cls?.templateUrl) await loadTemplate(Cls.templateUrl);
 
     this.currentPath = path;
     scrollTo(0, 0);

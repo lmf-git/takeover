@@ -26,7 +26,7 @@ async function loadCSS(url, scope) {
       classes[name] = `${name}_${scope}`;
       return `.${classes[name]}`;
     });
-    cssModules.set(key, { css, classes });
+    cssModules.set(key, { styles: css, classes });
   }
   return cssModules.get(key);
 }

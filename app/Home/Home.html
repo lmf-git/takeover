@@ -37,7 +37,7 @@
     <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="increment">+</button>
   </div>
   <p>
-    <input type="text" placeholder="Type something..." @input="updateMessage" value="{{message}}">
+    <input type="text" id="message-input" placeholder="Type something..." @input="updateMessage" value="{{message}}">
   </p>
   <p>You typed: <strong>{{message}}</strong></p>
 </div>

@@ -99,10 +99,21 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
 
   update() {
     if (!this.shadowRoot || this.#hydrating || !this.#tpl) return;
+    const active = this.shadowRoot.activeElement;
+    const focus = active ? {
+      sel: active.id ? `#${active.id}` : `${active.tagName}[name="${active.name}"]`,
+      start: active.selectionStart, end: active.selectionEnd
+    } : null;
+    this.#ac?.abort();
+    this.#ac = new AbortController();
     const { content, styles } = extractStyles(renderWithExpressions(this.#tpl, this.props));
-    const allStyles = this.#css.styles + styles;
-    this.shadowRoot.innerHTML = (allStyles ? `<style>${allStyles}</style>` : '') + content;
+    this.shadowRoot.innerHTML = (this.#css.styles + styles ? `<style>${this.#css.styles}${styles}</style>` : '') + content;
     this.#bind();
+    if (focus) {
+      const el = this.$(focus.sel);
+      el?.focus();
+      if (focus.start != null) el?.setSelectionRange?.(focus.start, focus.end);
+    }
   }
 
   #bind() {

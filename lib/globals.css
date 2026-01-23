@@ -57,6 +57,12 @@ body {
   transition: var(--transition);
 }
 
+/* Ensure custom elements are block-level before JS defines them (for SSR/DSD) */
+app-layout, app-router, app-navigation, app-counter, theme-toggle,
+home-page, about-page, contact-page, dashboard-page, login-page, notfound-page, user-page {
+  display: block;
+}
+
 /* Apply theme to web component host elements */
 :host {
   --host-bg: var(--bg-color);

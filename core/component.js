@@ -188,15 +188,6 @@ export class Component extends BaseElement {
   #bindEvents() {
     if (!isBrowser || !this.shadowRoot) return;
 
-    // Route link handling
-    this.shadowRoot.addEventListener('click', e => {
-      const a = e.target.closest('a[route]');
-      if (a) {
-        e.preventDefault();
-        navigate(a.getAttribute('href'));
-      }
-    }, { signal: this.signal });
-
     // Declarative event binding: @click="methodName" or @click="store.method()"
     const eventAttrs = ['click', 'submit', 'input', 'change', 'keydown', 'keyup'];
     eventAttrs.forEach(eventName => {

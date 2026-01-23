@@ -36,6 +36,7 @@ export default class Router extends HTMLElement {
 
     // Check if SSR page exists
     const existingPage = this.outlet.firstElementChild;
+    console.log('[Router] SSR check:', existingPage?.tagName, 'shadowRoot:', !!existingPage?.shadowRoot);
     if (existingPage?.shadowRoot) {
       // SSR page exists - but still need to check auth
       const route = matchRoute(this.routes, location.pathname);

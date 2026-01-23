@@ -215,6 +215,7 @@ async function build() {
   await copyDir(join(root, 'core'), join(serverDist, 'core'), transform, true);
   await copyDir(join(root, 'lib'), join(serverDist, 'lib'), transform, true);
   await copyDir(join(root, 'app'), join(serverDist, 'app'), transform, true);
+  await copyDir(join(root, 'components'), join(serverDist, 'components'), transform, true);
 
   // Generate routes.json for client-side routing
   const routes = await generateRoutesJson();

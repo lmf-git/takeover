@@ -61,13 +61,15 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     this.state = store.get();
     if (metadata) store.setMeta(metadata);
 
-    if (this.shadowRoot) { this.#hydrating = true; this.#bind(); }
+    const hadSSR = !!this.shadowRoot;
+    if (hadSSR) { this.#hydrating = true; this.#bind(); }
     else { this.attachShadow({ mode: 'open' }); this.update(); }
 
     this.constructor.store.forEach(p => this.#subs.push(store.on(p, () => (this.state = store.get(), this.update()))));
     this.mount?.();
     this.#hydrating = false;
-    if (Object.keys(this.#local).length) this.update();
+    // Only update after hydration if not SSR'd (SSR content is already correct)
+    if (!hadSSR && Object.keys(this.#local).length) this.update();
   }
 
   disconnectedCallback() { this.#ac?.abort(); this.#subs.forEach(fn => fn()); this.unmount?.(); }

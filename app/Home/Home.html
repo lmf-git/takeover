@@ -87,10 +87,10 @@ export default class HomePage extends Component {
   static metadata = { title: 'Home - Web Components App', description: 'Welcome to our web components application.' };
   static ssrProps = { title: 'Welcome Home', localCount: 0, message: '' };
 
-  // Initialize local state
+  // Initialize local state only if not already set (avoid re-render after SSR hydration)
   mount() {
-    this.local.localCount = 0;
-    this.local.message = '';
+    if (this.local.localCount === undefined) this.local.localCount = 0;
+    if (this.local.message === undefined) this.local.message = '';
   }
 
   // Re-render when local state changes

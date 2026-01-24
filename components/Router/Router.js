@@ -39,7 +39,9 @@ export default class Router extends HTMLElement {
         }
       }
       this.currentPath = location.pathname;
-    } else this.navigate();
+    } else {
+      this.navigate();
+    }
   }
 
   go(path) { if (this.currentPath !== path) { history.pushState(null, '', path); this.navigate(); } }

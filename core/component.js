@@ -38,7 +38,7 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
   static template = ''; static templateUrl = ''; static cssModule = '';
   static store = []; static metadata = null; static requiresAuth = false;
 
-  #subs = []; #ac = null; #local = {}; #tpl = ''; #css = { classes: {}, styles: '' }; #hydrating = false; #updatePending = false;
+  #subs = []; #ac = null; #local = {}; #tpl = ''; #css = { classes: {}, styles: '' }; #hydrating = false;
 
   constructor() {
     super();
@@ -73,20 +73,15 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
   disconnectedCallback() { this.#ac?.abort(); this.#subs.forEach(fn => fn()); this.unmount?.(); }
 
   update() {
-    if (!this.shadowRoot || this.#hydrating || !this.#tpl || this.#updatePending) return;
-    this.#updatePending = true;
-    requestAnimationFrame(() => {
-      this.#updatePending = false;
-      if (!this.shadowRoot || this.#hydrating) return;
-      const active = this.shadowRoot.activeElement;
-      const focus = active ? { sel: active.id ? `#${active.id}` : `${active.tagName}[name="${active.name}"]`, start: active.selectionStart, end: active.selectionEnd } : null;
-      this.#ac?.abort();
-      this.#ac = new AbortController();
-      const { content, styles } = extractStyles(renderWithExpressions(this.#tpl, this.props));
-      this.shadowRoot.innerHTML = (this.#css.styles + styles ? `<style>${this.#css.styles}${styles}</style>` : '') + content;
-      this.#bind();
-      if (focus) { const el = this.$(focus.sel); el?.focus(); focus.start != null && el?.setSelectionRange?.(focus.start, focus.end); }
-    });
+    if (!this.shadowRoot || this.#hydrating || !this.#tpl) return;
+    const active = this.shadowRoot.activeElement;
+    const focus = active ? { sel: active.id ? `#${active.id}` : `${active.tagName}[name="${active.name}"]`, start: active.selectionStart, end: active.selectionEnd } : null;
+    this.#ac?.abort();
+    this.#ac = new AbortController();
+    const { content, styles } = extractStyles(renderWithExpressions(this.#tpl, this.props));
+    this.shadowRoot.innerHTML = (this.#css.styles + styles ? `<style>${this.#css.styles}${styles}</style>` : '') + content;
+    this.#bind();
+    if (focus) { const el = this.$(focus.sel); el?.focus(); focus.start != null && el?.setSelectionRange?.(focus.start, focus.end); }
   }
 
   #bind() {

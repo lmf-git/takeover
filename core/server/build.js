@@ -1,4 +1,4 @@
-import { readFile, writeFile, readdir, mkdir, rm } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdir, rm, copyFile } from 'node:fs/promises';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pathFromFile } from '../routes.js';
@@ -147,6 +147,10 @@ async function build() {
 
   const routes = await generateRoutesJson();
   await writeFile(join(clientDist, 'routes.json'), JSON.stringify(routes, null, 2));
+
+  // Copy Cloudflare worker if it exists
+  await copyFile(join(root, 'deploy/cloudflare/_worker.js'), join(clientDist, '_worker.js')).catch(() => {});
+
   console.log('Build complete:', routes.map(r => r.path).join(', '));
 }
 

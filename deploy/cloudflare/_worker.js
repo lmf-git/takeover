@@ -19,9 +19,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Serve static assets
-    if (['.js', '.mjs', '.css', '.json', '.svg', '.png', '.jpg', '.ico', '.woff', '.woff2'].some(e => url.pathname.endsWith(e))) {
-      return env.ASSETS.fetch(request);
+    // Serve static assets (including component templates in /app/ and /components/)
+    const isStaticAsset = ['.js', '.mjs', '.css', '.json', '.svg', '.png', '.jpg', '.ico', '.woff', '.woff2'].some(e => url.pathname.endsWith(e));
+    const isTemplateFile = url.pathname.endsWith('.html') && (url.pathname.startsWith('/app/') || url.pathname.startsWith('/components/'));
+    if (isStaticAsset || isTemplateFile) {
+      return env.ASSETS.fetch(url);
     }
 
     if (!renderer) {

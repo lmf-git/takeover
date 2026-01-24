@@ -14,7 +14,8 @@ export default class LoginPage extends Component {
   get props() {
     const { username, email, errors, isLoading, attempts } = this.local;
     const errorMessages = Object.values(errors);
-    return { ...super.props, isLoading, attempts, hasErrors: errorMessages.length > 0, errorMessages, canSubmit: username.length > 0 && !errorMessages.length, redirectFrom: typeof location !== 'undefined' ? new URLSearchParams(location.search).get('from') : null };
+    const redirectFrom = this.pageProps?.query?.from || (typeof location !== 'undefined' ? new URLSearchParams(location.search).get('from') : null);
+    return { ...super.props, isLoading, attempts, hasErrors: errorMessages.length > 0, errorMessages, canSubmit: username.length > 0 && !errorMessages.length, redirectFrom };
   }
 
   bind() {

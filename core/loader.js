@@ -8,7 +8,7 @@ const pathFor = tag => {
   return `/components/${pascal}/${pascal}.js`;
 };
 
-const load = tag => { if (!loaded.has(tag) && !customElements.get(tag)) { loaded.add(tag); import(pathFor(tag)).catch(() => {}); } };
+const load = tag => { if (!loaded.has(tag) && !customElements.get(tag)) { loaded.add(tag); import(pathFor(tag)).catch(e => console.warn(`[loader] Failed to load ${tag}:`, e.message)); } };
 
 const scan = node => {
   if (!node || scanned.has(node)) return;

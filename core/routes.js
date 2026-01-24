@@ -9,7 +9,7 @@ export function pathFromFile(filePath, basePath = '') {
   if (!segs.length) return null;
   if (segs.length >= 2 && segs.at(-1).toLowerCase() === segs.at(-2).toLowerCase().replace(/^\[(.+)\]$/, '$1'))
     segs.pop();
-  const route = '/' + segs.map(s => s.match(/^\[(.+)\]$/) ? `:${RegExp.$1}` : s.toLowerCase()).join('/');
+  const route = '/' + segs.map(s => { const m = s.match(/^\[(.+)\]$/); return m ? `:${m[1]}` : s.toLowerCase(); }).join('/');
   return route.replace(/^\/home$/, '/');
 }
 

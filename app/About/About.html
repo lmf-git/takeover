@@ -1,33 +1,39 @@
 <style>
+  :host {
+    color: var(--text-color);
+  }
   section {
     padding: 20px;
-    background-color: #fefae0;
-    border: 1px solid #e9ecef;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
   }
   h1 {
-    color: #e76f51;
-    border-bottom: 2px solid #e76f51;
+    color: var(--danger-color);
+    border-bottom: 2px solid var(--danger-color);
     padding-bottom: 10px;
+  }
+  h2 {
+    color: var(--text-color);
   }
   .page-navigation {
     margin-top: 20px;
     padding: 10px;
-    background-color: #e9ecef;
+    background-color: var(--hover-bg);
     border-radius: 5px;
   }
-  a { color: #e76f51; text-decoration: none; font-weight: bold; }
+  a { color: var(--danger-color); text-decoration: none; font-weight: bold; }
   a:hover { text-decoration: underline; }
   .state-demo {
     margin: 20px 0;
     padding: 15px;
-    background-color: #e9ecef;
+    background-color: var(--hover-bg);
     border-radius: 5px;
   }
-  .counter-doubled { font-weight: bold; color: #e76f51; }
-  .highlight { color: white; background: #e76f51; padding: 2px 6px; border-radius: 4px; }
-  .timestamp { color: #6c757d; font-size: 12px; margin-top: 15px; font-style: italic; }
+  .counter-doubled { font-weight: bold; color: var(--danger-color); }
+  .highlight { color: white; background: var(--danger-color); padding: 2px 6px; border-radius: 4px; }
+  .timestamp { color: var(--text-secondary); font-size: 12px; margin-top: 15px; font-style: italic; }
 </style>
 <section>
   <h1>{{title}}</h1>

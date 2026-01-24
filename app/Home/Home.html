@@ -2,11 +2,12 @@
   /* Inline styles work alongside CSS modules */
   :host {
     display: block;
+    color: var(--text-color);
   }
   .counter-value {
     font-size: 1.2em;
     font-weight: bold;
-    color: #2a9d8f;
+    color: var(--success-color);
   }
   .local-demo {
     display: flex;
@@ -16,10 +17,12 @@
   }
   input[type="text"] {
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1em;
     width: 250px;
+    background: var(--bg-color);
+    color: var(--text-color);
   }
 </style>
 

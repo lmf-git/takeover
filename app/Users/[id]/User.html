@@ -1,13 +1,16 @@
 <style>
+  :host {
+    color: var(--text-color);
+  }
   section {
     padding: 20px;
-    background-color: #e0f2f7; /* Light blue background */
-    border-left: 5px solid #00acc1; /* Teal border */
+    background-color: var(--bg-secondary);
+    border-left: 5px solid var(--info-color);
     border-radius: 5px;
     margin: 20px 0;
   }
   h1 {
-    color: #00acc1; /* Teal color */
+    color: var(--info-color);
   }
   .user-info {
     font-size: 1.1em;
@@ -15,7 +18,10 @@
   }
   .user-id {
     font-weight: bold;
-    color: #00838f; /* Darker teal */
+    color: var(--primary-color);
+  }
+  a {
+    color: var(--primary-color);
   }
 </style>
 <section>

@@ -2,7 +2,7 @@
 
 .hero {
   padding: 30px;
-  background: linear-gradient(135deg, #2a9d8f 0%, #264653 100%);
+  background: linear-gradient(135deg, var(--success-color, #2a9d8f) 0%, var(--primary-color, #264653) 100%);
   color: white;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -20,15 +20,16 @@
 
 .card {
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--bg-secondary, #f8f9fa);
   border-radius: 8px;
   margin-bottom: 20px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color, #e9ecef);
+  color: var(--text-color, #212529);
 }
 
 .card h2 {
   margin-top: 0;
-  color: #264653;
+  color: var(--text-color, #264653);
 }
 
 .button {
@@ -46,29 +47,30 @@
 }
 
 .buttonPrimary {
-  background: #2a9d8f;
+  background: var(--success-color, #2a9d8f);
   color: white;
 }
 
 .buttonDanger {
-  background: #dc3545;
+  background: var(--danger-color, #dc3545);
   color: white;
 }
 
 .buttonInfo {
-  background: #0d6efd;
+  background: var(--primary-color, #0d6efd);
   color: white;
 }
 
 .nav {
   margin-top: 20px;
   padding: 15px;
-  background: #e9ecef;
+  background: var(--hover-bg, #e9ecef);
   border-radius: 8px;
+  color: var(--text-color, #212529);
 }
 
 .nav a {
-  color: #2a9d8f;
+  color: var(--primary-color, #2a9d8f);
   text-decoration: none;
   font-weight: bold;
 }
@@ -78,7 +80,7 @@
 }
 
 .timestamp {
-  color: #6c757d;
+  color: var(--text-secondary, #6c757d);
   font-size: 12px;
   margin-top: 15px;
   font-style: italic;
@@ -89,5 +91,5 @@
   height: 64px;
   border-radius: 50%;
   margin: 10px 0;
-  border: 3px solid #2a9d8f;
+  border: 3px solid var(--success-color, #2a9d8f);
 }

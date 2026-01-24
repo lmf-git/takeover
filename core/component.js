@@ -79,7 +79,7 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     this.#ac?.abort();
     this.#ac = new AbortController();
     const { content, styles } = extractStyles(renderWithExpressions(this.#tpl, this.props));
-    this.shadowRoot.innerHTML = (this.#css.styles + styles ? `<style>${this.#css.styles}${styles}</style>` : '') + content;
+    this.shadowRoot.innerHTML = (this.#css.styles || styles ? `<style>${this.#css.styles}${styles}</style>` : '') + content;
     this.#bind();
     if (focus) { const el = this.$(focus.sel); el?.focus(); focus.start != null && el?.setSelectionRange?.(focus.start, focus.end); }
   }

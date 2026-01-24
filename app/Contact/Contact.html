@@ -1,20 +1,26 @@
 <style>
+  :host {
+    color: var(--text-color);
+  }
   h1 {
-    color: #219ebc;
+    color: var(--info-color);
+  }
+  h3 {
+    color: var(--text-color);
   }
   section {
     padding: 20px;
-    background-color: #f8f9fa;
+    background-color: var(--bg-secondary);
     border-radius: 5px;
   }
   .page-navigation {
     margin-top: 20px;
     padding: 10px;
-    background-color: #e9ecef;
+    background-color: var(--hover-bg);
     border-radius: 5px;
   }
   a {
-    color: #219ebc;
+    color: var(--info-color);
     text-decoration: none;
     font-weight: bold;
   }
@@ -30,26 +36,31 @@
   label {
     display: block;
     margin-bottom: 5px;
+    color: var(--text-color);
   }
   input, textarea {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    box-sizing: border-box;
   }
   button {
-    background-color: #219ebc;
+    background-color: var(--info-color);
     color: white;
     border: none;
     padding: 10px 15px;
     border-radius: 4px;
     cursor: pointer;
+    transition: var(--transition);
   }
   button:hover {
-    background-color: #187789;
+    opacity: 0.9;
   }
   .timestamp {
-    color: #6c757d;
+    color: var(--text-secondary);
     font-size: 12px;
     margin-top: 15px;
     font-style: italic;
@@ -57,7 +68,7 @@
   .stats {
     margin-top: 20px;
     padding: 10px;
-    background-color: #f0f0f0;
+    background-color: var(--hover-bg);
     border-radius: 5px;
   }
 </style>

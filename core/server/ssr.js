@@ -1,5 +1,5 @@
 // Shared SSR rendering logic - platform agnostic
-import { renderWithExpressions } from '../template.js';
+import { renderWithExpressions, escapeHtml } from '../template.js';
 import { matchRoute } from '../routes.js';
 
 const cache = { templates: new Map(), css: new Map() };
@@ -14,8 +14,6 @@ const processCSS = (raw, scope) => {
   const css = raw.replace(/\.([a-zA-Z_][\w-]*)/g, (_, c) => (classes[c] = `${c}_${scope}`, `.${classes[c]}`));
   return { css, classes };
 };
-
-const esc = s => String(s).replace(/[&"'<>]/g, c => ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[c]);
 
 export function createRenderer({ loadFile, resolvePaths }) {
 
@@ -75,7 +73,8 @@ export function createRenderer({ loadFile, resolvePaths }) {
     }
 
     const ssrProps = typeof route.ssrProps === 'function' ? route.ssrProps({ path: url, params }) : route.ssrProps || {};
-    const props = { ...state, ...ssrProps, path: url, params, query: Object.fromEntries(new URLSearchParams(search || '')), timestamp: new Date().toLocaleString(), year: new Date().getFullYear() };
+    const query = Object.fromEntries(new URLSearchParams(search || ''));
+    const props = { ...state, ...ssrProps, path: url, params, query, redirectFrom: query.from || null, timestamp: new Date().toLocaleString(), year: new Date().getFullYear() };
 
     const { tpl: layoutTpl, css: layoutCss } = await load('app-layout');
     const layoutRendered = renderWithExpressions(layoutTpl, { ...props, $css: layoutCss.classes });
@@ -91,7 +90,7 @@ export function createRenderer({ loadFile, resolvePaths }) {
     const appHtml = `<template shadowrootmode="open">${allLayoutStyles ? `<style>${allLayoutStyles}</style>` : ''}${finalLayout}</template>`;
 
     const meta = route.metadata || state.meta || {};
-    const headMeta = [meta.title && `<title>${esc(meta.title)}</title>`, meta.description && `<meta name="description" content="${esc(meta.description)}">`].filter(Boolean).join('');
+    const headMeta = [meta.title && `<title>${escapeHtml(meta.title)}</title>`, meta.description && `<meta name="description" content="${escapeHtml(meta.description)}">`].filter(Boolean).join('');
 
     return { appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${JSON.stringify(state)}</script>`, headMeta };
   };

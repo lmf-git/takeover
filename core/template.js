@@ -1,6 +1,7 @@
 const get = (obj, path) => path?.split('.').reduce((o, k) => o?.[k], obj);
 const safeMethods = new Set(['split', 'join', 'slice', 'toUpperCase', 'toLowerCase', 'trim', 'charAt', 'substring', 'replace']);
 const literals = { true: true, false: false, null: null, undefined: undefined };
+export const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 function evaluate(expr, props) {
   const t = expr.trim();
@@ -69,10 +70,17 @@ export function renderWithExpressions(tpl, props = {}) {
     r = r.replace(m[0], evaluate(m[1], props) ? m[2] : m[3] || '');
   }
 
+  // Triple braces {{{expr}}} for unescaped output
+  r = r.replace(/\{\{\{([^{}]+)\}\}\}/g, (m, e) => {
+    const v = evaluate(e.trim(), props);
+    return v !== undefined ? String(v) : m;
+  });
+
+  // Double braces {{expr}} for escaped output
   return r.replace(/\{\{([^{}]+)\}\}/g, (m, e) => {
     const t = e.trim();
     if (t[0] === '#' || t[0] === '/') return m;
     const v = evaluate(t, props);
-    return v !== undefined ? String(v) : m;
+    return v !== undefined ? escapeHtml(v) : m;
   });
 }

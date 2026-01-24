@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node core/server/index.js",
     "build": "node core/server/build.js",
-    "start": "NODE_ENV=production node core/server/index.js"
+    "start": "NODE_ENV=production node core/server/index.js",
+    "deploy:cloudflare": "yarn build && cp -r deploy/cloudflare/functions dist/client/functions && wrangler pages deploy dist/client --config deploy/cloudflare/wrangler.toml"
   }
 }

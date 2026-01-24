@@ -77,11 +77,35 @@ async function generateRoutesJson() {
         if (routePath) {
           const html = await readFile(itemPath, 'utf-8');
           const hasEmbedded = /<script\b[^>]*>[\s\S]*?<\/script>/i.test(html);
+
+          // Extract metadata from script
+          let script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i)?.[1] || '';
+          if (!script) {
+            for (const ext of ['.mjs', '.js']) {
+              try { script = await readFile(itemPath.replace('.html', ext), 'utf-8'); break; } catch {}
+            }
+          }
+
+          let metadata = null, ssrProps = null, requiresAuth = false;
+          if (script) {
+            try {
+              const m1 = script.match(/static\s+ssrProps\s*=\s*(\{[^}]+\})/);
+              const m2 = script.match(/static\s+metadata\s*=\s*(\{[^}]+\})/);
+              const m3 = script.match(/static\s+requiresAuth\s*=\s*(true|false)/);
+              if (m1) ssrProps = eval(`(${m1[1]})`);
+              if (m2) metadata = eval(`(${m2[1]})`);
+              if (m3) requiresAuth = m3[1] === 'true';
+            } catch {}
+          }
+
           routes.push({
             path: routePath,
             component: relative.split('/').pop().replace('.html', '').toLowerCase() + '-page',
             module: `/app/${relative.replace('.html', hasEmbedded ? '.script.js' : '.js')}`,
-            dynamic: routePath.includes(':')
+            dynamic: routePath.includes(':'),
+            ...(metadata && { metadata }),
+            ...(ssrProps && { ssrProps }),
+            ...(requiresAuth && { requiresAuth })
           });
         }
       }

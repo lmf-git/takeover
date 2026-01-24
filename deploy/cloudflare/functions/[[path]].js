@@ -1,28 +1,52 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { createRenderer } from '../../../core/server/ssr.js';
 
-const root = process.cwd();
-process.env.SSR_ROOT = join(root, 'dist/server');
+let renderer, routesCache;
 
-export async function onRequest({ request }) {
+const resolvePaths = tag => {
+  if (tag === 'app-layout') return { tpl: '/app/_Layout/_Layout.html', css: '/app/_Layout/_Layout.module.css' };
+  if (tag === 'app-router') return null;
+  const isPage = tag.endsWith('-page');
+  const name = isPage ? tag.replace('-page', '') : tag.replace(/^app-/, '');
+  const pascal = name.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
+  const dir = isPage ? '/app' : '/components';
+  return { tpl: `${dir}/${pascal}/${pascal}.html`, css: `${dir}/${pascal}/${pascal}.module.css` };
+};
+
+export async function onRequest({ request, env }) {
   const url = new URL(request.url);
 
-  // Serve static assets directly
+  // Let static assets pass through
   if (['.js', '.mjs', '.css', '.json', '.svg', '.png', '.jpg', '.ico', '.woff', '.woff2'].some(e => url.pathname.endsWith(e))) {
-    return;
+    return env.ASSETS.fetch(request);
   }
 
-  const template = readFileSync(join(root, 'dist/client/_template.html'), 'utf-8');
-  const { render } = await import(pathToFileURL(join(root, 'dist/server/core/server/entry-server.mjs')).href);
-  const result = await render(url.pathname + url.search);
+  // Create renderer with ASSETS.fetch loader
+  if (!renderer) {
+    const loadFile = async path => {
+      const res = await env.ASSETS.fetch(new URL(path, request.url));
+      if (!res.ok) throw new Error(`Failed to load ${path}`);
+      return res.text();
+    };
+    renderer = createRenderer({ loadFile, resolvePaths });
+  }
+
+  // Load routes
+  if (!routesCache) {
+    const res = await env.ASSETS.fetch(new URL('/routes.json', request.url));
+    routesCache = await res.json();
+  }
+
+  const templateRes = await env.ASSETS.fetch(new URL('/_template.html', request.url));
+  const template = await templateRes.text();
+
+  const result = await renderer(url.pathname + url.search, routesCache, {});
 
   if (result.redirect) {
     return new Response(null, { status: 302, headers: { Location: result.redirect } });
   }
 
   const html = template
-    .replace('<!--head-meta-->', (result.headMeta || '') + (result.scopedStyles || ''))
+    .replace('<!--head-meta-->', result.headMeta || '')
     .replace('<!--app-html-->', result.appHtml)
     .replace('<!--initial-state-->', result.initialStateScript);
 

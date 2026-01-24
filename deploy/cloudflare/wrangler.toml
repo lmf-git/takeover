@@ -2,5 +2,5 @@ name = "takeover"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-[site]
-bucket = "../../dist/client"
+[pages]
+site = "client"

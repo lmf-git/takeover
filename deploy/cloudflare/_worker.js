@@ -1,5 +1,7 @@
+// Paths relative to dist/client/ after copy
 import { createRenderer } from './core/server/ssr.js';
 import { defaults } from './lib/store.js';
+import { createMatcher } from './core/routes.js';
 
 let renderer, routesCache;
 
@@ -17,12 +19,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Let static assets pass through
+    // Serve static assets
     if (['.js', '.mjs', '.css', '.json', '.svg', '.png', '.jpg', '.ico', '.woff', '.woff2'].some(e => url.pathname.endsWith(e))) {
       return env.ASSETS.fetch(request);
     }
 
-    // Create renderer with ASSETS.fetch loader
     if (!renderer) {
       const loadFile = async path => {
         const res = await env.ASSETS.fetch(new URL(path, request.url));
@@ -32,16 +33,17 @@ export default {
       renderer = createRenderer({ loadFile, resolvePaths });
     }
 
-    // Load routes
     if (!routesCache) {
       const res = await env.ASSETS.fetch(new URL('/routes.json', request.url));
-      routesCache = await res.json();
+      routesCache = (await res.json()).map(r => ({
+        ...r,
+        matcher: r.dynamic ? createMatcher(r.path) : null
+      }));
     }
 
     try {
       const templateRes = await env.ASSETS.fetch(new URL('/_template.html', request.url));
       const template = await templateRes.text();
-
       const result = await renderer(url.pathname + url.search, routesCache, defaults);
 
       if (result.redirect) {

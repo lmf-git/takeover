@@ -80,7 +80,7 @@ async function handler(req, res) {
   const [pathname, query] = req.url.split('?');
   const url = decodeURIComponent(pathname);
 
-  if (url === '/api/routes') return res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(await getRoutes()));
+  if (url === '/api/routes' || url === '/routes.json') return res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(await getRoutes()));
   if (query === 'raw') { const c = await readFile(join(root, url), 'utf-8').catch(() => ''); return res.writeHead(200, { 'Content-Type': 'text/javascript' }).end(`export default ${JSON.stringify(c)}`); }
   if (query === 'script') return serveScript(join(root, url), res);
 

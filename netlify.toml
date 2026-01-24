@@ -1,7 +1,7 @@
 [build]
   command = "yarn build"
   publish = "dist/client"
-  functions = "netlify/functions"
+  functions = "deploy/netlify/functions"
 
 [functions]
   node_bundler = "esbuild"

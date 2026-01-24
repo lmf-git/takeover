@@ -1,4 +1,4 @@
-import { Component, define } from '../../../core/index.js';
+import { Component, define } from '../../../core/component.js';
 
 export default class UserPage extends Component {
   static templateUrl = '/app/Users/[id]/User.html';

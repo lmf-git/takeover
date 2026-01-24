@@ -45,9 +45,9 @@
   --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
 }
 
-/* Prevent layout shift from scrollbar appearing/disappearing */
+/* Prevent layout shift from scrollbar */
 html {
-  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 /* Global body styles */

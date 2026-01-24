@@ -1,4 +1,7 @@
-import { store, matchRoute, createMatcher, define, loadTemplate } from '../../core/index.js';
+import { store, define, loadTemplate } from '../../core/component.js';
+import { matchRoute, createMatcher } from '../../core/routes.js';
+
+const getClass = mod => mod.default || Object.values(mod).find(v => typeof v === 'function');
 
 export default class Router extends HTMLElement {
   routes = [];
@@ -29,42 +32,31 @@ export default class Router extends HTMLElement {
     if (page?.shadowRoot) {
       const route = matchRoute(this.routes, location.pathname);
       if (route) {
-        const mod = await import(route.route.module);
-        const Cls = mod.default || Object.values(mod).find(v => typeof v === 'function');
+        const Cls = getClass(await import(route.route.module));
         if (Cls?.requiresAuth && !store.get('isAuthenticated')) {
           history.replaceState(null, '', `/login?from=${encodeURIComponent(location.pathname)}`);
           return this.navigate();
         }
       }
       this.currentPath = location.pathname;
-    } else {
-      this.navigate();
-    }
+    } else this.navigate();
   }
 
-  go(path) {
-    if (this.currentPath !== path) {
-      history.pushState(null, '', path);
-      this.navigate();
-    }
-  }
+  go(path) { if (this.currentPath !== path) { history.pushState(null, '', path); this.navigate(); } }
 
   async preload(path) {
-    const result = matchRoute(this.routes, path);
-    if (!result) return;
-    const mod = await import(result.route.module);
-    const Cls = mod.default || Object.values(mod).find(v => typeof v === 'function');
-    if (Cls?.templateUrl) await loadTemplate(Cls.templateUrl);
+    const r = matchRoute(this.routes, path);
+    if (!r) return;
+    const Cls = getClass(await import(r.route.module));
+    if (Cls?.templateUrl) loadTemplate(Cls.templateUrl);
   }
 
   async navigate() {
-    const path = location.pathname;
-    const result = matchRoute(this.routes, path);
+    const path = location.pathname, result = matchRoute(this.routes, path);
     if (!result) return this.outlet.innerHTML = '<h1>404</h1>';
 
     const { route, params } = result;
-    const mod = await import(route.module);
-    const Cls = mod.default || Object.values(mod).find(v => typeof v === 'function');
+    const Cls = getClass(await import(route.module));
 
     if (Cls?.requiresAuth && !store.get('isAuthenticated')) {
       history.replaceState(null, '', `/login?from=${encodeURIComponent(path)}`);
@@ -76,7 +68,6 @@ export default class Router extends HTMLElement {
     const el = document.createElement(route.component);
     el.pageProps = { path, params, query: Object.fromEntries(new URLSearchParams(location.search)) };
 
-    // Render offscreen, wait for nested components, then show
     const staging = document.createElement('div');
     staging.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
     document.body.appendChild(staging);
@@ -91,13 +82,8 @@ export default class Router extends HTMLElement {
 
   async waitForComponents(root, timeout = 3000) {
     const start = Date.now();
-    const getPending = el => {
-      if (!el.shadowRoot) return el.tagName?.includes('-') ? [el] : [];
-      const children = [...el.shadowRoot.querySelectorAll('*')];
-      return children.flatMap(getPending);
-    };
-    while (getPending(root).length && Date.now() - start < timeout)
-      await new Promise(r => setTimeout(r, 10));
+    const getPending = el => el.shadowRoot ? [...el.shadowRoot.querySelectorAll('*')].flatMap(getPending) : el.tagName?.includes('-') ? [el] : [];
+    while (getPending(root).length && Date.now() - start < timeout) await new Promise(r => setTimeout(r, 10));
   }
 }
 

@@ -3,16 +3,11 @@ const loaded = new Set();
 const pathFor = tag => {
   if (tag === 'app-layout') return '/app/_Layout/_Layout.js';
   if (tag === 'app-router') return '/components/Router/Router.js';
-  const name = tag.replace(/^app-/, '');
-  const pascal = name.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
+  const pascal = tag.replace(/^app-/, '').split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
   return `/components/${pascal}/${pascal}.js`;
 };
 
-const load = async tag => {
-  if (loaded.has(tag) || customElements.get(tag)) return;
-  loaded.add(tag);
-  await import(pathFor(tag)).catch(() => {});
-};
+const load = tag => { if (!loaded.has(tag) && !customElements.get(tag)) { loaded.add(tag); import(pathFor(tag)).catch(() => {}); } };
 
 const scan = node => {
   const tag = node.tagName?.toLowerCase();
@@ -21,18 +16,15 @@ const scan = node => {
   node.shadowRoot?.querySelectorAll('*').forEach(scan);
 };
 
-new MutationObserver(m => m.flatMap(x => [...x.addedNodes]).filter(n => n.nodeType === 1).forEach(scan))
-  .observe(document, { childList: true, subtree: true });
+const observe = root => new MutationObserver(m => m.flatMap(x => [...x.addedNodes]).filter(n => n.nodeType === 1).forEach(scan)).observe(root, { childList: true, subtree: true });
 
-(function scanAll(root) {
-  root.querySelectorAll('*').forEach(el => { scan(el); el.shadowRoot && scanAll(el.shadowRoot); });
-})(document);
+observe(document);
+document.querySelectorAll('*').forEach(el => { scan(el); el.shadowRoot && (el.shadowRoot.querySelectorAll('*').forEach(scan), observe(el.shadowRoot)); });
 
 const orig = Element.prototype.attachShadow;
 Element.prototype.attachShadow = function(init) {
   const shadow = orig.call(this, init);
   setTimeout(() => shadow.querySelectorAll('*').forEach(scan), 0);
-  new MutationObserver(m => m.flatMap(x => [...x.addedNodes]).filter(n => n.nodeType === 1).forEach(scan))
-    .observe(shadow, { childList: true, subtree: true });
+  observe(shadow);
   return shadow;
 };

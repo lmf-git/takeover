@@ -1,4 +1,4 @@
-import { Component, define } from '../../core/index.js';
+import { Component, define } from '../../core/component.js';
 
 export default class ContactPage extends Component {
   static templateUrl = '/app/Contact/Contact.html';

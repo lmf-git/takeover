@@ -2,55 +2,43 @@ import store from '../lib/store.js';
 import { renderWithExpressions } from './template.js';
 
 const isBrowser = typeof window !== 'undefined';
-const templates = new Map();
-const cssModules = new Map();
+const cache = { templates: new Map(), css: new Map() };
+
+export const define = (name, ctor) => isBrowser && customElements.define(name, ctor);
 
 export const navigate = path => isBrowser && dispatchEvent(new CustomEvent('navigate', { detail: { path } }));
 
-export async function loadTemplate(url) {
-  if (!templates.has(url)) {
-    const res = await fetch(url).catch(() => null);
-    const html = res?.ok ? await res.text() : '';
-    templates.set(url, html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').trim());
-  }
-  return templates.get(url);
-}
+const fetchText = async url => {
+  const res = await fetch(url).catch(() => null);
+  return res?.ok ? res.text() : '';
+};
 
-async function loadCSS(url, scope) {
+export const loadTemplate = async url => {
+  if (!cache.templates.has(url)) cache.templates.set(url, (await fetchText(url)).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').trim());
+  return cache.templates.get(url);
+};
+
+const loadCSS = async (url, scope) => {
   const key = `${url}:${scope}`;
-  if (!cssModules.has(key)) {
-    const res = await fetch(url).catch(() => null);
-    const raw = res?.ok ? await res.text() : '';
+  if (!cache.css.has(key)) {
+    const raw = await fetchText(url);
     const classes = {};
-    const css = raw.replace(/\.([a-zA-Z_][\w-]*)/g, (_, name) => {
-      classes[name] = `${name}_${scope}`;
-      return `.${classes[name]}`;
-    });
-    cssModules.set(key, { styles: css, classes });
+    const styles = raw.replace(/\.([a-zA-Z_][\w-]*)/g, (_, n) => (classes[n] = `${n}_${scope}`, `.${classes[n]}`));
+    cache.css.set(key, { styles, classes });
   }
-  return cssModules.get(key);
-}
+  return cache.css.get(key);
+};
 
-function extractStyles(html) {
+const extractStyles = html => {
   let styles = '';
-  const content = html.replace(/<style>([\s\S]*?)<\/style>/gi, (_, css) => (styles += css, ''));
-  return { content, styles };
-}
+  return { content: html.replace(/<style>([\s\S]*?)<\/style>/gi, (_, css) => (styles += css, '')), styles };
+};
 
 export class Component extends (isBrowser ? HTMLElement : class {}) {
-  static template = '';
-  static templateUrl = '';
-  static cssModule = '';
-  static store = [];
-  static metadata = null;
-  static requiresAuth = false;
+  static template = ''; static templateUrl = ''; static cssModule = '';
+  static store = []; static metadata = null; static requiresAuth = false;
 
-  #subs = [];
-  #ac = null;
-  #local = {};
-  #tpl = '';
-  #css = { classes: {}, styles: '' };
-  #hydrating = false;
+  #subs = []; #ac = null; #local = {}; #tpl = ''; #css = { classes: {}, styles: '' }; #hydrating = false;
 
   constructor() {
     super();
@@ -73,66 +61,41 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     this.state = store.get();
     if (metadata) store.setMeta(metadata);
 
-    if (this.shadowRoot) {
-      this.#hydrating = true;
-      this.#bind();
-    } else {
-      this.attachShadow({ mode: 'open' });
-      this.update();
-    }
+    if (this.shadowRoot) { this.#hydrating = true; this.#bind(); }
+    else { this.attachShadow({ mode: 'open' }); this.update(); }
 
-    this.constructor.store.forEach(path => {
-      this.#subs.push(store.on(path, () => (this.state = store.get(), this.update())));
-    });
-
+    this.constructor.store.forEach(p => this.#subs.push(store.on(p, () => (this.state = store.get(), this.update()))));
     this.mount?.();
     this.#hydrating = false;
-
     if (Object.keys(this.#local).length) this.update();
   }
 
-  disconnectedCallback() {
-    this.#ac?.abort();
-    this.#subs.forEach(fn => fn());
-    this.unmount?.();
-  }
+  disconnectedCallback() { this.#ac?.abort(); this.#subs.forEach(fn => fn()); this.unmount?.(); }
 
   update() {
     if (!this.shadowRoot || this.#hydrating || !this.#tpl) return;
     const active = this.shadowRoot.activeElement;
-    const focus = active ? {
-      sel: active.id ? `#${active.id}` : `${active.tagName}[name="${active.name}"]`,
-      start: active.selectionStart, end: active.selectionEnd
-    } : null;
+    const focus = active ? { sel: active.id ? `#${active.id}` : `${active.tagName}[name="${active.name}"]`, start: active.selectionStart, end: active.selectionEnd } : null;
     this.#ac?.abort();
     this.#ac = new AbortController();
     const { content, styles } = extractStyles(renderWithExpressions(this.#tpl, this.props));
     this.shadowRoot.innerHTML = (this.#css.styles + styles ? `<style>${this.#css.styles}${styles}</style>` : '') + content;
     this.#bind();
-    if (focus) {
-      const el = this.$(focus.sel);
-      el?.focus();
-      if (focus.start != null) el?.setSelectionRange?.(focus.start, focus.end);
-    }
+    if (focus) { const el = this.$(focus.sel); el?.focus(); focus.start != null && el?.setSelectionRange?.(focus.start, focus.end); }
   }
 
   #bind() {
     if (!isBrowser) return;
-    ['click', 'submit', 'input', 'change', 'keydown', 'keyup'].forEach(evt => {
-      this.shadowRoot.querySelectorAll(`[\\@${evt}]`).forEach(el => {
+    this.shadowRoot.querySelectorAll('[\\@click],[\\@submit],[\\@input],[\\@change],[\\@keydown],[\\@keyup]').forEach(el => {
+      ['click', 'submit', 'input', 'change', 'keydown', 'keyup'].forEach(evt => {
         const h = el.getAttribute(`@${evt}`);
-        el.addEventListener(evt, e => {
-          if (h.startsWith('store.')) store[h.slice(6).replace(/\(\)$/, '')]?.();
-          else this[h.replace(/\(\)$/, '')]?.(e);
-        }, { signal: this.signal });
+        if (h) el.addEventListener(evt, e => h.startsWith('store.') ? store[h.slice(6).replace(/\(\)$/, '')]?.() : this[h.replace(/\(\)$/, '')]?.(e), { signal: this.signal });
       });
     });
     this.bind?.();
   }
 
-  get props() {
-    return { ...this.state, ...this.#local, ...this.pageProps, path: isBrowser ? location.pathname : '', $css: this.#css.classes };
-  }
+  get props() { return { ...this.state, ...this.#local, ...this.pageProps, path: isBrowser ? location.pathname : '', $css: this.#css.classes }; }
 
   $(sel) { return this.shadowRoot?.querySelector(sel); }
   $$(sel) { return [...(this.shadowRoot?.querySelectorAll(sel) || [])]; }

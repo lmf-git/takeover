@@ -1,32 +1,23 @@
-import fs from 'node:fs';
-import path from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
-const clientDist = path.join(root, 'dist/client');
-const serverDist = path.join(root, 'dist/server');
-
-// Set environment variable for entry-server.js to use correct paths
-process.env.SSR_ROOT = serverDist;
+process.env.SSR_ROOT = join(root, 'dist/server');
 
 export async function handler(event) {
-  const template = fs.readFileSync(path.join(clientDist, '_template.html'), 'utf-8');
-  const entryPath = path.join(serverDist, 'core/server/entry-server.mjs');
-  const { render } = await import(pathToFileURL(entryPath).href);
+  const template = readFileSync(join(root, 'dist/client/_template.html'), 'utf-8');
+  const { render } = await import(pathToFileURL(join(root, 'dist/server/core/server/entry-server.mjs')).href);
+  const result = await render(event.path + (event.rawQuery ? `?${event.rawQuery}` : ''));
 
-  const url = event.path + (event.rawQuery ? `?${event.rawQuery}` : '');
-  const result = await render(url);
+  if (result.redirect) return { statusCode: 302, headers: { Location: result.redirect } };
 
-  if (result.redirect) {
-    return { statusCode: 302, headers: { Location: result.redirect } };
-  }
-
-  const { appHtml, initialStateScript, headMeta, scopedStyles } = result;
-
-  const html = template
-    .replace('<!--head-meta-->', (headMeta || '') + (scopedStyles || ''))
-    .replace('<!--app-html-->', appHtml)
-    .replace('<!--initial-state-->', initialStateScript);
-
-  return { statusCode: 200, headers: { 'Content-Type': 'text/html' }, body: html };
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'text/html' },
+    body: template
+      .replace('<!--head-meta-->', (result.headMeta || '') + (result.scopedStyles || ''))
+      .replace('<!--app-html-->', result.appHtml)
+      .replace('<!--initial-state-->', result.initialStateScript)
+  };
 }

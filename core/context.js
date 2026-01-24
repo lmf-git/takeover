@@ -9,11 +9,7 @@ export class Store extends EventTarget {
 
   #wrap(obj, path = '') {
     return new Proxy(obj, {
-      get: (t, p) => {
-        if (typeof p === 'symbol') return t[p];
-        const v = t[p];
-        return v && typeof v === 'object' && !Array.isArray(v) ? this.#wrap(v, path ? `${path}.${p}` : p) : v;
-      },
+      get: (t, p) => typeof p === 'symbol' ? t[p] : t[p] && typeof t[p] === 'object' && !Array.isArray(t[p]) ? this.#wrap(t[p], path ? `${path}.${p}` : p) : t[p],
       set: (t, p, v) => {
         if (t[p] === v) return true;
         const old = t[p]; t[p] = v;
@@ -30,10 +26,9 @@ export class Store extends EventTarget {
   set(updates) { Object.entries(updates).forEach(([k, v]) => this.#proxy[k] = v); return this.#state; }
 
   on(pathOrCb, cb) {
-    const evt = typeof pathOrCb === 'function' ? 'change' : `change:${pathOrCb}`;
-    const h = typeof pathOrCb === 'function'
-      ? e => pathOrCb(this.get(), e.detail)
-      : e => cb(e.detail.value, e.detail.old);
+    const [evt, h] = typeof pathOrCb === 'function'
+      ? ['change', e => pathOrCb(this.get(), e.detail)]
+      : [`change:${pathOrCb}`, e => cb(e.detail.value, e.detail.old)];
     this.addEventListener(evt, h);
     return () => this.removeEventListener(evt, h);
   }

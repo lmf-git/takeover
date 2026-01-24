@@ -1,4 +1,4 @@
-import { Component, store, define } from '../../core/index.js';
+import { Component, store, define } from '../../core/component.js';
 
 export default class Navigation extends Component {
   static templateUrl = '/components/Navigation/Navigation.html';

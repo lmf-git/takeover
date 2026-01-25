@@ -52,12 +52,14 @@ export default class Router extends HTMLElement {
 
     const page = this.outlet.firstElementChild;
     if (page?.shadowRoot) {
+      // SSR content detected - hydrate without re-render or scroll reset
       const route = matchRoute(this.routes, location.pathname);
       if (route) {
         const Cls = getClass(await import(route.route.module));
         if (checkAuth(Cls, location.pathname)) return this.navigate();
       }
       this.currentPath = location.pathname;
+      this.hydrated = true;
     } else {
       this.navigate();
     }

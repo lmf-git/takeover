@@ -86,13 +86,24 @@ async function generateRoutesJson() {
             }
           }
 
-          let metadata = null, ssrProps = null, requiresAuth = false;
+          let metadata = null, ssrProps = {}, requiresAuth = false;
           if (script) {
             try {
-              const m1 = script.match(/static\s+ssrProps\s*=\s*(\{[^}]+\})/);
+              // Extract balanced braces to handle nested objects
+              const extractObj = (src, prefix) => {
+                const match = src.match(new RegExp(`static\\s+${prefix}\\s*=\\s*\\{`));
+                if (!match) return null;
+                let start = match.index + match[0].length - 1, depth = 1, i = start + 1;
+                while (i < src.length && depth > 0) { if (src[i] === '{') depth++; else if (src[i] === '}') depth--; i++; }
+                return src.slice(start, i);
+              };
+              const localObj = extractObj(script, 'local');
+              const ssrObj = extractObj(script, 'ssrProps');
               const m2 = script.match(/static\s+metadata\s*=\s*(\{[^}]+\})/);
               const m3 = script.match(/static\s+requiresAuth\s*=\s*(true|false)/);
-              if (m1) ssrProps = eval(`(${m1[1]})`);
+              // Merge local into ssrProps (local provides defaults, ssrProps can override)
+              if (localObj) ssrProps = { ...ssrProps, ...eval(`(${localObj})`) };
+              if (ssrObj) ssrProps = { ...ssrProps, ...eval(`(${ssrObj})`) };
               if (m2) metadata = eval(`(${m2[1]})`);
               if (m3) requiresAuth = m3[1] === 'true';
             } catch {}
@@ -104,7 +115,7 @@ async function generateRoutesJson() {
             module: `/app/${relative.replace('.html', hasEmbedded ? '.script.js' : '.js')}`,
             dynamic: routePath.includes(':'),
             ...(metadata && { metadata }),
-            ...(ssrProps && { ssrProps }),
+            ...(Object.keys(ssrProps).length && { ssrProps }),
             ...(requiresAuth && { requiresAuth })
           });
         }

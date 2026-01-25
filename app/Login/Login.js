@@ -7,8 +7,9 @@ const schema = { username: { min: 2 }, email: { email: true } };
 export default class LoginPage extends Component {
   static templateUrl = '/app/Login/Login.html';
   static metadata = { title: 'Login', description: 'Login to access your dashboard.' };
-  static ssrProps = { username: '', email: '', isLoading: false, hasErrors: false, errorMessages: [], canSubmit: false, attempts: 0 };
   static local = { username: '', email: '', isLoading: false, errors: {}, attempts: 0 };
+  // local values auto-included in SSR; only need computed defaults here
+  static ssrProps = { hasErrors: false, errorMessages: [], canSubmit: false };
 
   get props() {
     const { username, errors, isLoading, attempts } = this.local;

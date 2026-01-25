@@ -47,6 +47,38 @@ function evaluate(expr, props) {
 export const render = (tpl, props = {}) =>
   tpl.replace(/\{\{([^{}]+)\}\}/g, (m, p) => get(props, p.trim()) ?? m);
 
+// Extract :prop="expr" bindings from template, returns { html, bindings }
+export function extractPropBindings(tpl) {
+  const bindings = [];
+  let bindId = 0;
+  const html = tpl.replace(/<([a-z]+-[a-z-]+)([^>]*?)(\s*\/?>)/gi, (match, tag, attrs, close) => {
+    const propBindings = {};
+    const cleanAttrs = attrs.replace(/\s:([a-zA-Z_][\w-]*)="([^"]+)"/g, (_, propName, expr) => {
+      propBindings[propName] = expr;
+      return '';
+    });
+    if (Object.keys(propBindings).length) {
+      const id = `__bind_${bindId++}`;
+      bindings.push({ id, props: propBindings });
+      return `<${tag}${cleanAttrs} data-prop-bind="${id}"${close}`;
+    }
+    return match;
+  });
+  return { html, bindings };
+}
+
+// Evaluate prop bindings and return map of id -> evaluated props
+export function evaluatePropBindings(bindings, props) {
+  const result = {};
+  for (const { id, props: propExprs } of bindings) {
+    result[id] = {};
+    for (const [propName, expr] of Object.entries(propExprs)) {
+      result[id][propName] = evaluate(expr, props);
+    }
+  }
+  return result;
+}
+
 export function renderWithExpressions(tpl, props = {}) {
   let r = tpl;
 

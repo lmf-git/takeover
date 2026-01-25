@@ -58,9 +58,14 @@ body {
 }
 
 /* Ensure custom elements are block-level before JS defines them (for SSR/DSD) */
-app-layout, app-router, app-navigation, app-counter, theme-toggle,
+app-layout, app-router, app-navigation, app-counter, theme-toggle, local-state-display,
 home-page, about-page, contact-page, dashboard-page, login-page, notfound-page, user-page {
   display: block;
+}
+
+/* Prevent layout shifts during hydration */
+app-layout {
+  contain: layout style;
 }
 
 /* Apply theme to web component host elements */

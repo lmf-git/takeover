@@ -52,9 +52,21 @@ export function createRenderer({ loadFile, resolvePaths }) {
     for (let i = 0; i < max; i++) {
       const matches = [...result.matchAll(/<([a-z]+-[a-z-]+)([^>]*)><\/\1>/g)];
       if (!matches.length) break;
-      for (const [full, tag] of matches) {
+      for (const [full, tag, attrs] of matches) {
         if (tag === 'app-router') continue;
-        const rendered = await renderComponent(tag, props);
+        // Extract :prop="expr" bindings from attributes and evaluate them
+        let childProps = props;
+        const propBindings = [...(attrs || '').matchAll(/\s:([a-zA-Z_][\w-]*)="([^"]+)"/g)];
+        if (propBindings.length) {
+          const boundProps = {};
+          for (const [, propName, expr] of propBindings) {
+            // Simple expression evaluation for SSR
+            const value = expr.split('.').reduce((o, k) => o?.[k], props);
+            boundProps[propName] = value;
+          }
+          childProps = { ...props, ...boundProps };
+        }
+        const rendered = await renderComponent(tag, childProps);
         if (rendered) result = result.replace(full, rendered);
       }
     }

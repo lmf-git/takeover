@@ -54,10 +54,13 @@ async function buildRoutes() {
           while (i < src.length && depth > 0) { if (src[i] === '{') depth++; else if (src[i] === '}') depth--; i++; }
           return src.slice(start, i);
         };
-        const obj1 = extractObj(script, 'ssrProps');
+        const localObj = extractObj(script, 'local');
+        const ssrObj = extractObj(script, 'ssrProps');
         const obj2 = extractObj(script, 'metadata');
         const m3 = script.match(/static\s+requiresAuth\s*=\s*(true|false)/);
-        if (obj1) ssrProps = eval(`(${obj1})`);
+        // Merge local into ssrProps (local provides defaults, ssrProps can override)
+        if (localObj) ssrProps = { ...ssrProps, ...eval(`(${localObj})`) };
+        if (ssrObj) ssrProps = { ...ssrProps, ...eval(`(${ssrObj})`) };
         if (obj2) metadata = eval(`(${obj2})`);
         if (m3) requiresAuth = m3[1] === 'true';
       } catch {}

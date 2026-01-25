@@ -11,8 +11,9 @@ export default class ContactPage extends Component {
   static templateUrl = '/app/Contact/Contact.html';
   static store = ['counter'];
   static metadata = { title: 'Contact', description: 'Get in touch with us.' };
-  static ssrProps = { title: 'Contact Us', isLoading: false, sent: false };
   static local = { errors: {}, isLoading: false, sent: false };
+  // local values auto-included in SSR; only need non-local values here
+  static ssrProps = { title: 'Contact Us' };
   static reactive = false; // Don't auto-update, we'll handle it manually
 
   get props() {

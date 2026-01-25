@@ -20,6 +20,16 @@
   </app-layout>
   
   <!--initial-state-->
+  <script>
+    // Disable browser scroll restoration - we handle it manually after hydration
+    if (history.scrollRestoration) history.scrollRestoration = 'manual';
+    // Save scroll on unload
+    addEventListener('beforeunload', function() {
+      sessionStorage.setItem('__scroll__', JSON.stringify({
+        path: location.pathname, x: scrollX, y: scrollY
+      }));
+    });
+  </script>
   <script type="module" src="/core/server/entry-client.js"></script>
 </body>
 </html>

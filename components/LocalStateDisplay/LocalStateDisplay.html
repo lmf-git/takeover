@@ -1,0 +1,55 @@
+<style>
+  :host {
+    display: block;
+  }
+  .wrapper {
+    padding: 15px;
+    border: 2px dashed var(--primary-color, #007bff);
+    border-radius: 8px;
+  }
+  .label {
+    font-size: 0.85em;
+    color: var(--text-muted, #6c757d);
+    margin-bottom: 5px;
+  }
+  .value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--primary-color, #007bff);
+  }
+  .message {
+    margin-top: 10px;
+    font-style: italic;
+    color: var(--text-color, #333);
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: var(--primary-color, #007bff);
+    color: white;
+    cursor: pointer;
+    font-size: 0.9em;
+  }
+  .btn:hover {
+    opacity: 0.85;
+  }
+</style>
+
+<!-- Use parent's cardClass if provided, otherwise use own wrapper class -->
+<div class="{{#if cardClass}}{{cardClass}}{{else}}wrapper{{/if}}">
+  <div class="label">Props received from parent:</div>
+  <div class="value">Count: {{count}}</div>
+  <div class="controls">
+    <button class="btn" @click="decrement">- Decrement Parent</button>
+    <button class="btn" @click="increment">+ Increment Parent</button>
+  </div>
+  {{#if message}}
+    <div class="message">"{{message}}"</div>
+  {{/if}}
+</div>

@@ -46,6 +46,12 @@
 </div>
 
 <div class="{{$css.card}}">
+  <h2>Prop Passing Demo</h2>
+  <p>This child component receives props from the parent's local state:</p>
+  <local-state-display :count="localCount" :message="message" :cardClass="$css.card"></local-state-display>
+</div>
+
+<div class="{{$css.card}}">
   <h2>Global State Demo</h2>
   <p>This counter is shared across all components:</p>
   <app-counter></app-counter>
@@ -85,11 +91,19 @@ export default class HomePage extends Component {
   static cssModule = '/app/Home/Home.module.css';
   static store = ['counter', 'theme', 'user', 'isAuthenticated'];
   static metadata = { title: 'Home - Web Components App', description: 'Welcome to our web components application.' };
-  static ssrProps = { title: 'Welcome Home', localCount: 0, message: '' };
   static local = { localCount: 0, message: '' };
+  // ssrProps is now optional - local values are automatically included for SSR
+  static ssrProps = { title: 'Welcome Home' };  // Only need non-local values here
 
   get props() {
     return { ...super.props, title: 'Welcome Home', timestamp: new Date().toLocaleString() };
+  }
+
+  bind() {
+    // Listen for events from child components
+    this.on(this.shadowRoot, 'update-count', e => {
+      this.local.localCount += e.detail.delta;
+    });
   }
 
   increment() { this.local.localCount++; }

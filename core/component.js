@@ -1,5 +1,5 @@
 import store from '../lib/store.js';
-import { renderWithExpressions } from './template.js';
+import { renderWithExpressions, extractPropBindings, evaluatePropBindings } from './template.js';
 
 const isBrowser = typeof window !== 'undefined';
 const cache = { templates: new Map(), css: new Map() };
@@ -70,7 +70,7 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
   /** @type {boolean} Auto-update on local state changes (default: true) */
   static reactive = true;
 
-  #subs = []; #ac = null; #local = {}; #tpl = ''; #css = { classes: {}, styles: '' }; #hydrating = false; #batching = false;
+  #subs = []; #ac = null; #local = {}; #tpl = ''; #bindings = []; #css = { classes: {}, styles: '' }; #hydrating = false; #batching = false;
 
   constructor() {
     super();
@@ -96,7 +96,10 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     this.#ac = new AbortController();
     const { template, templateUrl, cssModule, metadata } = this.constructor;
 
-    this.#tpl = template || (templateUrl ? await loadTemplate(templateUrl) : '');
+    const rawTpl = template || (templateUrl ? await loadTemplate(templateUrl) : '');
+    const { html, bindings } = extractPropBindings(rawTpl);
+    this.#tpl = html;
+    this.#bindings = bindings;
     if (cssModule) this.#css = await loadCSS(cssModule, this.tagName.toLowerCase());
 
     this.state = store.get();
@@ -123,8 +126,22 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     this.#ac = new AbortController();
     const { content, styles } = extractStyles(renderWithExpressions(this.#tpl, this.props));
     this.shadowRoot.innerHTML = (this.#css.styles || styles ? `<style>${this.#css.styles}${styles}</style>` : '') + content;
+    this.#applyPropBindings();
     this.#bind();
     if (focus) { const el = this.$(focus.sel); el?.focus(); focus.start != null && el?.setSelectionRange?.(focus.start, focus.end); }
+  }
+
+  #applyPropBindings() {
+    if (!this.#bindings.length) return;
+    const evaluated = evaluatePropBindings(this.#bindings, this.props);
+    for (const [id, props] of Object.entries(evaluated)) {
+      const el = this.shadowRoot.querySelector(`[data-prop-bind="${id}"]`);
+      if (el) {
+        for (const [propName, value] of Object.entries(props)) {
+          el[propName] = value;
+        }
+      }
+    }
   }
 
   #bind() {

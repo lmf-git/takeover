@@ -1,11 +1,14 @@
 export class Store extends EventTarget {
-  #state; #proxy;
+  #state; #proxy; #defaults;
 
-  constructor(initial = {}) {
+  constructor(initial = {}, defaults = null) {
     super();
+    this.#defaults = defaults ?? { ...initial };
     this.#state = initial;
     this.#proxy = this.#wrap(this.#state);
   }
+
+  get defaults() { return { ...this.#defaults }; }
 
   #wrap(obj, path = '') {
     return new Proxy(obj, {
@@ -24,6 +27,9 @@ export class Store extends EventTarget {
   get state() { return this.#proxy; }
   get(path) { return path ? path.split('.').reduce((o, k) => o?.[k], this.#state) : { ...this.#state }; }
   set(updates) { Object.entries(updates).forEach(([k, v]) => this.#proxy[k] = v); return this.#state; }
+  reset(key) { key ? this.#proxy[key] = this.#defaults[key] : Object.keys(this.#defaults).forEach(k => this.#proxy[k] = this.#defaults[k]); }
+  toggle(key) { this.#proxy[key] = !this.#state[key]; return this.#state[key]; }
+  update(key, fn) { this.#proxy[key] = fn(this.#state[key]); return this.#state[key]; }
 
   on(pathOrCb, cb) {
     const [evt, h] = typeof pathOrCb === 'function'

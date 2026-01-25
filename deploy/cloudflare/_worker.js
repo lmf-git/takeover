@@ -1,6 +1,6 @@
 // Paths relative to dist/client/ after copy
 import { createRenderer } from './core/server/ssr.js';
-import { defaults } from './lib/store.js';
+import store from './lib/store.js';
 import { createMatcher } from './core/routes.js';
 
 let renderer, routesCache;
@@ -46,7 +46,7 @@ export default {
     try {
       const templateRes = await env.ASSETS.fetch(new URL('/_template.html', request.url));
       const template = await templateRes.text();
-      const result = await renderer(url.pathname + url.search, routesCache, defaults);
+      const result = await renderer(url.pathname + url.search, routesCache, store.defaults);
 
       if (result.redirect) {
         return new Response(null, { status: 302, headers: { Location: result.redirect } });

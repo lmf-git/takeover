@@ -5,21 +5,15 @@ export default class DashboardPage extends Component {
   static store = ['user', 'isAuthenticated'];
   static requiresAuth = true;
   static metadata = { title: 'Dashboard', description: 'Protected dashboard area' };
-
-  constructor() {
-    super();
-    Object.assign(this.local, {
-      todos: [
-        { id: 1, text: 'Review quarterly reports', completed: false, priority: 'high' },
-        { id: 2, text: 'Update user documentation', completed: true, priority: 'medium' },
-        { id: 3, text: 'Optimize database queries', completed: false, priority: 'high' },
-        { id: 4, text: 'Plan team meeting agenda', completed: false, priority: 'low' }
-      ],
-      filter: 'all', nextId: 5
-    });
-  }
-
-  onLocalChange(prop) { if (['todos', 'filter'].includes(prop)) this.update(); }
+  static local = {
+    todos: [
+      { id: 1, text: 'Review quarterly reports', completed: false, priority: 'high' },
+      { id: 2, text: 'Update user documentation', completed: true, priority: 'medium' },
+      { id: 3, text: 'Optimize database queries', completed: false, priority: 'high' },
+      { id: 4, text: 'Plan team meeting agenda', completed: false, priority: 'low' }
+    ],
+    filter: 'all', nextId: 5
+  };
 
   get props() {
     const { todos, filter } = this.local;
@@ -32,16 +26,9 @@ export default class DashboardPage extends Component {
     this.on('#add-todo', 'click', () => this.addTodo());
     this.on('#new-todo-input', 'keypress', e => e.key === 'Enter' && this.addTodo());
     this.on('#clear-completed', 'click', () => this.local.todos = this.local.todos.filter(t => !t.completed));
-    this.on(this.shadowRoot, 'click', e => {
-      const btn = e.target.closest('[data-filter]');
-      if (btn) this.local.filter = btn.dataset.filter;
-      const del = e.target.closest('.todo-delete');
-      if (del) this.local.todos = this.local.todos.filter(t => t.id !== +del.dataset.todoId);
-    });
-    this.on(this.shadowRoot, 'change', e => {
-      const cb = e.target.closest('.todo-checkbox');
-      if (cb) this.local.todos = this.local.todos.map(t => t.id === +cb.dataset.todoId ? { ...t, completed: !t.completed } : t);
-    });
+    this.delegate('click', '[data-filter]', el => this.local.filter = el.dataset.filter);
+    this.delegate('click', '.todo-delete', el => this.local.todos = this.local.todos.filter(t => t.id !== +el.dataset.todoId));
+    this.delegate('change', '.todo-checkbox', el => this.local.todos = this.local.todos.map(t => t.id === +el.dataset.todoId ? { ...t, completed: !t.completed } : t));
   }
 
   addTodo() {

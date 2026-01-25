@@ -86,46 +86,16 @@ export default class HomePage extends Component {
   static store = ['counter', 'theme', 'user', 'isAuthenticated'];
   static metadata = { title: 'Home - Web Components App', description: 'Welcome to our web components application.' };
   static ssrProps = { title: 'Welcome Home', localCount: 0, message: '' };
-
-  // Initialize local state only if not already set (avoid re-render after SSR hydration)
-  mount() {
-    if (this.local.localCount === undefined) this.local.localCount = 0;
-    if (this.local.message === undefined) this.local.message = '';
-  }
-
-  // Re-render when local state changes
-  onLocalChange(prop, value) {
-    this.update();
-  }
+  static local = { localCount: 0, message: '' };
 
   get props() {
-    return {
-      ...super.props,
-      title: 'Welcome Home',
-      timestamp: new Date().toLocaleString(),
-      // Include local state in props for template
-      localCount: this.local.localCount ?? 0,
-      message: this.local.message ?? ''
-    };
+    return { ...super.props, title: 'Welcome Home', timestamp: new Date().toLocaleString() };
   }
 
-  // Local state methods
-  increment() {
-    this.local.localCount++;
-  }
-
-  decrement() {
-    this.local.localCount--;
-  }
-
-  updateMessage(e) {
-    this.local.message = e.target.value;
-  }
-
-  // Global state method
-  loginAsAdmin() {
-    store.login({ username: 'admin', email: 'admin@test.com' });
-  }
+  increment() { this.local.localCount++; }
+  decrement() { this.local.localCount--; }
+  updateMessage(e) { this.local.message = e.target.value; }
+  loginAsAdmin() { store.login({ username: 'admin', email: 'admin@test.com' }); }
 }
 
 define('home-page', HomePage);

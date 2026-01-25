@@ -3,13 +3,7 @@ import { Component, store, navigate, define } from '../../core/component.js';
 export default class LoginPage extends Component {
   static templateUrl = '/app/Login/Login.html';
   static metadata = { title: 'Login', description: 'Login to access your dashboard.' };
-
-  constructor() {
-    super();
-    Object.assign(this.local, { username: '', email: '', isLoading: false, errors: {}, attempts: 0 });
-  }
-
-  onLocalChange() { this.update(); }
+  static local = { username: '', email: '', isLoading: false, errors: {}, attempts: 0 };
 
   get props() {
     const { username, email, errors, isLoading, attempts } = this.local;

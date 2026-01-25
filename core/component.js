@@ -37,14 +37,25 @@ const extractStyles = html => {
 export class Component extends (isBrowser ? HTMLElement : class {}) {
   static template = ''; static templateUrl = ''; static cssModule = '';
   static store = []; static metadata = null; static requiresAuth = false;
+  static local = null; // Declarative initial local state
+  static reactive = true; // Auto-update on local state changes
 
   #subs = []; #ac = null; #local = {}; #tpl = ''; #css = { classes: {}, styles: '' }; #hydrating = false;
 
   constructor() {
     super();
     this.state = store.get();
+    // Initialize from static local if defined
+    if (this.constructor.local) Object.assign(this.#local, JSON.parse(JSON.stringify(this.constructor.local)));
     this.local = new Proxy(this.#local, {
-      set: (t, k, v) => (t[k] !== v && (t[k] = v, this.onLocalChange?.(k, v)), true),
+      set: (t, k, v) => {
+        if (t[k] === v) return true;
+        t[k] = v;
+        this.onLocalChange?.(k, v);
+        // Auto-update if reactive (default) and onLocalChange didn't handle it
+        if (this.constructor.reactive && !this.onLocalChange) this.update();
+        return true;
+      },
       get: (t, k) => t[k]
     });
   }
@@ -97,12 +108,24 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     this.bind?.();
   }
 
-  get props() { return { ...this.state, ...this.#local, ...this.pageProps, path: isBrowser ? location.pathname : '', $css: this.#css.classes }; }
+  get props() {
+    const c = this.#css.classes;
+    return { ...this.state, ...this.#local, ...this.pageProps, path: isBrowser ? location.pathname : '', $css: c, $c: (...names) => names.map(n => c[n] || n).join(' ') };
+  }
 
   $(sel) { return this.shadowRoot?.querySelector(sel); }
   $$(sel) { return [...(this.shadowRoot?.querySelectorAll(sel) || [])]; }
   on(target, evt, fn, opts = {}) { (typeof target === 'string' ? this.$(target) : target)?.addEventListener(evt, fn, { ...opts, signal: this.signal }); }
   emit(name, detail) { this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true, detail })); }
+
+  // Event delegation: handle events on dynamic children matching selector
+  delegate(evt, sel, fn) { this.on(this.shadowRoot, evt, e => { const t = e.target.closest(sel); t && fn(t, e); }); }
+
+  // CSS class helper: cx('base', { active: isActive }, isDisabled && 'disabled') => 'base active disabled'
+  cx(...args) {
+    const c = this.#css.classes;
+    return args.flatMap(a => !a ? [] : typeof a === 'string' ? (c[a] || a) : Array.isArray(a) ? a.map(x => c[x] || x) : Object.entries(a).filter(([, v]) => v).map(([k]) => c[k] || k)).join(' ');
+  }
 }
 
 export { store };

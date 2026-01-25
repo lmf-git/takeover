@@ -5,8 +5,8 @@ export default class Counter extends Component {
   static store = ['counter'];
 
   bind() {
-    this.on('.increment', 'click', () => store.set({ counter: (store.get('counter') || 0) + 1 }));
-    this.on('.decrement', 'click', () => store.set({ counter: Math.max(0, (store.get('counter') || 0) - 1) }));
+    this.on('.increment', 'click', () => store.update('counter', c => c + 1));
+    this.on('.decrement', 'click', () => store.update('counter', c => Math.max(0, c - 1)));
   }
 }
 

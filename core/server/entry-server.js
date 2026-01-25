@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createMatcher, pathFromFile } from '../routes.js';
 import { scanDir } from '../scan.js';
 import { createRenderer } from './ssr.js';
-import store, { defaults } from '../../lib/store.js';
+import store from '../../lib/store.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = process.env.SSR_ROOT || resolve(__dirname, '../..');

@@ -46,11 +46,19 @@ async function buildRoutes() {
     }
     if (script) {
       try {
-        const m1 = script.match(/static\s+ssrProps\s*=\s*(\{[^}]+\})/);
-        const m2 = script.match(/static\s+metadata\s*=\s*(\{[^}]+\})/);
+        // Extract balanced braces to handle nested objects like { errors: {} }
+        const extractObj = (src, prefix) => {
+          const match = src.match(new RegExp(`static\\s+${prefix}\\s*=\\s*\\{`));
+          if (!match) return null;
+          let start = match.index + match[0].length - 1, depth = 1, i = start + 1;
+          while (i < src.length && depth > 0) { if (src[i] === '{') depth++; else if (src[i] === '}') depth--; i++; }
+          return src.slice(start, i);
+        };
+        const obj1 = extractObj(script, 'ssrProps');
+        const obj2 = extractObj(script, 'metadata');
         const m3 = script.match(/static\s+requiresAuth\s*=\s*(true|false)/);
-        if (m1) ssrProps = eval(`(${m1[1]})`);
-        if (m2) metadata = eval(`(${m2[1]})`);
+        if (obj1) ssrProps = eval(`(${obj1})`);
+        if (obj2) metadata = eval(`(${obj2})`);
         if (m3) requiresAuth = m3[1] === 'true';
       } catch {}
     }

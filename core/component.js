@@ -34,13 +34,43 @@ const extractStyles = html => {
   return { content: html.replace(/<style>([\s\S]*?)<\/style>/gi, (_, css) => (styles += css, '')), styles };
 };
 
+/**
+ * Base component class for web components with reactive state
+ * @extends HTMLElement
+ *
+ * @example
+ * class MyComponent extends Component {
+ *   static templateUrl = '/components/My/My.html';
+ *   static cssModule = '/components/My/My.module.css';
+ *   static store = ['user', 'theme'];  // Subscribe to store keys
+ *   static local = { count: 0 };        // Initial local state
+ *   static metadata = { title: 'My Page' };
+ *   static requiresAuth = false;
+ *
+ *   bind() {
+ *     this.on('#btn', 'click', () => this.local.count++);
+ *   }
+ * }
+ */
 export class Component extends (isBrowser ? HTMLElement : class {}) {
-  static template = ''; static templateUrl = ''; static cssModule = '';
-  static store = []; static metadata = null; static requiresAuth = false;
-  static local = null; // Declarative initial local state
-  static reactive = true; // Auto-update on local state changes
+  /** @type {string} Inline template HTML */
+  static template = '';
+  /** @type {string} URL to load template from */
+  static templateUrl = '';
+  /** @type {string} URL to CSS module */
+  static cssModule = '';
+  /** @type {string[]} Store keys to subscribe to */
+  static store = [];
+  /** @type {{title?: string, description?: string}|null} Page metadata */
+  static metadata = null;
+  /** @type {boolean} Require authentication to access */
+  static requiresAuth = false;
+  /** @type {Object|null} Initial local state - auto-cloned per instance */
+  static local = null;
+  /** @type {boolean} Auto-update on local state changes (default: true) */
+  static reactive = true;
 
-  #subs = []; #ac = null; #local = {}; #tpl = ''; #css = { classes: {}, styles: '' }; #hydrating = false;
+  #subs = []; #ac = null; #local = {}; #tpl = ''; #css = { classes: {}, styles: '' }; #hydrating = false; #batching = false;
 
   constructor() {
     super();
@@ -52,8 +82,8 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
         if (t[k] === v) return true;
         t[k] = v;
         this.onLocalChange?.(k, v);
-        // Auto-update if reactive (default) and onLocalChange didn't handle it
-        if (this.constructor.reactive && !this.onLocalChange) this.update();
+        // Auto-update if reactive (default), not batching, and onLocalChange didn't handle it
+        if (this.constructor.reactive && !this.#batching && !this.onLocalChange) this.update();
         return true;
       },
       get: (t, k) => t[k]
@@ -125,6 +155,42 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
   cx(...args) {
     const c = this.#css.classes;
     return args.flatMap(a => !a ? [] : typeof a === 'string' ? (c[a] || a) : Array.isArray(a) ? a.map(x => c[x] || x) : Object.entries(a).filter(([, v]) => v).map(([k]) => c[k] || k)).join(' ');
+  }
+
+  // Form helpers
+
+  /** Bind form fields to local state: bindForm({ username: '#username', email: '#email' }) */
+  bindForm(fields) {
+    for (const [key, sel] of Object.entries(fields)) {
+      this.on(sel, 'input', e => this.local[key] = e.target.value);
+      this.on(sel, 'change', e => this.local[key] = e.target.type === 'checkbox' ? e.target.checked : e.target.value);
+    }
+  }
+
+  /** Get form data from selectors or form element */
+  getFormData(selOrForm = 'form') {
+    const form = typeof selOrForm === 'string' ? this.$(selOrForm) : selOrForm;
+    return form ? Object.fromEntries(new FormData(form)) : {};
+  }
+
+  /** Reset form fields */
+  resetForm(selOrForm = 'form') {
+    const form = typeof selOrForm === 'string' ? this.$(selOrForm) : selOrForm;
+    form?.reset?.();
+  }
+
+  /** Set loading state with automatic UI feedback */
+  async withLoading(fn, key = 'isLoading') {
+    this.local[key] = true;
+    try { return await fn(); }
+    finally { this.local[key] = false; }
+  }
+
+  /** Batch multiple local state changes into a single update */
+  batch(fn) {
+    this.#batching = true;
+    try { fn(); }
+    finally { this.#batching = false; this.update(); }
   }
 }
 

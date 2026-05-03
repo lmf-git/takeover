@@ -1,0 +1,71 @@
+<style>
+  .section { padding: 120px 0; }
+
+  .fleet-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .fleet-card {
+    background: #fff;
+    padding: 40px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+
+  .fleet-card-name {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    margin-bottom: 16px;
+    color: var(--text-dark);
+  }
+</style>
+
+<header class="page-header">
+  <div class="hero-visuals">
+    <div class="hero-bg"></div>
+    <div class="hero-grid-lines"></div>
+    <div class="hero-waves"></div>
+  </div>
+  <div class="section-inner">
+    <h1 class="page-title">
+      {{#if lang === 'es'}}
+        Nuestra <em>Flota</em>
+      {{else}}
+        Our <em>Fleet</em>
+      {{/if}}
+    </h1>
+  </div>
+</header>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="fleet-cards">
+      <div class="fleet-card fade-up">
+        <div class="fleet-card-name">{{lang === 'es' ? 'Buques Palangreros' : 'Longline Vessels'}}</div>
+        {{#if lang === 'es'}}
+          <p>Técnica selectiva y sustentable para la captura de Merluza Negra.</p>
+        {{else}}
+          <p>Selective and sustainable technique for Patagonian Toothfish capture.</p>
+        {{/if}}
+      </div>
+      <div class="fleet-card fade-up" style="transition-delay: 0.1s">
+        <div class="fleet-card-name">{{lang === 'es' ? 'Buques Pelágicos' : 'Pelagic Vessels'}}</div>
+        {{#if lang === 'es'}}
+          <p>Flota dirigida a pesquerías bien gestionadas de la plataforma continental.</p>
+        {{else}}
+          <p>Fleet targeting well-managed fisheries of the continental shelf.</p>
+        {{/if}}
+      </div>
+      <div class="fleet-card fade-up" style="transition-delay: 0.2s">
+        <div class="fleet-card-name">{{lang === 'es' ? 'Planta a bordo' : 'Onboard Plant'}}</div>
+        {{#if lang === 'es'}}
+          <p>Procesamiento inmediato para garantizar máxima frescura.</p>
+        {{else}}
+          <p>Immediate processing to guarantee maximum freshness.</p>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</section>

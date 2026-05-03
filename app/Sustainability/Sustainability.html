@@ -1,0 +1,53 @@
+<style>
+  .section { padding: 120px 0; }
+
+  .sustain-items { display: flex; flex-direction: column; gap: 64px; }
+  .sustain-item { display: flex; gap: 32px; }
+  .sustain-num { font-family: var(--font-serif); font-size: 32px; color: var(--teal); opacity: 0.5; }
+</style>
+
+<header class="page-header">
+  <div class="hero-visuals">
+    <div class="hero-bg"></div>
+    <div class="hero-grid-lines"></div>
+    <div class="hero-waves"></div>
+  </div>
+  <div class="section-inner">
+    <h1 class="page-title">
+      {{#if lang === 'es'}}
+        Nuestro <em>Compromiso</em>
+      {{else}}
+        Our <em>Commitment</em>
+      {{/if}}
+    </h1>
+  </div>
+</header>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="sustain-items">
+      <div class="sustain-item fade-up">
+        <span class="sustain-num">01</span>
+        <div>
+          <h3>{{lang === 'es' ? 'Certificación MSC' : 'MSC Certification'}}</h3>
+          {{#if lang === 'es'}}
+            <p>Promovemos activamente la certificación de las pesquerías argentinas.</p>
+          {{else}}
+            <p>We actively promote the certification of Argentine fisheries.</p>
+          {{/if}}
+        </div>
+      </div>
+      <div class="sustain-item fade-up" style="transition-delay: 0.1s">
+        <span class="sustain-num">02</span>
+        <div>
+          <h3>{{lang === 'es' ? 'Lucha contra la pesca ilegal' : 'Fighting illegal fishing'}}</h3>
+          {{#if lang === 'es'}}
+            <p>Como miembro de COLTO, trabajamos para eliminar la pesca ilegal.</p>
+          {{else}}
+            <p>As a COLTO member, we work to eliminate illegal fishing.</p>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

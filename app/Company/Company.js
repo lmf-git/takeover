@@ -1,7 +1,7 @@
 import { Component, define } from '../../core/component.js';
 
-export default class Contact extends Component {
-  static templateUrl = '/app/Contact/Contact.html';
+export default class Company extends Component {
+  static templateUrl = '/app/Company/Company.html';
   static store = ['lang'];
 
   mount() {
@@ -14,4 +14,4 @@ export default class Contact extends Component {
   }
 }
 
-define('contact-page', Contact);
+define('company-page', Company);

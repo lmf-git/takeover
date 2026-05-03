@@ -1,138 +1,40 @@
 <style>
-  :host {
-    color: var(--text-color);
-  }
-  h1 {
-    color: var(--info-color);
-  }
-  h3 {
-    color: var(--text-color);
-  }
-  section {
-    padding: 20px;
-    background-color: var(--bg-secondary);
-    border-radius: 5px;
-  }
-  .page-navigation {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: var(--hover-bg);
-    border-radius: 5px;
-  }
-  a {
-    color: var(--info-color);
-    text-decoration: none;
-    font-weight: bold;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
-  .contact-form {
-    margin-top: 20px;
-  }
-  .form-group {
-    margin-bottom: 15px;
-  }
-  label {
-    display: block;
-    margin-bottom: 5px;
-    color: var(--text-color);
-  }
-  input, textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background: var(--bg-color);
-    color: var(--text-color);
-    box-sizing: border-box;
-  }
-  button {
-    background-color: var(--info-color);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: var(--transition);
-  }
-  button:hover:not(:disabled) {
-    opacity: 0.9;
-  }
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  .field-error {
-    color: var(--danger-color);
-    font-size: 13px;
-    margin-top: 5px;
-  }
-  .input-error {
-    border-color: var(--danger-color) !important;
-    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
-  }
-  .success-message {
-    background: rgba(0, 255, 0, 0.1);
-    color: var(--success-color);
-    padding: 15px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-  }
-  .timestamp {
-    color: var(--text-secondary);
-    font-size: 12px;
-    margin-top: 15px;
-    font-style: italic;
-  }
-  .stats {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: var(--hover-bg);
-    border-radius: 5px;
+  .section { padding: 120px 0; }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 120px;
   }
 </style>
-<section>
-  <h1>{{title}}</h1>
-  <p>Get in touch with us using the form below.</p>
-  
-  <div class="contact-form">
-    <div class="success-message" style="display: none;">
-      <p>✓ Message sent successfully! We'll get back to you soon.</p>
-    </div>
-    <div class="form-group">
-      <label for="name">Name</label>
-      <input type="text" id="name" placeholder="Your name">
-      <div class="field-error error-name" style="display: none;"></div>
-    </div>
-    <div class="form-group">
-      <label for="email">Email</label>
-      <input type="email" id="email" placeholder="Your email">
-      <div class="field-error error-email" style="display: none;"></div>
-    </div>
-    <div class="form-group">
-      <label for="message">Message</label>
-      <textarea id="message" rows="5" placeholder="Your message"></textarea>
-      <div class="field-error error-message" style="display: none;"></div>
-    </div>
-    <button type="button" {{#if isLoading}}disabled{{/if}}>
-      {{#if isLoading}}Sending...{{else}}Send Message{{/if}}
-    </button>
+
+<header class="page-header">
+  <div class="hero-visuals">
+    <div class="hero-bg"></div>
+    <div class="hero-grid-lines"></div>
+    <div class="hero-waves"></div>
   </div>
-  
-  <div class="stats">
-    <h3>App Stats</h3>
-    <p>Counter value: {{counter}}</p>
-    <p>You've clicked the counter {{counter === 1 ? 'once' : counter + ' times'}}</p>
+  <div class="section-inner">
+    <h1 class="page-title">
+      {{#if lang === 'es'}}
+        Hablemos sobre <em>nuestros productos</em>
+      {{else}}
+        Let's talk about <em>our products</em>
+      {{/if}}
+    </h1>
   </div>
-  
-  <div class="page-navigation">
-    <p>You are currently on the {{title.split(' ')[0]}} page.</p>
-    <p>Navigate to: 
-      <a href="/" route>Home Page</a> | 
-      <a href="/about" route>About Page</a>
-    </p>
+</header>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="contact-grid">
+      <div class="fade-up">
+        <h2>{{lang === 'es' ? 'Contacto' : 'Contact'}}</h2>
+        <p>info@estremar.com</p>
+      </div>
+      <div class="fade-up" style="transition-delay: 0.15s">
+        <p>{{lang === 'es' ? 'Formulario de contacto aquí.' : 'Contact form here.'}}</p>
+      </div>
+    </div>
   </div>
-  
-  <p class="timestamp">Page rendered at: {{timestamp}}</p>
 </section>

@@ -1,7 +1,7 @@
 import { Component, define } from '../../core/component.js';
 
-export default class Contact extends Component {
-  static templateUrl = '/app/Contact/Contact.html';
+export default class Sustainability extends Component {
+  static templateUrl = '/app/Sustainability/Sustainability.html';
   static store = ['lang'];
 
   mount() {
@@ -14,4 +14,4 @@ export default class Contact extends Component {
   }
 }
 
-define('contact-page', Contact);
+define('sustainability-page', Sustainability);

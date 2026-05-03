@@ -146,7 +146,29 @@ async function build() {
   await extractScripts(join(root, 'app'), join(clientDist, 'app'));
   await extractScripts(join(root, 'components'), join(clientDist, 'components'));
 
-  await writeFile(join(clientDist, '_template.html'), await readFile(join(root, 'index.html'), 'utf-8'));
+  const globalsCss = await readFile(join(root, 'globals.css'), 'utf-8').catch(() => '');
+  const modulePreloads = [
+    '/core/server/entry-client.js',
+    '/core/loader.js',
+    '/components/Router/Router.js',
+    '/lib/store.js',
+    '/core/component.js',
+    '/core/template.js',
+    '/core/context.js',
+    '/core/routes.js',
+    '/lib/nav.js'
+  ].map(p => `<link rel="modulepreload" href="${p}">`).join('\n  ');
+  
+  const otherPreloads = [
+    '<link rel="preload" href="/routes.json" as="fetch">'
+  ].join('\n  ');
+
+  let template = await readFile(join(root, 'index.html'), 'utf-8');
+  template = template
+    .replace('<!--inline-css-->', `<style>${globalsCss}</style>`)
+    .replace('<!--preload-links-->', modulePreloads + '\n  ' + otherPreloads);
+
+  await writeFile(join(clientDist, '_template.html'), template);
   await copyDir(join(root, 'public'), join(clientDist, 'public')).catch(() => {});
 
   await Promise.all([

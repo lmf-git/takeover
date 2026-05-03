@@ -106,13 +106,9 @@ export default class Router extends HTMLElement {
       const el = document.createElement(route.component);
       el.pageProps = { path, params, query: getQuery() };
 
-      const staging = document.createElement('div');
-      staging.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
-      document.body.appendChild(staging);
-      staging.appendChild(el);
+      // Wait for the component and its potential children to be defined
       await this.waitForComponents(el);
-      staging.remove();
-
+      
       this.currentPath = path;
       scrollTo(0, 0);
       this.outlet.replaceChildren(el);
@@ -131,8 +127,34 @@ export default class Router extends HTMLElement {
 
   async waitForComponents(root, timeout = 3000) {
     const start = Date.now();
-    const getPending = el => el.shadowRoot ? [...el.shadowRoot.querySelectorAll('*')].flatMap(getPending) : el.tagName?.includes('-') ? [el] : [];
-    while (getPending(root).length && Date.now() - start < timeout) await new Promise(r => setTimeout(r, 10));
+    const getPending = node => {
+      const tags = [];
+      if (node.tagName?.includes('-') && !customElements.get(node.tagName.toLowerCase())) {
+        tags.push(node.tagName.toLowerCase());
+      }
+      if (node.shadowRoot) {
+        let child = node.shadowRoot.firstChild;
+        while (child) {
+          if (child.nodeType === 1) tags.push(...getPending(child));
+          child = child.nextSibling;
+        }
+      }
+      let child = node.firstElementChild;
+      while (child) {
+        tags.push(...getPending(child));
+        child = child.nextElementSibling;
+      }
+      return tags;
+    };
+    
+    const check = async () => {
+      const pending = [...new Set(getPending(root))];
+      if (pending.length && Date.now() - start < timeout) {
+        await Promise.all(pending.map(tag => customElements.whenDefined(tag)));
+        return check();
+      }
+    };
+    await check();
   }
 }
 

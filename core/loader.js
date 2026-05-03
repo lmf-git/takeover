@@ -8,31 +8,63 @@ const pathFor = tag => {
   return `/components/${pascal}/${pascal}.js`;
 };
 
-const load = tag => { if (!loaded.has(tag) && !customElements.get(tag)) { loaded.add(tag); import(pathFor(tag)).catch(e => console.warn(`[loader] Failed to load ${tag}:`, e.message)); } };
+const load = tag => { 
+  if (!loaded.has(tag) && !customElements.get(tag)) { 
+    loaded.add(tag); 
+    import(pathFor(tag)).catch(e => console.warn(`[loader] Failed to load ${tag}:`, e.message)); 
+  } 
+};
 
 const scan = node => {
   if (!node || scanned.has(node)) return;
-  scanned.add(node);
-  const tag = node.tagName?.toLowerCase();
-  if (tag?.includes('-') && !customElements.get(tag) && !tag.endsWith('-page')) load(tag);
-  node.querySelectorAll?.('*').forEach(scan);
-  node.shadowRoot?.querySelectorAll('*').forEach(scan);
+  
+  if (node.nodeType === 1) { // Element
+    scanned.add(node);
+    const tag = node.tagName.toLowerCase();
+    if (tag.includes('-') && !customElements.get(tag) && !tag.endsWith('-page')) {
+      load(tag);
+    }
+    if (node.shadowRoot) scan(node.shadowRoot);
+    
+    // Scan children
+    let child = node.firstElementChild;
+    while (child) {
+      scan(child);
+      child = child.nextElementSibling;
+    }
+  } else if (node.nodeType === 11) { // ShadowRoot / Fragment
+    scanned.add(node);
+    let child = node.firstChild;
+    while (child) {
+      if (child.nodeType === 1) scan(child);
+      child = child.nextSibling;
+    }
+  }
 };
 
 const observed = new WeakSet();
 const observe = root => {
-  if (observed.has(root)) return;
+  if (!root || observed.has(root)) return;
   observed.add(root);
-  new MutationObserver(m => m.flatMap(x => [...x.addedNodes]).filter(n => n.nodeType === 1).forEach(scan)).observe(root, { childList: true, subtree: true });
+  new MutationObserver(m => {
+    for (const record of m) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType === 1) scan(node);
+      }
+    }
+  }).observe(root, { childList: true, subtree: true });
 };
 
-observe(document);
-document.querySelectorAll('*').forEach(el => { scan(el); el.shadowRoot && (scan(el.shadowRoot), observe(el.shadowRoot)); });
+// Initial scan
+scan(document.documentElement);
+observe(document.documentElement);
 
 const orig = Element.prototype.attachShadow;
 Element.prototype.attachShadow = function(init) {
   const shadow = orig.call(this, init);
-  setTimeout(() => scan(shadow), 0);
-  observe(shadow);
+  setTimeout(() => {
+    scan(shadow);
+    observe(shadow);
+  }, 0);
   return shadow;
 };

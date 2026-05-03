@@ -62,7 +62,26 @@ async function renderSSR(url, res) {
 
     if (result.redirect) return res.writeHead(302, { Location: result.redirect }).end();
 
+    const globalsCss = await readFile(join(root, 'globals.css'), 'utf-8').catch(() => '');
+    const modulePreloads = [
+      '/core/server/entry-client.js',
+      '/core/loader.js',
+      '/components/Router/Router.js',
+      '/lib/store.js',
+      '/core/component.js',
+      '/core/template.js',
+      '/core/context.js',
+      '/core/routes.js',
+      '/lib/nav.js'
+    ].map(p => `<link rel="modulepreload" href="${p}">`).join('\n  ');
+    
+    const otherPreloads = [
+      '<link rel="preload" href="/routes.json" as="fetch">'
+    ].join('\n  ');
+
     let html = template
+      .replace('<!--inline-css-->', `<style>${globalsCss}</style>`)
+      .replace('<!--preload-links-->', modulePreloads + '\n  ' + otherPreloads)
       .replace('<!--head-meta-->', (result.headMeta || '') + (result.scopedStyles || ''))
       .replace('<!--app-html-->', result.appHtml)
       .replace('<!--initial-state-->', result.initialStateScript);

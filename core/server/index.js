@@ -126,7 +126,7 @@ async function renderSSR(url, res, req) {
       .replace('<!--preload-links-->', modulePreloads + '\n  ' + otherPreloads)
       .replace('<!--head-meta-->', (result.headMeta || '') + (result.scopedStyles || ''))
       .replace('<!--app-html-->', result.appHtml)
-      .replace('<!--initial-state-->', result.initialStateScript);
+      .replace('<!--initial-state-->', result.initialStateScript + result.localesScript);
 
     if (!isProd) html = html.replace('</body>', `<script type="module">
 (function(){

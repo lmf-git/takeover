@@ -155,9 +155,17 @@ async function build() {
   console.log('[build] Bundling core...');
   const entryAbs = join(root, 'core/server/entry-client.js');
   const { code: bundleCode, hash: bundleHash } = await bundle(entryAbs, root, { minify: true });
+
+  // Prepend all locale data so translations are available synchronously (no fetch)
+  const localeData = {};
+  await Promise.all(['en', 'es', 'fr'].map(async lang => {
+    try { localeData[lang] = JSON.parse(await readFile(join(root, 'locales', `${lang}.json`), 'utf-8')); } catch {}
+  }));
+  const finalBundle = `window.__LOCALES__=${JSON.stringify(localeData)};${bundleCode}`;
+
   const bundleFile = `core.${bundleHash}.js`;
-  await writeFile(join(assetsDir, bundleFile), bundleCode);
-  console.log(`[build] Core bundle → _assets/${bundleFile} (${(bundleCode.length/1024).toFixed(1)}kb)`);
+  await writeFile(join(assetsDir, bundleFile), finalBundle);
+  console.log(`[build] Core bundle → _assets/${bundleFile} (${(finalBundle.length/1024).toFixed(1)}kb)`);
 
   // 2. Copy + minify individual component/app/lib/core files (for dynamic imports)
   const transform = (content, path, ext) => ext === '.js' ? transformJS(content, path) : content;

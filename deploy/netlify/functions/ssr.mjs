@@ -18,6 +18,6 @@ export async function handler(event) {
     body: template
       .replace('<!--head-meta-->', (result.headMeta || '') + (result.scopedStyles || ''))
       .replace('<!--app-html-->', result.appHtml)
-      .replace('<!--initial-state-->', result.initialStateScript)
+      .replace('<!--initial-state-->', result.initialStateScript + (result.localesScript || ''))
   };
 }

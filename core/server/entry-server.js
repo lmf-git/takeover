@@ -21,6 +21,17 @@ async function loadServerLocale(lang) {
   }
 }
 
+let allLocalesCache = null;
+async function loadAllLocales() {
+  if (allLocalesCache) return allLocalesCache;
+  const result = {};
+  await Promise.all(['en', 'es', 'fr'].map(async lang => {
+    result[lang] = await loadServerLocale(lang);
+  }));
+  allLocalesCache = result;
+  return result;
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = process.env.SSR_ROOT || resolve(__dirname, '../..');
 const appDir = resolve(root, 'app');
@@ -91,9 +102,11 @@ const routesPromise = buildRoutes();
 
 export async function render(url, { locale = 'en' } = {}) {
   const routes = await routesPromise;
-  const messages = await loadServerLocale(locale);
+  const [messages, allLocales] = await Promise.all([loadServerLocale(locale), loadAllLocales()]);
   store.set({ locale, messages });
-  return renderPage(url, routes, store.get());
+  const result = renderPage(url, routes, store.get());
+  const localesScript = `<script>window.__LOCALES__=${JSON.stringify(allLocales)}</script>`;
+  return Object.assign(await result, { localesScript });
 }
 
 export async function getClientRoutes() {

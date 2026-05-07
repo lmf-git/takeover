@@ -199,8 +199,11 @@ async function build() {
 
   await writeFile(join(clientDist, '_template.html'), template);
 
-  // 5. Locale JSON files
-  await copyDir(join(root, 'locales'), join(clientDist, 'locales'));
+  // 5. Locale JSON files (client for fetch, server for SSR)
+  await Promise.all([
+    copyDir(join(root, 'locales'), join(clientDist, 'locales')),
+    copyDir(join(root, 'locales'), join(serverDist, 'locales')),
+  ]);
 
   // 7. Public assets
   await copyDir(join(root, 'public'), join(clientDist, 'public')).catch(() => {});

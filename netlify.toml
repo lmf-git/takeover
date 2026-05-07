@@ -33,6 +33,11 @@
   to = "/assets/:splat"
   status = 200
 
+[[redirects]]
+  from = "/locales/*"
+  to = "/locales/:splat"
+  status = 200
+
 # All other routes go to SSR function
 [[redirects]]
   from = "/*"

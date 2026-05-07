@@ -5,7 +5,7 @@ const pathFor = tag => {
   if (tag === 'app-layout') return '/app/_Layout/_Layout.js';
   if (tag === 'app-router') return '/components/Router/Router.js';
   const pascal = tag.replace(/^app-/, '').split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
-  return `/components/${pascal}/${pascal}.html?script`;
+  return `/components/${pascal}/${pascal}.js`;
 };
 
 const load = tag => { 

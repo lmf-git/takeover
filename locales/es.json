@@ -1,0 +1,58 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "about": "Acerca de",
+    "contact": "Contacto",
+    "dashboard": "Panel"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "loginAsAdmin": "Iniciar como Admin",
+    "loggedInAs": "Conectado como",
+    "notLoggedIn": "No conectado",
+    "persistNote": "¡El estado de autenticación persiste entre recargas!"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
+  "footer": {
+    "copyright": "© {year} Aplicación de Componentes Web"
+  },
+  "home": {
+    "title": "Bienvenido",
+    "welcome": "¡Bienvenido a nuestra aplicación de componentes web!",
+    "localState": "Demo de Estado Local",
+    "localStateDesc": "Este estado es local sólo a este componente:",
+    "propPassing": "Demo de Paso de Props",
+    "globalState": "Demo de Estado Global",
+    "globalStateDesc": "Este contador es compartido por todos los componentes:",
+    "currentCounter": "Valor actual del contador:",
+    "authContext": "Demo de Contexto de Autenticación",
+    "typeSomething": "Escribe algo..."
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "notFound": "Página no encontrada",
+    "goHome": "Ir al inicio"
+  },
+  "about": {
+    "title": "Acerca de nosotros",
+    "intro": "Esta es la página de información de nuestra aplicación usando web components y enrutamiento del lado del cliente.",
+    "shadowDemo": "Este componente demuestra estilos con ámbito usando Shadow DOM con un ejemplo resaltado.",
+    "stateHeading": "Acceso al Estado Global",
+    "counterPersists": "El valor del contador persiste entre páginas:",
+    "currentCounter": "Contador actual:",
+    "counterDoubled": "Contador duplicado:",
+    "lastPath": "Última ruta visitada:",
+    "currentPage": "Actualmente estás en la página Acerca de.",
+    "navigateTo": "Navegar a:"
+  },
+  "lang": {
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés"
+  }
+}

@@ -81,16 +81,18 @@
 
 <nav>
   <div class="nav-container">
+    <app-logo></app-logo>
     <ul>
-      <li><a href="/" route>Home</a></li>
-      <li><a href="/about" route>About</a></li>
-      <li><a href="/contact" route>Contact</a></li>
-      <li><a href="/dashboard" route>Dashboard</a></li>
+      <li><a href="/" route>{{t.nav.home}}</a></li>
+      <li><a href="/about" route>{{t.nav.about}}</a></li>
+      <li><a href="/contact" route>{{t.nav.contact}}</a></li>
+      <li><a href="/dashboard" route>{{t.nav.dashboard}}</a></li>
     </ul>
-    
+
     <div class="nav-actions">
+      <language-switch></language-switch>
       <theme-toggle></theme-toggle>
-      
+
       <div id="auth-section">
         {{#if isAuthenticated}}
         <div class="user-info">
@@ -99,7 +101,7 @@
         </div>
         {{/if}}
         <button class="auth-btn{{#if isAuthenticated}} logout{{/if}}" id="auth-btn">
-          {{#if isAuthenticated}}Logout{{else}}Login{{/if}}
+          {{#if isAuthenticated}}{{t.auth.logout}}{{else}}{{t.auth.login}}{{/if}}
         </button>
       </div>
     </div>

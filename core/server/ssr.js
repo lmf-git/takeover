@@ -86,7 +86,7 @@ export function createRenderer({ loadFile, resolvePaths }) {
 
     const ssrProps = typeof route.ssrProps === 'function' ? route.ssrProps({ path: url, params }) : route.ssrProps || {};
     const query = Object.fromEntries(new URLSearchParams(search || ''));
-    const props = { ...state, ...ssrProps, path: url, params, query, redirectFrom: query.from || null, timestamp: new Date().toLocaleString(), year: new Date().getFullYear() };
+    const props = { ...state, ...ssrProps, path: url, params, query, redirectFrom: query.from || null, timestamp: new Date().toLocaleString(), year: new Date().getFullYear(), t: state.messages || {} };
 
     const { tpl: layoutTpl, css: layoutCss } = await load('app-layout');
     const layoutRendered = renderWithExpressions(layoutTpl, { ...props, $css: layoutCss.classes });

@@ -1,0 +1,62 @@
+<style>
+  :host {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  svg {
+    width: var(--logo-size, 36px);
+    height: auto;
+    display: block;
+  }
+</style>
+
+<svg viewBox="0 0 382 438" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M17 137.5L106 192.5L17 39V137.5Z" fill="url(#paint0)"/>
+  <path d="M181 141L106 192.5L17 39L181 141Z" fill="url(#paint1)"/>
+  <path d="M363 137.5L274 192.5L363 39V137.5Z" fill="url(#paint2)"/>
+  <path d="M199 141L274 192.5L363 39L199 141Z" fill="url(#paint3)"/>
+  <path d="M191 138L356.411 34.5H25.5891L191 138Z" fill="url(#paint4)"/>
+  <path d="M188 415.5L187.5 147.5L109 199.5L109 367.5L188 415.5Z" fill="url(#paint5)"/>
+  <path d="M193.672 415.5L194.172 147.5L272.672 199.5L272.672 367.5L193.672 415.5Z" fill="url(#paint6)"/>
+  <defs>
+    <linearGradient id="paint0" x1="61.5" y1="39" x2="61.5" y2="192.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0.278846" stop-color="#94E0F0"/>
+      <stop offset="1" stop-color="#776EE5"/>
+    </linearGradient>
+    <linearGradient id="paint1" x1="99" y1="39" x2="99" y2="192.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#397BC5"/>
+      <stop offset="1" stop-color="#5A5ACB"/>
+    </linearGradient>
+    <linearGradient id="paint2" x1="318.5" y1="39" x2="318.5" y2="192.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0.278846" stop-color="#6958C2"/>
+      <stop offset="1" stop-color="#4C69C6"/>
+    </linearGradient>
+    <linearGradient id="paint3" x1="281" y1="39" x2="281" y2="192.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C59FF8"/>
+      <stop offset="1" stop-color="#5CA6DF"/>
+    </linearGradient>
+    <linearGradient id="paint4" x1="382" y1="0" x2="16.5" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#846CE0"/>
+      <stop offset="1" stop-color="#68CBE9"/>
+    </linearGradient>
+    <linearGradient id="paint5" x1="110.431" y1="418" x2="110.431" y2="105.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#515DD1"/>
+      <stop offset="1" stop-color="#79D1E5"/>
+    </linearGradient>
+    <linearGradient id="paint6" x1="271.241" y1="133" x2="271.241" y2="448.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#306FBF"/>
+      <stop offset="1" stop-color="#B985E9"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+import { Component, define } from '/core/component.js';
+
+export default class Logo extends Component {
+  static templateUrl = '/components/Logo/Logo.html';
+}
+
+define('app-logo', Logo);
+</script>

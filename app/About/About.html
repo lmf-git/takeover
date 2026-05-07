@@ -36,23 +36,23 @@
   .timestamp { color: var(--text-secondary); font-size: 12px; margin-top: 15px; font-style: italic; }
 </style>
 <section>
-  <h1>{{title}}</h1>
-  <p>This is the about page of our application using vanilla web components and client-side routing.</p>
-  <p>This component demonstrates scoped styles using Shadow DOM with a <span class="highlight">highlighted</span> example.</p>
-  
+  <h1>{{t.about.title}}</h1>
+  <p>{{t.about.intro}}</p>
+  <p>{{t.about.shadowDemo}} <span class="highlight">highlighted</span></p>
+
   <div class="state-demo">
-    <h2>Global State Access</h2>
-    <p>The counter value persists across pages:</p>
+    <h2>{{t.about.stateHeading}}</h2>
+    <p>{{t.about.counterPersists}}</p>
     <app-counter></app-counter>
-    <p>Current counter: {{counter}}</p>
-    <p>Counter doubled: <span class="counter-doubled">{{counter * 2}}</span></p>
-    <p>Last visited path: {{lastRoute || 'None'}}</p>
+    <p>{{t.about.currentCounter}} {{counter}}</p>
+    <p>{{t.about.counterDoubled}} <span class="counter-doubled">{{counter * 2}}</span></p>
+    <p>{{t.about.lastPath}} {{lastRoute || 'None'}}</p>
   </div>
-  
+
   <div class="page-navigation">
-    <p>You are currently on the {{path === '/about' ? 'About' : 'Unknown'}} page.</p>
-    <p>Navigate to: <a href="/" route>Home Page</a> | <a href="/contact" route>Contact Page</a></p>
+    <p>{{t.about.currentPage}}</p>
+    <p>{{t.about.navigateTo}} <a href="/" route>{{t.nav.home}}</a> | <a href="/contact" route>{{t.nav.contact}}</a></p>
   </div>
-  
+
   <p class="timestamp">Page rendered at: {{timestamp}}</p>
 </section>

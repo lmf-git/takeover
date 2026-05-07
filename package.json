@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "node core/server/index.js",
     "build": "node core/server/build.js",
+    "preview": "NODE_ENV=production node core/server/index.js",
     "start": "NODE_ENV=production node core/server/index.js",
+    "clean": "node --input-type=module -e \"import{rm}from'node:fs/promises';rm('dist',{recursive:true,force:true}).then(()=>console.log('dist cleaned'))\"",
     "deploy:cloudflare": "yarn build && wrangler pages deploy"
   }
 }

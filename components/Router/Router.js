@@ -63,6 +63,7 @@ export default class Router extends HTMLElement {
     } else {
       this.navigate();
     }
+
   }
 
   go(path) { if (this.currentPath !== path) { history.pushState(null, '', path); this.navigate(); } }
@@ -106,12 +107,17 @@ export default class Router extends HTMLElement {
       const el = document.createElement(route.component);
       el.pageProps = { path, params, query: getQuery() };
 
-      // Wait for the component and its potential children to be defined
-      await this.waitForComponents(el);
-      
+      // Mount first — connectedCallback fires, shadow DOM is set up
       this.currentPath = path;
       scrollTo(0, 0);
       this.outlet.replaceChildren(el);
+
+      // Yield one timer tick so connectedCallback's async template fetch
+      // resolves through attachShadow + update(), populating the shadow DOM
+      await new Promise(r => setTimeout(r, 0));
+
+      // Now the shadow tree exists; wait for any nested custom elements to be defined
+      await this.waitForComponents(el);
 
       // afterEach hook
       Router.afterEach?.({ path, params, query: getQuery() }, from ? { path: from } : null);

@@ -6,6 +6,21 @@ import { scanDir } from '../scan.js';
 import { createRenderer } from './ssr.js';
 import store from '../../lib/store.js';
 
+const __dirname_ssr = dirname(fileURLToPath(import.meta.url));
+const localesDir = resolve(__dirname_ssr, '../../locales');
+const localeCache = new Map();
+
+async function loadServerLocale(lang) {
+  if (localeCache.has(lang)) return localeCache.get(lang);
+  try {
+    const messages = JSON.parse(await readFile(join(localesDir, `${lang}.json`), 'utf-8'));
+    localeCache.set(lang, messages);
+    return messages;
+  } catch {
+    return {};
+  }
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = process.env.SSR_ROOT || resolve(__dirname, '../..');
 const appDir = resolve(root, 'app');
@@ -74,8 +89,10 @@ async function buildRoutes() {
 
 const routesPromise = buildRoutes();
 
-export async function render(url) {
+export async function render(url, { locale = 'en' } = {}) {
   const routes = await routesPromise;
+  const messages = await loadServerLocale(locale);
+  store.set({ locale, messages });
   return renderPage(url, routes, store.get());
 }
 

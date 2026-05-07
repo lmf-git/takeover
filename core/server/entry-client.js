@@ -1,22 +1,15 @@
 import '/core/loader.js';
 import store from '/lib/store.js';
+import { initLocale } from '/lib/i18n.js';
 
-// Wait for all custom elements to be defined (hydration complete)
-const waitForHydration = () => new Promise(resolve => {
-  const check = () => {
-    // Only check custom elements that are actually in the DOM
-    const pending = [...document.body.getElementsByTagName('*')].filter(el =>
-      el.tagName.includes('-') && !customElements.get(el.tagName.toLowerCase())
-    );
-    if (pending.length === 0) {
-      resolve();
-    } else {
-      // Use customElements.whenDefined for each pending tag for better performance
-      Promise.all(pending.map(el => customElements.whenDefined(el.tagName.toLowerCase()))).then(resolve);
-    }
-  };
-  check();
-});
+// Wait for all custom elements visible in the DOM to be defined (hydration complete)
+const waitForHydration = () => {
+  // querySelectorAll with :not(:defined) is a single native selector pass — no JS filtering loop
+  const pending = [...document.querySelectorAll(':not(:defined)')].map(el => el.tagName.toLowerCase()).filter(t => t.includes('-'));
+  const unique = [...new Set(pending)];
+  if (!unique.length) return Promise.resolve();
+  return Promise.all(unique.map(tag => customElements.whenDefined(tag)));
+};
 
 // Restore scroll after hydration
 (async () => {
@@ -34,7 +27,10 @@ const waitForHydration = () => new Promise(resolve => {
 })();
 
 if (window.__INITIAL_STATE__) {
-  // Don't override theme - client-side localStorage value takes precedence
+  // Restore all SSR state; locale will be re-checked by initLocale below
   const { theme, ...rest } = window.__INITIAL_STATE__;
   store.set(rest);
 }
+
+// Initialise locale after restoring state (uses localStorage preference if set)
+initLocale();

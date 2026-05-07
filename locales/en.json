@@ -1,0 +1,58 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "dashboard": "Dashboard"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "loginAsAdmin": "Login as Admin",
+    "loggedInAs": "Logged in as",
+    "notLoggedIn": "Not logged in",
+    "persistNote": "Authentication state persists across page refreshes!"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "footer": {
+    "copyright": "© {year} Web Components App"
+  },
+  "home": {
+    "title": "Welcome Home",
+    "welcome": "Welcome to our web component application!",
+    "localState": "Local State Demo",
+    "localStateDesc": "This state is local to this component only:",
+    "propPassing": "Prop Passing Demo",
+    "globalState": "Global State Demo",
+    "globalStateDesc": "This counter is shared across all components:",
+    "currentCounter": "Current counter value:",
+    "authContext": "Auth Context Demo",
+    "typeSomething": "Type something..."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "notFound": "Page not found",
+    "goHome": "Go home"
+  },
+  "about": {
+    "title": "About Us",
+    "intro": "This is the about page of our application using vanilla web components and client-side routing.",
+    "shadowDemo": "This component demonstrates scoped styles using Shadow DOM with a highlighted example.",
+    "stateHeading": "Global State Access",
+    "counterPersists": "The counter value persists across pages:",
+    "currentCounter": "Current counter:",
+    "counterDoubled": "Counter doubled:",
+    "lastPath": "Last visited path:",
+    "currentPage": "You are currently on the About page.",
+    "navigateTo": "Navigate to:"
+  },
+  "lang": {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French"
+  }
+}

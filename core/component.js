@@ -110,6 +110,10 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     else { this.attachShadow({ mode: 'open' }); this.update(); }
 
     this.constructor.store.forEach(p => this.#subs.push(store.on(p, () => (this.state = store.get(), this.update()))));
+    // Auto-subscribe to messages only if the template actually uses t.* expressions
+    if (!this.constructor.store.includes('messages') && /(^|[^a-zA-Z0-9_])t\.[a-z]/.test(this.#tpl)) {
+      this.#subs.push(store.on('messages', () => (this.state = store.get(), this.update())));
+    }
     this.mount?.();
     this.#hydrating = false;
     // Only update after hydration if not SSR'd (SSR content is already correct)
@@ -157,7 +161,8 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
 
   get props() {
     const c = this.#css.classes;
-    return { ...this.state, ...this.#local, ...this.pageProps, path: isBrowser ? location.pathname : '', $css: c, $c: (...names) => names.map(n => c[n] || n).join(' ') };
+    const s = store.get();
+    return { ...s, ...this.#local, ...this.pageProps, path: isBrowser ? location.pathname : '', $css: c, $c: (...names) => names.map(n => c[n] || n).join(' '), t: s.messages || {} };
   }
 
   $(sel) { return this.shadowRoot?.querySelector(sel); }

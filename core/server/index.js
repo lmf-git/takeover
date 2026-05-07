@@ -16,18 +16,59 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
 let routesCache = null;
 const getRoutes = async () => routesCache || (routesCache = await scanRoutes(join(root, 'app')));
 
+const SUPPORTED_LOCALES = ['en', 'es', 'fr'];
+
+function detectLocale(req) {
+  const cookies = req.headers.cookie || '';
+  const cookie = cookies.match(/(?:^|;\s*)locale=([^;]+)/)?.[1];
+  if (cookie) {
+    const c = cookie.split(/[-_]/)[0].toLowerCase();
+    if (SUPPORTED_LOCALES.includes(c)) return c;
+  }
+  const accept = req.headers['accept-language'] || '';
+  const lang = accept.split(',')[0]?.split(';')[0]?.split(/[-_]/)[0]?.trim().toLowerCase();
+  return SUPPORTED_LOCALES.includes(lang) ? lang : 'en';
+}
+
 let wss;
 const clients = new Set();
 const broadcast = (type, data = {}) => clients.forEach(ws => ws.readyState === 1 && ws.send(JSON.stringify({ type, ...data })));
 
+// Debounce map: file → timer
+const hmrTimers = new Map();
+
 function setupWatcher() {
   ['app', 'components', 'core', 'lib'].map(d => join(root, d)).filter(existsSync).forEach(dir => {
     watch(dir, { recursive: true }, (_, file) => {
-      if (file && ['.js', '.html', '.css'].includes(extname(file))) {
+      if (!file) return;
+      const ext = extname(file);
+      if (!['.js', '.html', '.css'].includes(ext)) return;
+
+      // Debounce rapid saves (e.g. editor writing temp files)
+      clearTimeout(hmrTimers.get(file));
+      hmrTimers.set(file, setTimeout(() => {
+        hmrTimers.delete(file);
         routesCache = null;
-        console.log(`[HMR] ${file}`);
-        broadcast('reload', { file });
-      }
+        // Derive a root-relative URL for the changed file
+        // file is relative to the watched dir — but we only know dir, not which watch triggered,
+        // so reconstruct by scanning dir prefix from root
+        const url = '/' + file.replace(/\\/g, '/');
+        const isCSS = ext === '.css';
+        const isCore = url.startsWith('/core/') || url.startsWith('/lib/');
+
+        console.log(`[HMR] ${url}`);
+
+        if (isCSS) {
+          // CSS changes: inject new styles without reload
+          broadcast('css', { url });
+        } else if (isCore) {
+          // Core framework changed: full reload required (modules cached by browser)
+          broadcast('reload', { url });
+        } else {
+          // Component/app file: try module-level swap, fall back to reload
+          broadcast('update', { url });
+        }
+      }, 50));
     });
   });
 }
@@ -54,11 +95,12 @@ async function serveStatic(filePath, res) {
   } catch { return false; }
 }
 
-async function renderSSR(url, res) {
+async function renderSSR(url, res, req) {
   try {
     let template = await readFile(join(root, 'index.html'), 'utf-8');
     const { render } = await import(`./entry-server.js${isProd ? '' : `?t=${Date.now()}`}`);
-    const result = await render(url);
+    const locale = detectLocale(req);
+    const result = await render(url, { locale });
 
     if (result.redirect) return res.writeHead(302, { Location: result.redirect }).end();
 
@@ -86,7 +128,57 @@ async function renderSSR(url, res) {
       .replace('<!--app-html-->', result.appHtml)
       .replace('<!--initial-state-->', result.initialStateScript);
 
-    if (!isProd) html = html.replace('</body>', `<script type="module">const ws=new WebSocket('ws://'+location.host);ws.onmessage=e=>{if(JSON.parse(e.data).type==='reload')location.reload()}</script></body>`);
+    if (!isProd) html = html.replace('</body>', `<script type="module">
+(function(){
+  let ws,reconnect;
+  function connect(){
+    ws=new WebSocket('ws://'+location.host);
+    ws.onopen=()=>clearTimeout(reconnect);
+    ws.onclose=()=>{ reconnect=setTimeout(connect,1000); };
+    ws.onmessage=e=>{
+      const msg=JSON.parse(e.data);
+      if(msg.type==='reload'){
+        location.reload();
+      } else if(msg.type==='css'){
+        // Hot-swap CSS: refetch and replace <style> / <link> for the changed file
+        document.querySelectorAll('link[rel=stylesheet],style[data-hmr]').forEach(el=>{
+          if(el.href && el.href.includes(msg.url.split('/').pop())) {
+            el.href=el.href.replace(/[?#].*/,'')+'?t='+Date.now();
+          }
+        });
+        // Also patch inline <style> by fetching fresh globals
+        if(msg.url.endsWith('globals.css')){
+          fetch('/globals.css?t='+Date.now()).then(r=>r.text()).then(css=>{
+            let el=document.querySelector('style[data-hmr=globals]');
+            if(!el){el=document.createElement('style');el.dataset.hmr='globals';document.head.appendChild(el);}
+            el.textContent=css;
+          });
+        }
+      } else if(msg.type==='update'){
+        // Component changed: re-import with cache-bust, then re-mount affected elements
+        const url=msg.url.endsWith('.html')
+          ? msg.url.replace('.html','.js')
+          : msg.url;
+        const abs=url[0]==='/'?url:'/'+url;
+        import(abs+'?t='+Date.now()).then(mod=>{
+          // Find all instances of this custom element in DOM and reconnect them
+          const tag=url.split('/').pop().replace(/\.(js|html)$/,'').toLowerCase();
+          const tagWithSuffix=tag.includes('-')?tag:null;
+          const candidates=tagWithSuffix
+            ?[...document.querySelectorAll(tagWithSuffix)]
+            :[];
+          candidates.forEach(el=>{
+            if(el.disconnectedCallback) el.disconnectedCallback();
+            if(el.connectedCallback) el.connectedCallback();
+          });
+          if(!candidates.length) location.reload();
+        }).catch(()=>location.reload());
+      }
+    };
+  }
+  connect();
+})();
+</script></body>`);
 
     res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' }).end(html);
   } catch (e) {
@@ -109,7 +201,7 @@ async function handler(req, res) {
     if (ext && ext !== '.html') return res.writeHead(404).end('Not found');
   }
 
-  await renderSSR(req.url, res);
+  await renderSSR(req.url, res, req);
 }
 
 const server = createServer(handler);

@@ -27,53 +27,53 @@
 </style>
 
 <div class="{{$css.hero}}">
-  <h1>{{title}}</h1>
-  <p>Welcome to the home page of our web component application!</p>
+  <h1>{{t.home.title}}</h1>
+  <p>{{t.home.welcome}}</p>
 </div>
 
 <div class="{{$css.card}}">
-  <h2>Local State Demo</h2>
-  <p>This state is local to this component only:</p>
+  <h2>{{t.home.localState}}</h2>
+  <p>{{t.home.localStateDesc}}</p>
   <div class="local-demo">
     <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="decrement">-</button>
     <span class="counter-value">{{localCount}}</span>
     <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="increment">+</button>
   </div>
   <p>
-    <input type="text" id="message-input" placeholder="Type something..." @input="updateMessage" value="{{message}}">
+    <input type="text" id="message-input" placeholder="{{t.home.typeSomething}}" @input="updateMessage" value="{{message}}">
   </p>
   <p>You typed: <strong>{{message}}</strong></p>
 </div>
 
 <div class="{{$css.card}}">
-  <h2>Prop Passing Demo</h2>
+  <h2>{{t.home.propPassing}}</h2>
   <p>This child component receives props from the parent's local state:</p>
   <local-state-display :count="localCount" :message="message" :cardClass="$css.card"></local-state-display>
 </div>
 
 <div class="{{$css.card}}">
-  <h2>Global State Demo</h2>
-  <p>This counter is shared across all components:</p>
+  <h2>{{t.home.globalState}}</h2>
+  <p>{{t.home.globalStateDesc}}</p>
   <app-counter></app-counter>
-  <p>Current counter value: <span class="counter-value">{{counter}}</span></p>
+  <p>{{t.home.currentCounter}} <span class="counter-value">{{counter}}</span></p>
 </div>
 
 <div class="{{$css.card}}">
-  <h2>Auth Context Demo</h2>
+  <h2>{{t.home.authContext}}</h2>
   <div id="auth-status">
     {{#if isAuthenticated}}
-      <p>Logged in as: <strong>{{user.username}}</strong></p>
+      <p>{{t.auth.loggedInAs}}: <strong>{{user.username}}</strong></p>
       <p>Email: {{user.email}} | Role: {{user.role}}</p>
       <img class="{{$css.avatar}}" src="{{user.avatar}}" alt="Avatar">
       <br>
-      <button class="{{$css.button}} {{$css.buttonDanger}}" @click="store.logout()">Logout</button>
+      <button class="{{$css.button}} {{$css.buttonDanger}}" @click="store.logout()">{{t.auth.logout}}</button>
     {{else}}
-      <p>Not logged in</p>
-      <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="store.login()">Quick Login</button>
-      <button class="{{$css.button}} {{$css.buttonInfo}}" @click="loginAsAdmin">Login as Admin</button>
+      <p>{{t.auth.notLoggedIn}}</p>
+      <button class="{{$css.button}} {{$css.buttonPrimary}}" @click="store.login()">{{t.auth.login}}</button>
+      <button class="{{$css.button}} {{$css.buttonInfo}}" @click="loginAsAdmin">{{t.auth.loginAsAdmin}}</button>
     {{/if}}
   </div>
-  <p><small>Authentication state persists across page refreshes!</small></p>
+  <p><small>{{t.auth.persistNote}}</small></p>
 </div>
 
 <div class="{{$css.nav}}">

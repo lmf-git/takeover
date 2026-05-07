@@ -1,0 +1,70 @@
+<style>
+  .section { padding: 120px 0; }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .product-card {
+    background: var(--off-white);
+    padding: 32px;
+    border-radius: 4px;
+  }
+
+  .product-name {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    margin-bottom: 16px;
+    color: var(--text-dark);
+  }
+</style>
+
+<header class="page-header">
+  <div class="hero-visuals">
+    <div class="hero-bg"></div>
+    <div class="hero-grid-lines"></div>
+    <div class="hero-waves"></div>
+  </div>
+  <div class="section-inner">
+    <h1 class="page-title">
+      {{#if lang === 'es'}}
+        Nuestros <em>Productos</em>
+      {{else}}
+        Our <em>Products</em>
+      {{/if}}
+    </h1>
+  </div>
+</header>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="products-grid">
+      <div class="product-card fade-up">
+        <div class="product-name">{{lang === 'es' ? 'Merluza Negra' : 'Patagonian Toothfish'}}</div>
+        {{#if lang === 'es'}}
+          <p>Uno de los pescados más preciados del mundo.</p>
+        {{else}}
+          <p>One of the most prized fish in the world.</p>
+        {{/if}}
+      </div>
+      <div class="product-card fade-up" style="transition-delay: 0.1s">
+        <div class="product-name">{{lang === 'es' ? 'Merluza de Cola' : 'Grenadier'}}</div>
+        {{#if lang === 'es'}}
+          <p>Primera pesquería en Sudamérica en obtener la certificación MSC.</p>
+        {{else}}
+          <p>First fishery in South America to obtain MSC certification.</p>
+        {{/if}}
+      </div>
+      <div class="product-card fade-up" style="transition-delay: 0.2s">
+        <div class="product-name">{{lang === 'es' ? 'Calamar' : 'Squid'}}</div>
+        {{#if lang === 'es'}}
+          <p>Capturado en las ricas aguas de la Patagonia.</p>
+        {{else}}
+          <p>Caught in the rich Patagonian waters.</p>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</section>

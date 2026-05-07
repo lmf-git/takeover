@@ -1,75 +1,130 @@
-/* Global CSS Custom Properties for Theme Switching */
-
 :root {
-  /* Light theme (default) */
-  --bg-color: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-color: #212529;
-  --text-secondary: #6c757d;
-  --border-color: #dee2e6;
-  --hover-bg: #e9ecef;
-  --primary-color: #0d6efd;
-  --primary-hover: #0b5ed7;
-  --success-color: #198754;
-  --danger-color: #dc3545;
-  --warning-color: #ffc107;
-  --info-color: #0dcaf0;
-  
-  /* Shadows */
-  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-  
-  /* Transitions */
-  --transition: all 0.2s ease;
+  --blue: #2B789D;
+  --blue-dark: #1d5a7a;
+  --blue-deep: #0d2233;
+  --teal: #9CC0CC;
+  --teal-light: #c8dde4;
+  --navy: #0a1825;
+  --navy-mid: #112233;
+  --white: #f7f8f9;
+  --off-white: #eef2f5;
+  --text-dark: #111820;
+  --text-mid: #3d5162;
+  --text-light: #7a95a8;
+  --font-serif: 'EB Garamond', Georgia, serif;
+  --font-sans: 'DM Sans', Helvetica, Arial, sans-serif;
 }
 
-[data-theme="dark"] {
-  /* Dark theme */
-  --bg-color: #121212;
-  --bg-secondary: #1e1e1e;
-  --text-color: #ffffff;
-  --text-secondary: #b3b3b3;
-  --border-color: #404040;
-  --hover-bg: #2a2a2a;
-  --primary-color: #4dabf7;
-  --primary-hover: #339af0;
-  --success-color: #51cf66;
-  --danger-color: #ff6b6b;
-  --warning-color: #ffd43b;
-  --info-color: #74c0fc;
-  
-  /* Dark shadows */
-  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
-  --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Prevent layout shift from scrollbar */
 html {
-  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
 }
 
-/* Global body styles */
 body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  transition: var(--transition);
+  font-family: var(--font-sans);
+  background: var(--white);
+  color: var(--text-dark);
+  overflow-x: hidden;
+  line-height: 1.5;
 }
 
-/* Ensure custom elements are block-level before JS defines them (for SSR/DSD) */
-app-layout, app-router, app-navigation, app-counter, theme-toggle, local-state-display,
-home-page, about-page, contact-page, dashboard-page, login-page, notfound-page, user-page {
-  display: block;
+/* Framework specific base styles */
+[hidden] { display: none; }
+
+/* Global animations */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
-/* Prevent layout shifts during hydration */
-app-layout {
-  contain: layout style;
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-/* Apply theme to web component host elements */
-:host {
-  --host-bg: var(--bg-color);
-  --host-text: var(--text-color);
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    transition: none;
+  }
+}
+
+/* ── SHARED HERO/HEADER STYLES ── */
+
+.hero-visuals {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #0a1825 0%, #0d2c42 40%, #1a4a6b 70%, #2B789D 100%);
+}
+
+.hero-grid-lines {
+  position: absolute;
+  inset: -100px;
+  background-image:
+    linear-gradient(rgba(156,192,204,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(156,192,204,0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
+  animation: gridMove 40s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(80px, 80px); }
+}
+
+.hero-waves {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60%;
+  opacity: 0.08;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 28px,
+    rgba(156,192,204,0.6) 28px,
+    rgba(156,192,204,0.6) 29px
+  );
+}
+
+.page-header {
+  position: relative;
+  background: var(--navy);
+  padding: 160px 0 100px;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.page-title {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 5vw, 72px);
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.page-title em {
+  font-style: italic;
+  color: var(--teal-light);
+}
+
+.section-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 56px;
+  width: 100%;
 }

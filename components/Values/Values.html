@@ -1,0 +1,73 @@
+<style>
+  :host {
+    display: block; /* Ensure the component takes up space */
+  }
+
+  .section-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 56px;
+    width: 100%;
+  }
+
+  /* ── VALUES SECTION STYLES ── */
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+    margin-top: 100px;
+  }
+
+  .value-item {
+    display: flex;
+    gap: 32px;
+    padding: 48px;
+    background: var(--off-white);
+    border-radius: 4px;
+    transition: background 0.3s, transform 0.3s;
+  }
+  .value-item:hover { background: #fff; transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.05); }
+
+  .value-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 16px;
+  }
+  .value-desc {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-mid);
+  }
+</style>
+
+<div class="section-inner">
+  <div class="values-grid">
+    <div class="value-item fade-up">
+      <div>
+        <div class="value-title">{{#if lang === 'es'}} Confianza del cliente {{else}} Customer trust {{/if}}</div>
+        <div class="value-desc">{{#if lang === 'es'}} La confianza de nuestros clientes es la base para nuestras operaciones y todos los días nos esforzamos por superar sus expectativas. {{else}} Our customers' trust is the foundation for our operations, and every day we strive to exceed their expectations. {{/if}}</div>
+      </div>
+    </div>
+    <div class="value-item fade-up" style="transition-delay: 0.1s">
+      <div>
+        <div class="value-title">{{#if lang === 'es'}} Practicidad operativa {{else}} Operational practicality {{/if}}</div>
+        <div class="value-desc">{{#if lang === 'es'}} Nos involucramos y comprometemos, sabemos qué estamos haciendo y hacemos bien nuestro trabajo. {{else}} We get involved and committed; we know what we are doing and we do our job well. {{/if}}</div>
+      </div>
+    </div>
+    <div class="value-item fade-up" style="transition-delay: 0.2s">
+      <div>
+        <div class="value-title">{{#if lang === 'es'}} Seguridad y medioambiente {{else}} Safety and environment {{/if}}</div>
+        <div class="value-desc">{{#if lang === 'es'}} Nos importa y nos responsabilizamos personalmente por la seguridad de nuestra gente y el medio ambiente. {{else}} We care and take personal responsibility for the safety of our people and the environment. {{/if}}</div>
+      </div>
+    </div>
+    <div class="value-item fade-up" style="transition-delay: 0.3s">
+      <div>
+        <div class="value-title">{{#if lang === 'es'}} Desarrollo de personas {{else}} People development {{/if}}</div>
+        <div class="value-desc">{{#if lang === 'es'}} Nuestros logros son resultado de los esfuerzos del equipo. Compartimos lo que sabemos y nos ayudamos mutuamente. {{else}} Our achievements are the result of team effort. We share what we know and help each other. {{/if}}</div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,8 +1,8 @@
 import { Component, define } from '../../core/component.js';
 
-export default class Contact extends Component {
-  static templateUrl = '/app/Contact/Contact.html';
-  static store = ['lang'];
+export default class Fleet extends Component {
+  static templateUrl = '../../components/Fleet/Fleet.html';
+  static store = ['lang']; // Subscribe to lang for dynamic text
 
   mount() {
     const observer = new IntersectionObserver((entries) => {
@@ -14,4 +14,4 @@ export default class Contact extends Component {
   }
 }
 
-define('contact-page', Contact);
+define('fleet-page', Fleet);

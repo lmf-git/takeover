@@ -1,0 +1,119 @@
+<style>
+  :host {
+    display: block; /* Ensure the component takes up space */
+  }
+
+  .section-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 56px;
+    width: 100%;
+  }
+
+  /* ── OPERATIONS/FLEET SECTION STYLES ── */
+  .ops-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 100px;
+    align-items: flex-end;
+    margin-bottom: 80px;
+  }
+  .ops-title { font-size: clamp(32px, 3.5vw, 48px); }
+  .ops-title-dark { color: var(--text-dark); }
+  .ops-desc { font-size: 16px; color: var(--text-mid); line-height: 1.7; }
+
+  .fleet-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .fleet-card {
+    background: #fff;
+    padding: 48px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+
+  .fleet-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 12px;
+  }
+
+  .fleet-name {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+
+  .fleet-body { font-size: 14px; line-height: 1.65; color: var(--text-mid); margin-bottom: 32px; }
+
+  .fleet-stats {
+    padding-top: 24px;
+    border-top: 1px solid var(--off-white);
+  }
+  .fleet-stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .fleet-stat-key { color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; font-weight: 700; }
+  .fleet-stat-val { color: var(--text-dark); font-weight: 600; }
+  .fleet-stat-msc { color: var(--blue); }
+</style>
+
+<section class="section" style="background: var(--off-white)" id="fleet">
+  <div class="section-inner">
+    <div class="ops-header fade-up">
+      <div>
+        <span class="section-label">{{#if lang === 'es'}} NUESTRA FLOTA {{else}} OUR FLEET {{/if}}</span>
+        <h2 class="ops-title page-title ops-title-dark">
+          {{#if lang === 'es'}} Operaciones en aguas del <em>Atlántico Sur</em> {{else}} Operations in <em>South Atlantic</em> waters {{/if}}
+        </h2>
+      </div>
+      <p class="ops-desc">
+        {{#if lang === 'es'}} Nuestra flota opera en las aguas de la Plataforma Continental Argentina, con base en Ushuaia, el puerto más austral del mundo. Empleamos las más modernas tecnologías de pesca responsable. {{else}} Our fleet operates in the waters of the Argentine Continental Shelf, based in Ushuaia, the world's southernmost port. We employ the most modern responsible fishing technologies. {{/if}}
+      </p>
+    </div>
+
+    <div class="fleet-cards">
+      <div class="fleet-card fade-up">
+        <div class="fleet-tag">{{#if lang === 'es'}} PESCA DE PALANGRE {{else}} LONGLINE FISHING {{/if}}</div>
+        <div class="fleet-name">{{#if lang === 'es'}} Buques Palangreros {{else}} Longline Vessels {{/if}}</div>
+        <p class="fleet-body">{{#if lang === 'es'}} Embarcaciones especializadas en la captura de Merluza Negra mediante el sistema de palangre, la técnica más selectiva y sustentable disponible. {{else}} Vessels specialized in Patagonian Toothfish capture using the longline system, the most selective and sustainable technique available. {{/if}}</p>
+        <div class="fleet-stats">
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} ESPECIE OBJETIVO {{else}} TARGET SPECIES {{/if}}</span><span class="fleet-stat-val">{{#if lang === 'es'}} Merluza Negra {{else}} Patagonian Toothfish {{/if}}</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} PUERTO BASE {{else}} HOME PORT {{/if}}</span><span class="fleet-stat-val">Ushuaia, TDF</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">CERTIF.</span><span class="fleet-stat-val fleet-stat-msc">MSC ✓</span></div>
+        </div>
+      </div>
+
+      <div class="fleet-card fade-up" style="transition-delay: 0.1s">
+        <div class="fleet-tag">{{#if lang === 'es'}} PESCA PELÁGICA {{else}} PELAGIC FISHING {{/if}}</div>
+        <div class="fleet-name">{{#if lang === 'es'}} Buques Pelágicos {{else}} Pelagic Vessels {{/if}}</div>
+        <p class="fleet-body">{{#if lang === 'es'}} Flota dirigida a la captura de especies pelágicas en pesquerías bien gestionadas y sustentables de la Plataforma Continental Argentina. {{else}} Fleet targeting the capture of pelagic species in well-managed and sustainable fisheries of the Argentine Continental Shelf. {{/if}}</p>
+        <div class="fleet-stats">
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} ÁREA DE PESCA {{else}} FISHING AREA {{/if}}</span><span class="fleet-stat-val">{{#if lang === 'es'}} Plataforma Continental {{else}} Continental Shelf {{/if}}</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">ZONA</span><span class="fleet-stat-val">FAO 41</span></div>
+        </div>
+      </div>
+
+      <div class="fleet-card fade-up" style="transition-delay: 0.2s">
+        <div class="fleet-tag">{{#if lang === 'es'}} PROCESAMIENTO A BORDO {{else}} ONBOARD PROCESSING {{/if}}</div>
+        <div class="fleet-name">{{#if lang === 'es'}} Planta de Procesado {{else}} Processing Plant {{/if}}</div>
+        <p class="fleet-body">{{#if lang === 'es'}} Procesamiento a bordo de los buques y en tierra en Ushuaia, con los más altos estándares de calidad para la cadena de frío. {{else}} Onboard and onshore processing in Ushuaia, with the highest quality standards for the cold chain. {{/if}}</p>
+        <div class="fleet-stats">
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} UBICACIÓN {{else}} LOCATION {{/if}}</span><span class="fleet-stat-val">Ushuaia, Argentina</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">ESTÁNDAR</span><span class="fleet-stat-val fleet-stat-msc">HACCP ✓</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

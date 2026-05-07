@@ -1,0 +1,105 @@
+<style>
+  .section { padding: 120px 0; }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 100px;
+    align-items: center;
+  }
+
+  .about-title {
+    font-family: var(--font-serif);
+    font-size: clamp(32px, 3.5vw, 52px);
+    color: var(--text-dark);
+    margin-bottom: 28px;
+  }
+
+  .about-body {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text-mid);
+    margin-bottom: 24px;
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 80px;
+  }
+
+  .value-card {
+    padding: 40px;
+    background: var(--off-white);
+    border-radius: 4px;
+  }
+
+  .value-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+</style>
+
+<header class="page-header">
+  <div class="hero-visuals">
+    <div class="hero-bg"></div>
+    <div class="hero-grid-lines"></div>
+    <div class="hero-waves"></div>
+  </div>
+  <div class="section-inner">
+    <h1 class="page-title">
+      {{#if lang === 'es'}}
+        Nuestra <em>Compañía</em>
+      {{else}}
+        Our <em>Company</em>
+      {{/if}}
+    </h1>
+  </div>
+</header>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div class="fade-up">
+        <h2 class="about-title">{{lang === 'es' ? 'Pasión por el mar y compromiso con el futuro' : 'Passion for the sea and commitment to the future'}}</h2>
+        <div class="about-body">
+          {{#if lang === 'es'}}
+            <p>Estremar es una empresa pesquera líder en Argentina, dedicada a la captura y procesamiento de productos del mar de alta calidad. Con base en Ushuaia, operamos en las frías y ricas aguas del Atlántico Sur.</p>
+          {{else}}
+            <p>Estremar is a leading fishing company in Argentina, dedicated to the capture and processing of high-quality seafood products. Based in Ushuaia, we operate in the cold and rich waters of the South Atlantic.</p>
+          {{/if}}
+        </div>
+      </div>
+      <div style="background: var(--off-white); aspect-ratio: 4/5; border-radius: 4px;" class="fade-up"></div>
+    </div>
+
+    <div class="values-grid">
+      <div class="value-card fade-up">
+        <div class="value-title">{{lang === 'es' ? 'Sustentabilidad' : 'Sustainability'}}</div>
+        {{#if lang === 'es'}}
+          <p>Protegemos los recursos marinos para las generaciones futuras.</p>
+        {{else}}
+          <p>We protect marine resources for future generations.</p>
+        {{/if}}
+      </div>
+      <div class="value-card fade-up" style="transition-delay: 0.1s">
+        <div class="value-title">{{lang === 'es' ? 'Calidad' : 'Quality'}}</div>
+        {{#if lang === 'es'}}
+          <p>Mantenemos los más altos estándares en cada etapa.</p>
+        {{else}}
+          <p>We maintain the highest standards at every stage.</p>
+        {{/if}}
+      </div>
+      <div class="value-card fade-up" style="transition-delay: 0.2s">
+        <div class="value-title">{{lang === 'es' ? 'Nuestra Gente' : 'Our People'}}</div>
+        {{#if lang === 'es'}}
+          <p>Valoramos el esfuerzo de nuestro equipo y su seguridad.</p>
+        {{else}}
+          <p>We value our team's effort and their safety.</p>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</section>

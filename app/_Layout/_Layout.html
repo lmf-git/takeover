@@ -1,38 +1,7 @@
-<style>
-  :host {
-    display: block;
-    font-family: Arial, sans-serif;
-  }
-  .layout-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-  header {
-    margin-bottom: 20px;
-  }
-  main {
-    min-height: 400px;
-  }
-  footer {
-    margin-top: 40px;
-    padding: 20px 0;
-    border-top: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    font-size: 14px;
-    text-align: center;
-  }
-</style>
-<div class="layout-container">
-  <header>
-    <app-navigation></app-navigation>
-  </header>
-  
+<div id="page">
+  <app-navigation></app-navigation>
   <main>
     <app-router></app-router>
   </main>
-  
-  <footer>
-    <p>© {{year}} Web Components App</p>
-  </footer>
+  <app-footer></app-footer>
 </div>

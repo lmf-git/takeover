@@ -1,29 +1,417 @@
 <style>
-  /* Inline styles work alongside CSS modules */
-  :host {
-    display: block;
-    color: var(--text-color);
-  }
-  .counter-value {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: var(--success-color);
-  }
-  .local-demo {
+  /* ── HERO EXTENSIONS ── */
+  #hero {
+    position: relative;
+    height: 100vh;
+    min-height: 720px;
     display: flex;
     align-items: center;
-    gap: 15px;
-    margin: 10px 0;
+    overflow: hidden;
   }
-  input[type="text"] {
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 860px;
+    padding-top: 60px;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--teal);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: currentColor;
+  }
+
+  .hero-title {
+    font-size: clamp(48px, 6.5vw, 92px);
+    margin-bottom: 32px;
+  }
+
+  .hero-subtitle {
+    font-size: 18px;
+    line-height: 1.6;
+    color: rgba(247,248,249,0.7);
+    max-width: 600px;
+    margin-bottom: 48px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--blue);
+    color: #fff;
+    text-decoration: none;
+    padding: 14px 28px;
     border-radius: 4px;
-    font-size: 1em;
-    width: 250px;
-    background: var(--bg-color);
-    color: var(--text-color);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: background 0.2s, transform 0.15s;
   }
+  .btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(247,248,249,0.7);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(247,248,249,0.2);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--teal); border-color: var(--teal); }
+
+  .hero-logo-accent {
+    width: 100%;
+    height: 100%;
+    opacity: 0.1;
+  }
+
+  .hero-stats {
+    position: absolute;
+    bottom: 60px;
+    right: 56px;
+    display: flex;
+    gap: 64px;
+    z-index: 2;
+  }
+
+  .hero-stat { text-align: right; }
+  .hero-stat-num {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 44px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .hero-stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    padding: 140px 0;
+  }
+
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 24px;
+  }
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: currentColor;
+  }
+
+  .section-label-teal { color: var(--teal); }
+  .section-label-centered { justify-content: center; }
+
+  /* ── ABOUT ── */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 120px;
+    align-items: center;
+  }
+
+  .about-content h2 {
+    font-size: clamp(36px, 4vw, 56px);
+    margin-bottom: 40px;
+  }
+
+  .about-title-dark { color: var(--text-dark); }
+
+  .about-text {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text-mid);
+  }
+  .about-text p { margin-bottom: 24px; }
+
+  .about-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    color: var(--blue);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(43, 120, 157, 0.2);
+    padding-bottom: 4px;
+    transition: border-color 0.2s;
+  }
+  .about-cta:hover { border-color: var(--blue); }
+
+  .about-visual {
+    position: relative;
+    aspect-ratio: 4/5;
+    background: var(--off-white);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .about-visual::after {
+    content: '// vessel at sea — Ushuaia port';
+    position: absolute;
+    bottom: 24px; left: 24px;
+    font-size: 10px;
+    color: var(--text-light);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .about-year {
+    position: absolute;
+    top: 40px; right: -20px;
+    font-family: var(--font-serif);
+    font-size: 140px;
+    line-height: 1;
+    color: #fff;
+    opacity: 0.8;
+    z-index: 1;
+  }
+
+  /* ── VALUES ── */
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+    margin-top: 100px;
+  }
+
+  .value-item {
+    display: flex;
+    gap: 32px;
+    padding: 48px;
+    background: var(--off-white);
+    border-radius: 4px;
+    transition: background 0.3s, transform 0.3s;
+  }
+  .value-item:hover { background: #fff; transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.05); }
+
+  .value-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 16px;
+  }
+  .value-desc {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-mid);
+  }
+
+  /* ── OPERATIONS ── */
+  .ops-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 100px;
+    align-items: flex-end;
+    margin-bottom: 80px;
+  }
+  .ops-title { font-size: clamp(32px, 3.5vw, 48px); }
+  .ops-title-dark { color: var(--text-dark); }
+  .ops-desc { font-size: 16px; color: var(--text-mid); line-height: 1.7; }
+
+  .fleet-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .fleet-card {
+    background: #fff;
+    padding: 48px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.03);
+  }
+
+  .fleet-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 12px;
+  }
+
+  .fleet-name {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+
+  .fleet-body { font-size: 14px; line-height: 1.65; color: var(--text-mid); margin-bottom: 32px; }
+
+  .fleet-stats {
+    padding-top: 24px;
+    border-top: 1px solid var(--off-white);
+  }
+  .fleet-stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .fleet-stat-key { color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; font-weight: 700; }
+  .fleet-stat-val { color: var(--text-dark); font-weight: 600; }
+  .fleet-stat-msc { color: var(--blue); }
+
+  /* ── PRODUCTS ── */
+  .products-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 32px;
+  }
+
+  .product-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(156,192,204,0.1);
+    padding: 40px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+  }
+  .product-card.featured { grid-column: span 1; grid-row: span 2; background: rgba(156,192,204,0.06); }
+  .product-card.wide { grid-column: span 2; }
+
+  .prod-tag { font-size: 9px; font-weight: 700; color: var(--teal); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
+  .prod-name { font-family: var(--font-serif); font-size: 32px; color: #fff; margin-bottom: 8px; line-height: 1.1; }
+  .prod-name-small { font-size: 24px; }
+  .prod-sci { font-style: italic; color: var(--teal-light); font-size: 15px; margin-bottom: 20px; display: block; }
+  .prod-desc { font-size: 14px; line-height: 1.6; color: rgba(247, 248, 249, 0.5); margin-bottom: 32px; }
+  .prod-desc-no-margin { margin: 0; }
+
+  .prod-img-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(156,192,204,0.1);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: auto;
+  }
+  .prod-img-label { font-size: 9px; color: rgba(156,192,204,0.2); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  .prod-wide-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+
+  /* ── SUSTAINABILITY ── */
+  .sustain-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 120px;
+  }
+  .sustain-sticky { position: sticky; top: 140px; }
+  .sustain-title { font-size: clamp(32px, 3.5vw, 48px); margin-bottom: 32px; }
+  .sustain-title-dark { color: var(--text-dark); }
+  .sustain-body { font-size: 17px; line-height: 1.7; color: var(--text-mid); margin-bottom: 48px; }
+
+  .cert-badges { display: flex; flex-direction: column; gap: 24px; }
+  .cert-badge { display: flex; gap: 20px; align-items: flex-start; }
+  .cert-badge-icon {
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--off-white);
+    color: var(--blue);
+    border-radius: 4px;
+    font-weight: 800; font-size: 13px; flex-shrink: 0;
+  }
+  .cert-badge-name { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; }
+  .cert-badge-desc { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+
+  .sustain-items { display: flex; flex-direction: column; gap: 64px; }
+  .sustain-num { font-family: var(--font-serif); font-size: 36px; color: var(--teal); opacity: 0.4; line-height: 1; }
+  .sustain-item-title { font-size: 19px; font-weight: 600; color: var(--text-dark); margin-bottom: 16px; }
+  .sustain-item-body { font-size: 15px; line-height: 1.7; color: var(--text-mid); }
+
+  /* ── CONTACT ── */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 120px;
+  }
+  .contact-title { font-size: clamp(32px, 3.5vw, 48px); color: #fff; margin-bottom: 32px; }
+  .contact-intro { font-size: 16px; line-height: 1.7; color: rgba(247,248,249,0.5); margin-bottom: 60px; }
+
+  .contact-info { display: flex; flex-direction: column; gap: 40px; }
+  .contact-item-label { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: rgba(156,192,204,0.4); margin-bottom: 8px; text-transform: uppercase; }
+  .contact-item-val { font-size: 16px; color: #fff; }
+
+  .contact-form {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(156,192,204,0.1);
+    padding: 60px;
+    border-radius: 8px;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .form-group { margin-bottom: 32px; }
+  .form-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(247,248,249,0.4); margin-bottom: 12px; }
+  .form-input, .form-textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(156,192,204,0.15);
+    border-radius: 4px;
+    padding: 16px;
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus { outline: none; border-color: var(--teal); }
+  .form-textarea { height: 140px; resize: none; }
+
+  .form-submit {
+    width: 100%;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .form-submit:hover { background: var(--blue-dark); }
 </style>
 
 <div class="{{$css.hero}}">
@@ -76,41 +464,293 @@
   <p><small>{{t.auth.persistNote}}</small></p>
 </div>
 
-<div class="{{$css.nav}}">
-  <p>You are currently on the path: {{path}}</p>
-  <p>Navigate to: <a href="/about" route>About Page</a> | <a href="/contact" route>Contact Page</a></p>
-</div>
+  <div class="hero-stats fade-up" style="transition-delay: 0.4s">
+    <div class="hero-stat">
+      <span class="hero-stat-num">30+</span>
+      <span class="hero-stat-label">{{#if lang === 'es'}} AÑOS DE OPERACIÓN {{else}} YEARS OF OPERATION {{/if}}</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">MSC</span>
+      <span class="hero-stat-label">{{#if lang === 'es'}} CERTIFICADO DESDE 2012 {{else}} CERTIFIED SINCE 2012 {{/if}}</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-num">#1</span>
+      <span class="hero-stat-label">{{#if lang === 'es'}} MERLUZA NEGRA ARGENTINA {{else}} ARGENTINE TOOTHFISH #1 {{/if}}</span>
+    </div>
+  </div>
+</section>
 
-<p class="{{$css.timestamp}}">Page rendered at: {{timestamp}}</p>
+<!-- ══════════════ QUIÉNES SOMOS ══════════════ -->
+<section class="section" id="about">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div class="about-content fade-up">
+        <span class="section-label">{{#if lang === 'es'}} QUIÉNES SOMOS {{else}} WHO WE ARE {{/if}}</span>
+        <h2 class="page-title about-title-dark">
+          {{#if lang === 'es'}} Una compañía pesquera <em>Argentina líder</em> {{else}} A leading <em>Argentine</em> fishing company {{/if}}
+        </h2>
+        <div class="about-text">
+          {{#if lang === 'es'}}
+            <p>Estremar es una de las más grandes compañías pesqueras en Argentina. Somos proveedores líderes de Merluza Negra y nuestros productos de mar se sirven en los platos de los mercados más importantes del mundo.</p>
+            <p>Mejoramos continuamente nuestras operaciones e invertimos en procesos de producción innovadores. Hemos operado en el puerto más austral, Ushuaia, desde 1992, y siempre nos hemos enorgullecido de emplear a las personas correctas.</p>
+          {{else}}
+            <p>Estremar is one of the largest fishing companies in Argentina. We are leading providers of Patagonian Toothfish and our seafood products are served on the plates of the world's most important markets.</p>
+            <p>We continuously improve our operations and invest in innovative production processes. We have operated in the southernmost port, Ushuaia, since 1992, and have always taken pride in employing the right people.</p>
+          {{/if}}
+        </div>
+        <a href="/company" route class="about-cta">
+          {{#if lang === 'es'}} Mensaje del Presidente {{else}} President's Message {{/if}}
+        </a>
+      </div>
+      <div class="about-visual fade-up" style="transition-delay: 0.2s">
+        <div class="about-year">1992</div>
+      </div>
+    </div>
 
-<script>
-import { Component, store, define } from '/core/component.js';
+    <div class="values-grid">
+      <div class="value-item fade-up">
+        <div>
+          <div class="value-title">{{#if lang === 'es'}} Confianza del cliente {{else}} Customer trust {{/if}}</div>
+          <div class="value-desc">{{#if lang === 'es'}} La confianza de nuestros clientes es la base para nuestras operaciones y todos los días nos esforzamos por superar sus expectativas. {{else}} Our customers' trust is the foundation for our operations, and every day we strive to exceed their expectations. {{/if}}</div>
+        </div>
+      </div>
+      <div class="value-item fade-up" style="transition-delay: 0.1s">
+        <div>
+          <div class="value-title">{{#if lang === 'es'}} Practicidad operativa {{else}} Operational practicality {{/if}}</div>
+          <div class="value-desc">{{#if lang === 'es'}} Nos involucramos y comprometemos, sabemos qué estamos haciendo y hacemos bien nuestro trabajo. {{else}} We get involved and committed; we know what we are doing and we do our job well. {{/if}}</div>
+        </div>
+      </div>
+      <div class="value-item fade-up" style="transition-delay: 0.2s">
+        <div>
+          <div class="value-title">{{#if lang === 'es'}} Seguridad y medioambiente {{else}} Safety and environment {{/if}}</div>
+          <div class="value-desc">{{#if lang === 'es'}} Nos importa y nos responsabilizamos personally por la seguridad de nuestra gente y el medio ambiente. {{else}} We care and take personal responsibility for the safety of our people and the environment. {{/if}}</div>
+        </div>
+      </div>
+      <div class="value-item fade-up" style="transition-delay: 0.3s">
+        <div>
+          <div class="value-title">{{#if lang === 'es'}} Desarrollo de personas {{else}} People development {{/if}}</div>
+          <div class="value-desc">{{#if lang === 'es'}} Nuestros logros son resultado de los esfuerzos del equipo. Compartimos lo que sabemos y nos ayudamos mutuamente. {{else}} Our achievements are the result of team effort. We share what we know and help each other. {{/if}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-export default class HomePage extends Component {
-  static templateUrl = '/app/Home/Home.html';
-  static cssModule = '/app/Home/Home.module.css';
-  static store = ['counter', 'theme', 'user', 'isAuthenticated'];
-  static metadata = { title: 'Home - Web Components App', description: 'Welcome to our web components application.' };
-  static local = { localCount: 0, message: '' };
-  // ssrProps is now optional - local values are automatically included for SSR
-  static ssrProps = { title: 'Welcome Home' };  // Only need non-local values here
+<!-- ══════════════ FLOTA ══════════════ -->
+<section class="section" style="background: var(--off-white)" id="fleet">
+  <div class="section-inner">
+    <div class="ops-header fade-up">
+      <div>
+        <span class="section-label">{{#if lang === 'es'}} NUESTRA FLOTA {{else}} OUR FLEET {{/if}}</span>
+        <h2 class="ops-title page-title ops-title-dark">
+          {{#if lang === 'es'}} Operaciones en aguas del <em>Atlántico Sur</em> {{else}} Operations in <em>South Atlantic</em> waters {{/if}}
+        </h2>
+      </div>
+      <p class="ops-desc">
+        {{#if lang === 'es'}} Nuestra flota opera en las aguas de la Plataforma Continental Argentina, con base en Ushuaia, el puerto más austral del mundo. Empleamos las más modernas tecnologías de pesca responsable. {{else}} Our fleet operates in the waters of the Argentine Continental Shelf, based in Ushuaia, the world's southernmost port. We employ the most modern responsible fishing technologies. {{/if}}
+      </p>
+    </div>
 
-  get props() {
-    return { ...super.props, title: 'Welcome Home', timestamp: new Date().toLocaleString() };
-  }
+    <div class="fleet-cards">
+      <div class="fleet-card fade-up">
+        <div class="fleet-tag">{{#if lang === 'es'}} PESCA DE PALANGRE {{else}} LONGLINE FISHING {{/if}}</div>
+        <div class="fleet-name">{{#if lang === 'es'}} Buques Palangreros {{else}} Longline Vessels {{/if}}</div>
+        <p class="fleet-body">{{#if lang === 'es'}} Embarcaciones especializadas en la captura de Merluza Negra mediante el sistema de palangre, la técnica más selectiva y sustentable disponible. {{else}} Vessels specialized in Patagonian Toothfish capture using the longline system, the most selective and sustainable technique available. {{/if}}</p>
+        <div class="fleet-stats">
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} ESPECIE OBJETIVO {{else}} TARGET SPECIES {{/if}}</span><span class="fleet-stat-val">{{#if lang === 'es'}} Merluza Negra {{else}} Patagonian Toothfish {{/if}}</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} PUERTO BASE {{else}} HOME PORT {{/if}}</span><span class="fleet-stat-val">Ushuaia, TDF</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">CERTIF.</span><span class="fleet-stat-val fleet-stat-msc">MSC ✓</span></div>
+        </div>
+      </div>
 
-  bind() {
-    // Listen for events from child components
-    this.on(this.shadowRoot, 'update-count', e => {
-      this.local.localCount += e.detail.delta;
-    });
-  }
+      <div class="fleet-card fade-up" style="transition-delay: 0.1s">
+        <div class="fleet-tag">{{#if lang === 'es'}} PESCA PELÁGICA {{else}} PELAGIC FISHING {{/if}}</div>
+        <div class="fleet-name">{{#if lang === 'es'}} Buques Pelágicos {{else}} Pelagic Vessels {{/if}}</div>
+        <p class="fleet-body">{{#if lang === 'es'}} Flota dirigida a la captura de especies pelágicas en pesquerías bien gestionadas y sustentables de la Plataforma Continental Argentina. {{else}} Fleet targeting the capture of pelagic species in well-managed and sustainable fisheries of the Argentine Continental Shelf. {{/if}}</p>
+        <div class="fleet-stats">
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} ÁREA DE PESCA {{else}} FISHING AREA {{/if}}</span><span class="fleet-stat-val">{{#if lang === 'es'}} Plataforma Continental {{else}} Continental Shelf {{/if}}</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">ZONA</span><span class="fleet-stat-val">FAO 41</span></div>
+        </div>
+      </div>
 
-  increment() { this.local.localCount++; }
-  decrement() { this.local.localCount--; }
-  updateMessage(e) { this.local.message = e.target.value; }
-  loginAsAdmin() { store.login({ username: 'admin', email: 'admin@test.com' }); }
-}
+      <div class="fleet-card fade-up" style="transition-delay: 0.2s">
+        <div class="fleet-tag">{{#if lang === 'es'}} PROCESAMIENTO A BORDO {{else}} ONBOARD PROCESSING {{/if}}</div>
+        <div class="fleet-name">{{#if lang === 'es'}} Planta de Procesado {{else}} Processing Plant {{/if}}</div>
+        <p class="fleet-body">{{#if lang === 'es'}} Procesamiento a bordo de los buques y en tierra en Ushuaia, con los más altos estándares de calidad para la cadena de frío. {{else}} Onboard and onshore processing in Ushuaia, with the highest quality standards for the cold chain. {{/if}}</p>
+        <div class="fleet-stats">
+          <div class="fleet-stat-row"><span class="fleet-stat-key">{{#if lang === 'es'}} UBICACIÓN {{else}} LOCATION {{/if}}</span><span class="fleet-stat-val">Ushuaia, Argentina</span></div>
+          <div class="fleet-stat-row"><span class="fleet-stat-key">ESTÁNDAR</span><span class="fleet-stat-val fleet-stat-msc">HACCP ✓</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-define('home-page', HomePage);
-</script>
+<!-- ══════════════ PRODUCTOS ══════════════ -->
+<section class="section" style="background: var(--navy)" id="products">
+  <div class="section-inner">
+    <div class="products-header-container">
+      <span class="section-label section-label-teal section-label-centered">{{#if lang === 'es'}} PRODUCTOS DEL MAR {{else}} SEAFOOD PRODUCTS {{/if}}</span>
+      <h2 class="page-title">{{#if lang === 'es'}} Del Atlántico Sur a los <em>mercados del mundo</em> {{else}} From the South Atlantic to <em>world markets</em> {{/if}}</h2>
+    </div>
+
+    <div class="products-grid">
+      <div class="product-card featured fade-up">
+        <div class="prod-tag">{{#if lang === 'es'}} PRODUCTO ESTRELLA · MSC CERTIFICADO {{else}} FLAGSHIP PRODUCT · MSC CERTIFIED {{/if}}</div>
+        <div class="prod-name">{{#if lang === 'es'}} Merluza Negra {{else}} Patagonian Toothfish {{/if}}</div>
+        <span class="prod-sci">Dissostichus eleginoides</span>
+        <p class="prod-desc">{{#if lang === 'es'}} Considerada uno de los pescados más preciados del mundo por su textura rica y sabor inigualable. Capturada mediante palangre en las frías y ricas aguas del Atlántico Sur, a profundidades de 500–2,000 metros. {{else}} Considered one of the most prized fish in the world for its rich texture and unrivaled flavor. Caught by longline in the cold and rich waters of the South Atlantic, at depths of 500–2,000 meters. {{/if}}</p>
+        <div class="prod-img-placeholder">
+          <span class="prod-img-label">// merluza negra — product photography</span>
+        </div>
+      </div>
+
+      <div class="product-card fade-up" style="transition-delay: 0.1s">
+        <div class="prod-tag">{{#if lang === 'es'}} ESPECIE PELÁGICA {{else}} PELAGIC SPECIES {{/if}}</div>
+        <div class="prod-name">{{#if lang === 'es'}} Merluza de Cola {{else}} Grenadier {{/if}}</div>
+        <p class="prod-desc">{{#if lang === 'es'}} Primera pesquería en Sudamérica en obtener la certificación MSC en 2012. {{else}} First fishery in South America to obtain MSC certification in 2012. {{/if}}</p>
+        <div class="prod-img-placeholder"><span class="prod-img-label">// grenadier photo</span></div>
+      </div>
+
+      <div class="product-card fade-up" style="transition-delay: 0.2s">
+        <div class="prod-tag">{{#if lang === 'es'}} PELÁGICO {{else}} PELAGIC {{/if}}</div>
+        <div class="prod-name">{{#if lang === 'es'}} Calamar {{else}} Squid {{/if}}</div>
+        <p class="prod-desc">{{#if lang === 'es'}} Capturado en las ricas aguas de la Patagonia Argentina. {{else}} Caught in the rich waters of Argentine Patagonia. {{/if}}</p>
+        <div class="prod-img-placeholder"><span class="prod-img-label">// squid photo</span></div>
+      </div>
+
+      <div class="product-card wide fade-up" style="transition-delay: 0.3s">
+        <div class="prod-wide-layout">
+          <div>
+            <div class="prod-tag">{{#if lang === 'es'}} FORMATO {{else}} FORMAT {{/if}}</div>
+            <div class="prod-name prod-name-small">{{#if lang === 'es'}} Filetes y porciones {{else}} Fillets and portions {{/if}}</div>
+            <p class="prod-desc prod-desc-no-margin">{{#if lang === 'es'}} Procesado a bordo y en planta, congelado a –40°C para máxima frescura. {{else}} Processed onboard and at the plant, frozen at -40°C for maximum freshness. {{/if}}</p>
+          </div>
+          <div>
+            <div class="prod-tag">{{#if lang === 'es'}} DESTINOS {{else}} DESTINATIONS {{/if}}</div>
+            <div class="prod-name prod-name-small">{{#if lang === 'es'}} Mercados globales {{else}} Global markets {{/if}}</div>
+            <p class="prod-desc prod-desc-no-margin">{{#if lang === 'es'}} Japón, Estados Unidos, Europa, China y los principales mercados gastronómicos del mundo. {{else}} Japan, United States, Europe, China, and the world's major gastronomic markets. {{/if}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ SUSTAINABILITY ══════════════ -->
+<section class="section" id="sustainability">
+  <div class="section-inner">
+    <div class="sustain-grid">
+      <div class="sustain-sticky fade-up">
+        <span class="section-label">{{#if lang === 'es'}} SUSTENTABILIDAD {{else}} SUSTAINABILITY {{/if}}</span>
+        <h2 class="sustain-title page-title sustain-title-dark">
+          {{#if lang === 'es'}} Comprometidos con el <em>futuro del mar</em> {{else}} Committed to the <em>future of the sea</em> {{/if}}
+        </h2>
+        <p class="sustain-body">
+          {{#if lang === 'es'}} La sustentabilidad es la base de nuestras operaciones. La existencia de productos de mar silvestres constituye la base de nuestra compañía y la forma de vida de muchas personas. {{else}} Sustainability is the foundation of our operations. The existence of wild seafood products forms the base of our company and the way of life for many people. {{/if}}
+        </p>
+        <div class="cert-badges">
+          <div class="cert-badge">
+            <div class="cert-badge-icon">MSC</div>
+            <div>
+              <div class="cert-badge-name">Marine Stewardship Council</div>
+              <div class="cert-badge-desc">{{#if lang === 'es'}} Merluza de Cola certificada desde 2012. Primera en Sudamérica. {{else}} Grenadier certified since 2012. First in South America. {{/if}}</div>
+            </div>
+          </div>
+          <div class="cert-badge">
+            <div class="cert-badge-icon">COL</div>
+            <div>
+              <div class="cert-badge-name">COLTO Member</div>
+              <div class="cert-badge-desc">{{#if lang === 'es'}} Coalición de Operadores Legales de Merluza Negra {{else}} Coalition of Legal Toothfish Operators {{/if}}</div>
+            </div>
+          </div>
+          <div class="cert-badge">
+            <div class="cert-badge-icon">INI</div>
+            <div>
+              <div class="cert-badge-name">INIDEP</div>
+              <div class="cert-badge-desc">{{#if lang === 'es'}} Apoyo al Instituto Nacional de Investigación y Desarrollo Pesquero {{else}} Supporting the National Institute of Fishery Research and Development {{/if}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sustain-items">
+        <div class="sustain-item fade-up">
+          <span class="sustain-num">01</span>
+          <div>
+            <div class="sustain-item-title">{{#if lang === 'es'}} Certificación MSC {{else}} MSC Certification {{/if}}</div>
+            <p class="sustain-item-body">{{#if lang === 'es'}} Estremar ha promovido activamente la certificación de las pesquerías argentinas bajo los principios del Consejo de Administración Marina, el estándar de oro mundial para la pesca sustentable. {{else}} Estremar has actively promoted the certification of Argentine fisheries under the Marine Stewardship Council principles, the global gold standard for sustainable fishing. {{/if}}</p>
+          </div>
+        </div>
+        <div class="sustain-item fade-up" style="transition-delay: 0.1s">
+          <span class="sustain-num">02</span>
+          <div>
+            <div class="sustain-item-title">{{#if lang === 'es'}} Lucha contra la pesca ilegal {{else}} Fighting illegal fishing {{/if}}</div>
+            <p class="sustain-item-body">{{#if lang === 'es'}} Como miembro de COLTO, trabajamos activamente para eliminar la pesca ilegal, no declarada y no reglamentada de Merluza Negra, protegiendo el recurso para las generaciones futuras. {{else}} As a member of COLTO, we work actively to eliminate illegal, unreported, and unregulated fishing of Patagonian Toothfish, protecting the resource for future generations. {{/if}}</p>
+          </div>
+        </div>
+        <div class="sustain-item fade-up" style="transition-delay: 0.2s">
+          <span class="sustain-num">03</span>
+          <div>
+            <div class="sustain-item-title">{{#if lang === 'es'}} Protección de la fauna marina {{else}} Marine wildlife protection {{/if}}</div>
+            <p class="sustain-item-body">{{#if lang === 'es'}} Colaboramos con Aves Argentinas para reducir la interacción de aves con la pesca. Instructores del grupo Albatros se embarcan en nuestros viajes para reunir datos y minimizar el impacto. {{else}} We collaborate with Aves Argentinas to reduce the interaction of birds with fishing. Albatross group instructors embark on our trips to gather data and minimize impact. {{/if}}</p>
+          </div>
+        </div>
+        <div class="sustain-item fade-up" style="transition-delay: 0.3s">
+          <span class="sustain-num">04</span>
+          <div>
+            <div class="sustain-item-title">{{#if lang === 'es'}} Investigación científica {{else}} Scientific research {{/if}}</div>
+            <p class="sustain-item-body">{{#if lang === 'es'}} Apoyamos el trabajo del INIDEP, que trabaja bajo rigurosos procedimientos científicos para lograr un manejo sustentable del stock comercial de peces en Argentina. {{else}} We support the work of INIDEP, which operates under rigorous scientific procedures to achieve sustainable management of the commercial fish stock in Argentina. {{/if}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CONTACTO ══════════════ -->
+<section class="section" style="background: var(--blue-deep)" id="contact">
+  <div class="section-inner">
+    <div class="contact-grid">
+      <div class="fade-up">
+        <span class="section-label section-label-teal">{{#if lang === 'es'}} CONTACTO {{else}} CONTACT {{/if}}</span>
+        <h2 class="contact-title page-title">{{#if lang === 'es'}} Hablemos sobre <em>nuestros productos</em> {{else}} Let's talk about <em>our products</em> {{/if}}</h2>
+        <p class="contact-intro">{{#if lang === 'es'}} Estamos siempre disponibles para responder sus consultas sobre nuestros productos, certificaciones y condiciones de venta. {{else}} We are always available to answer your inquiries about our products, certifications, and terms of sale. {{/if}}</p>
+        
+        <div class="contact-info">
+          <div><div class="contact-item-label">EMAIL</div><div class="contact-item-val">infoc@estremar.com</div></div>
+          <div><div class="contact-item-label">{{#if lang === 'es'}} TELÉFONO {{else}} PHONE {{/if}}</div><div class="contact-item-val">+54 11 5032-4971</div></div>
+          <div><div class="contact-item-label">{{#if lang === 'es'}} DIRECCIÓN {{else}} ADDRESS {{/if}}</div><div class="contact-item-val">Ushuaia, Tierra del Fuego, Argentina</div></div>
+        </div>
+      </div>
+
+      <div class="fade-up" style="transition-delay: 0.2s">
+        <form class="contact-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">{{#if lang === 'es'}} NOMBRE {{else}} NAME {{/if}}</label>
+              <input type="text" class="form-input" placeholder="—">
+            </div>
+            <div class="form-group">
+              <label class="form-label">{{#if lang === 'es'}} EMPRESA {{else}} COMPANY {{/if}}</label>
+              <input type="text" class="form-input" placeholder="—">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">EMAIL</label>
+            <input type="email" class="form-input" placeholder="—">
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{#if lang === 'es'}} PAÍS / MERCADO {{else}} COUNTRY / MARKET {{/if}}</label>
+            <input type="text" class="form-input" placeholder="—">
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{#if lang === 'es'}} MENSAJE {{else}} MESSAGE {{/if}}</label>
+            <textarea class="form-textarea" placeholder="—"></textarea>
+          </div>
+          <button type="submit" class="form-submit">{{#if lang === 'es'}} ENVIAR CONSULTA {{else}} SEND INQUIRY {{/if}}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,107 @@
+<style>
+  :host {
+    display: block; /* Ensure the component takes up space */
+  }
+
+  .section-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 56px;
+    width: 100%;
+  }
+
+  /* ── ABOUT SECTION STYLES ── */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 120px;
+    align-items: center;
+  }
+
+  .about-content h2 {
+    font-size: clamp(36px, 4vw, 56px);
+    margin-bottom: 40px;
+  }
+
+  .about-title-dark { color: var(--text-dark); }
+
+  .about-text {
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text-mid);
+  }
+  .about-text p { margin-bottom: 24px; }
+
+  .about-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    color: var(--blue);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(43, 120, 157, 0.2);
+    padding-bottom: 4px;
+    transition: border-color 0.2s;
+  }
+  .about-cta:hover { border-color: var(--blue); }
+
+  .about-visual {
+    position: relative;
+    aspect-ratio: 4/5;
+    background: var(--off-white);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .about-visual::after {
+    content: '// vessel at sea — Ushuaia port';
+    position: absolute;
+    bottom: 24px; left: 24px;
+    font-size: 10px;
+    color: var(--text-light);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .about-year {
+    position: absolute;
+    top: 40px; right: -20px;
+    font-family: var(--font-serif);
+    font-size: 140px;
+    line-height: 1;
+    color: #fff;
+    opacity: 0.8;
+    z-index: 1;
+  }
+</style>
+
+<div class="section-inner">
+  <div class="about-grid">
+    <div class="about-content fade-up">
+      <span class="section-label">{{#if lang === 'es'}} QUIÉNES SOMOS {{else}} WHO WE ARE {{/if}}</span>
+      <h2 class="page-title about-title-dark">
+        {{#if lang === 'es'}} Una compañía pesquera <em>Argentina líder</em> {{else}} A leading <em>Argentine</em> fishing company {{/if}}
+      </h2>
+      <div class="about-text">
+        {{#if lang === 'es'}}
+          <p>Estremar es una de las más grandes compañías pesqueras en Argentina. Somos proveedores líderes de Merluza Negra y nuestros productos de mar se sirven en los platos de los mercados más importantes del mundo.</p>
+          <p>Mejoramos continuamente nuestras operaciones e invertimos en procesos de producción innovadores. Hemos operado en el puerto más austral, Ushuaia, desde 1992, y siempre nos hemos enorgullecido de emplear a las personas correctas.</p>
+        {{else}}
+          <p>Estremar is one of the largest fishing companies in Argentina. We are leading providers of Patagonian Toothfish and our seafood products are served on the plates of the world's most important markets.</p>
+          <p>We continuously improve our operations and invest in innovative production processes. We have operated in the southernmost port, Ushuaia, since 1992, and have always taken pride in employing the right people.</p>
+        {{/if}}
+      </div>
+      <a href="/company" route class="about-cta">
+        {{#if lang === 'es'}} Mensaje del Presidente {{else}} President's Message {{/if}}
+      </a>
+    </div>
+    <div class="about-visual fade-up" style="transition-delay: 0.2s">
+      <div class="about-year">1992</div>
+    </div>
+  </div>
+</div>

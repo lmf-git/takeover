@@ -1,58 +1,142 @@
 {
   "nav": {
-    "home": "Inicio",
-    "about": "Acerca de",
+    "about": "Quiénes somos",
+    "fleet": "Nuestra Flota",
+    "products": "Productos",
+    "sustainability": "Sustentabilidad",
     "contact": "Contacto",
-    "dashboard": "Panel"
+    "contactUs": "Contáctenos"
   },
-  "auth": {
-    "login": "Iniciar sesión",
-    "logout": "Cerrar sesión",
-    "loginAsAdmin": "Iniciar como Admin",
-    "loggedInAs": "Conectado como",
-    "notLoggedIn": "No conectado",
-    "persistNote": "¡El estado de autenticación persiste entre recargas!"
+  "hero": {
+    "eyebrow": "Pesca Argentina · Desde 1992",
+    "title": "Proveedor líder de <em>Merluza Negra</em> del mar austral",
+    "subtitle": "Operamos desde Ushuaia, el puerto más austral del mundo, pescando con responsabilidad en las aguas de la Plataforma Continental Argentina.",
+    "btnProducts": "Nuestros Productos",
+    "btnLearnMore": "Conocer más",
+    "stat1Num": "30+",
+    "stat1Label": "Años de operación",
+    "stat2Num": "MSC",
+    "stat2Label": "Certificado desde 2012",
+    "stat3Num": "#1",
+    "stat3Label": "Merluza Negra Argentina"
   },
-  "theme": {
-    "light": "Claro",
-    "dark": "Oscuro"
+  "about": {
+    "label": "Quiénes somos",
+    "title": "Una compañía pesquera Argentina <em>líder</em>",
+    "body1": "Estremar es una de las más grandes compañías pesqueras en Argentina. Somos proveedores líderes de Merluza Negra y nuestros productos de mar se sirven en los platos de los mercados más importantes del mundo.",
+    "body2": "Mejoramos continuamente nuestras operaciones e invertimos en procesos de producción innovadores. Hemos operado en el puerto más austral, Ushuaia, desde 1992, y siempre nos hemos enorgullecido de emplear a las personas correctas.",
+    "signatureName": "Mensaje del Presidente",
+    "signatureTitle": "Compromiso con la excelencia y la sustentabilidad",
+    "imgAlt": "buque en el mar — puerto de Ushuaia",
+    "badgeText": "Operando desde Ushuaia, Tierra del Fuego"
+  },
+  "values": {
+    "v1Title": "Confianza del cliente",
+    "v1Body": "La confianza de nuestros clientes es la base para nuestras operaciones y todos los días nos esforzamos por superar sus expectativas.",
+    "v2Title": "Practicidad operativa",
+    "v2Body": "Nos involucramos y comprometemos, sabemos qué estamos haciendo y hacemos bien nuestro trabajo.",
+    "v3Title": "Seguridad y medioambiente",
+    "v3Body": "Nos importa y nos responsabilizamos personalmente por la seguridad de nuestra gente y el medio ambiente.",
+    "v4Title": "Desarrollo de personas",
+    "v4Body": "Nuestros logros son resultado de los esfuerzos del equipo. Compartimos lo que sabemos y nos ayudamos mutuamente."
+  },
+  "fleet": {
+    "label": "Nuestra Flota",
+    "title": "Operaciones en aguas del <em>Atlántico Sur</em>",
+    "desc": "Nuestra flota opera en las aguas de la Plataforma Continental Argentina, con base en Ushuaia, el puerto más austral del mundo. Empleamos las más modernas tecnologías de pesca responsable.",
+    "card1Type": "Pesca de palangre",
+    "card1Name": "Buques Palangreros",
+    "card1Desc": "Embarcaciones especializadas en la captura de Merluza Negra mediante el sistema de palangre, la técnica más selectiva y sustentable disponible.",
+    "card1K1": "Especie objetivo",
+    "card1K2": "Puerto base",
+    "card2Type": "Pesca pelágica",
+    "card2Name": "Buques Pelágicos",
+    "card2Desc": "Flota dirigida a la captura de especies pelágicas en pesquerías bien gestionadas y sustentables de la Plataforma Continental Argentina.",
+    "card2K1": "Área de pesca",
+    "card2V1": "Plataforma Continental",
+    "card2K2": "Zona",
+    "card3Type": "Procesamiento a bordo",
+    "card3Name": "Planta de Procesado",
+    "card3Desc": "Procesamiento a bordo de los buques y en tierra en Ushuaia, con los más altos estándares de calidad para la cadena de frío.",
+    "card3K1": "Ubicación",
+    "card3K2": "Estándar"
+  },
+  "products": {
+    "label": "Productos del mar",
+    "title": "Del Atlántico Sur a los <em>mercados del mundo</em>",
+    "featTag": "Producto estrella · MSC Certificado",
+    "featName": "Merluza Negra<br><span style=\"font-style:italic;color:var(--teal-light)\">Dissostichus eleginoides</span>",
+    "featDesc": "Considerada uno de los pescados más preciados del mundo por su textura rica y sabor inigualable. Capturada mediante palangre en las frías y ricas aguas del Atlántico Sur, a profundidades de 500–2,000 metros.",
+    "p2Tag": "Especie pelágica",
+    "p2Name": "Merluza de Cola",
+    "p2Desc": "Primera pesquería en Sudamérica en obtener la certificación MSC en 2012.",
+    "p3Tag": "Pelágico",
+    "p3Name": "Calamar",
+    "p3Desc": "Capturado en las ricas aguas de la Patagonia Argentina.",
+    "p4Tag": "Formato",
+    "p4Name": "Filetes y porciones",
+    "p4Desc": "Procesado a bordo y en planta, congelado a –40°C para máxima frescura.",
+    "p5Tag": "Destinos",
+    "p5Name": "Mercados globales",
+    "p5Desc": "Japón, Estados Unidos, Europa, China y los principales mercados gastronómicos del mundo."
+  },
+  "sustain": {
+    "label": "Sustentabilidad",
+    "title": "Comprometidos con el <em>futuro del mar</em>",
+    "body": "La sustentabilidad es la base de nuestras operaciones. La existencia de productos de mar silvestres constituye la base de nuestra compañía y la forma de vida de muchas personas.",
+    "cert1Name": "Marine Stewardship Council",
+    "cert1Desc": "Merluza de Cola certificada desde 2012. Primera en Sudamérica.",
+    "cert2Name": "Miembro COLTO",
+    "cert2Desc": "Coalición de Operadores Legales de Merluza Negra",
+    "cert3Name": "INIDEP",
+    "cert3Desc": "Apoyo al Instituto Nacional de Investigación y Desarrollo Pesquero",
+    "i1Title": "Certificación MSC",
+    "i1Body": "Estremar ha promovido activamente la certificación de las pesquerías argentinas bajo los principios del Consejo de Administración Marina, el estándar de oro mundial para la pesca sustentable.",
+    "i2Title": "Lucha contra la pesca ilegal",
+    "i2Body": "Como miembro de COLTO, trabajamos activamente para eliminar la pesca ilegal, no declarada y no reglamentada de Merluza Negra, protegiendo el recurso para las generaciones futuras.",
+    "i3Title": "Protección de la fauna marina",
+    "i3Body": "Colaboramos con Aves Argentinas para reducir la interacción de aves con la pesca. Instructores del grupo Albatros se embarcan en nuestros viajes para reunir datos y minimizar el impacto.",
+    "i4Title": "Investigación científica",
+    "i4Body": "Apoyamos el trabajo del INIDEP, que trabaja bajo rigurosos procedimientos científicos para lograr un manejo sustentable del stock comercial de peces en Argentina."
+  },
+  "contact": {
+    "label": "Contacto",
+    "title": "Hablemos sobre <em>nuestros productos</em>",
+    "sub": "Estamos siempre disponibles para responder sus consultas sobre nuestros productos, certificaciones y condiciones de venta.",
+    "emailLabel": "Email",
+    "phoneLabel": "Teléfono",
+    "addressLabel": "Dirección",
+    "address": "Ushuaia, Tierra del Fuego, Argentina",
+    "fName": "Nombre",
+    "fCompany": "Empresa",
+    "fCountry": "País / Mercado",
+    "fMessage": "Mensaje",
+    "fSubmit": "Enviar consulta",
+    "fSuccess": "¡Mensaje enviado!"
   },
   "footer": {
-    "copyright": "© {year} Aplicación de Componentes Web"
+    "tagline": "Pesquería responsable desde el fin del mundo. Ushuaia, Tierra del Fuego, Argentina.",
+    "colCompany": "Compañía",
+    "colOperations": "Operaciones",
+    "colCerts": "Certif. & membresías",
+    "lAbout": "Quiénes somos",
+    "lValues": "Nuestros valores",
+    "lSustain": "Sustentabilidad",
+    "lContact": "Contacto",
+    "lFleet": "Nuestra flota",
+    "lProducts": "Productos",
+    "lProcessing": "Procesamiento",
+    "copyright": "© 2024 Estremar. Todos los derechos reservados."
   },
-  "home": {
-    "title": "Bienvenido",
-    "welcome": "¡Bienvenido a nuestra aplicación de componentes web!",
-    "localState": "Demo de Estado Local",
-    "localStateDesc": "Este estado es local sólo a este componente:",
-    "propPassing": "Demo de Paso de Props",
-    "globalState": "Demo de Estado Global",
-    "globalStateDesc": "Este contador es compartido por todos los componentes:",
-    "currentCounter": "Valor actual del contador:",
-    "authContext": "Demo de Contexto de Autenticación",
-    "typeSomething": "Escribe algo..."
+  "lang": {
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés"
   },
   "common": {
     "loading": "Cargando...",
     "error": "Algo salió mal",
     "notFound": "Página no encontrada",
     "goHome": "Ir al inicio"
-  },
-  "about": {
-    "title": "Acerca de nosotros",
-    "intro": "Esta es la página de información de nuestra aplicación usando web components y enrutamiento del lado del cliente.",
-    "shadowDemo": "Este componente demuestra estilos con ámbito usando Shadow DOM con un ejemplo resaltado.",
-    "stateHeading": "Acceso al Estado Global",
-    "counterPersists": "El valor del contador persiste entre páginas:",
-    "currentCounter": "Contador actual:",
-    "counterDoubled": "Contador duplicado:",
-    "lastPath": "Última ruta visitada:",
-    "currentPage": "Actualmente estás en la página Acerca de.",
-    "navigateTo": "Navegar a:"
-  },
-  "lang": {
-    "en": "Inglés",
-    "es": "Español",
-    "fr": "Francés"
   }
 }

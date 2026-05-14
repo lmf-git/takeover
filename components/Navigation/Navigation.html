@@ -1,109 +1,106 @@
 <style>
+  :host { display: block; }
+
   nav {
-    background-color: var(--primary-color, #264653);
-    padding: 15px 0;
-    margin-bottom: 20px;
-    transition: var(--transition);
-  }
-  
-  .nav-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    padding: 0 56px;
+    height: 72px;
+    background: rgba(10,24,37,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(156,192,204,0.12);
+    transition: background 0.3s;
   }
-  
-  ul {
+
+  .nav-logo {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 36px;
     list-style: none;
-    margin: 0;
+  }
+
+  .nav-links a {
+    color: rgba(247,248,249,0.75);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: var(--font-sans, inherit);
     padding: 0;
   }
-  
-  li {
-    margin: 0 15px;
-  }
-  
-  a {
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 18px;
-    transition: var(--transition);
-  }
-  
-  a:hover {
-    color: var(--warning-color, #e9c46a);
-  }
-  
-  .nav-actions {
+
+  .nav-links a:hover { color: var(--teal, #9CC0CC); }
+
+  .nav-right {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
+    flex-shrink: 0;
   }
-  
-  .user-info {
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-  }
-  
-  .user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid white;
-  }
-  
-  .auth-btn {
-    background: var(--success-color, #198754);
-    color: white;
+
+  .nav-cta {
+    background: var(--blue, #2B789D);
+    color: #fff;
     border: none;
-    padding: 8px 16px;
+    padding: 9px 22px;
     border-radius: 4px;
+    font-family: var(--font-sans, inherit);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     cursor: pointer;
-    font-weight: bold;
-    transition: var(--transition);
+    transition: background 0.2s;
   }
-  
-  .auth-btn:hover {
-    background: var(--primary-hover, #0b5ed7);
-  }
-  
-  .auth-btn.logout {
-    background: var(--danger-color, #dc3545);
+
+  .nav-cta:hover { background: var(--blue-dark, #1d5a7a); }
+
+  app-menu-toggle { display: none; }
+
+  @media (max-width: 900px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .nav-cta { display: none; }
+    language-switch { display: none; }
+    app-menu-toggle { display: flex; }
   }
 </style>
 
-<nav>
-  <div class="nav-container">
-    <app-logo></app-logo>
-    <ul>
-      <li><a href="/" route>{{t.nav.home}}</a></li>
-      <li><a href="/about" route>{{t.nav.about}}</a></li>
-      <li><a href="/contact" route>{{t.nav.contact}}</a></li>
-      <li><a href="/dashboard" route>{{t.nav.dashboard}}</a></li>
-    </ul>
+<nav id="main-nav">
+  <a href="/" class="nav-logo" route aria-label="Estremar">
+    <app-logo animated></app-logo>
+  </a>
 
-    <div class="nav-actions">
-      <language-switch></language-switch>
-      <theme-toggle></theme-toggle>
+  <ul class="nav-links">
+    <li><a href="/about" route>{{t.nav.about}}</a></li>
+    <li><a href="/fleet" route>{{t.nav.fleet}}</a></li>
+    <li><a href="/products" route>{{t.nav.products}}</a></li>
+    <li><a href="/sustainability" route>{{t.nav.sustainability}}</a></li>
+    <li><a href="/contact" route>{{t.nav.contact}}</a></li>
+  </ul>
 
-      <div id="auth-section">
-        {{#if isAuthenticated}}
-        <div class="user-info">
-          <img class="user-avatar" src="{{user.avatar}}" alt="{{user.username}}">
-          <span>{{user.username}}</span>
-        </div>
-        {{/if}}
-        <button class="auth-btn{{#if isAuthenticated}} logout{{/if}}" id="auth-btn">
-          {{#if isAuthenticated}}{{t.auth.logout}}{{else}}{{t.auth.login}}{{/if}}
-        </button>
-      </div>
-    </div>
+  <div class="nav-right">
+    <language-switch></language-switch>
+    <button class="nav-cta" id="contact-cta">{{t.nav.contactUs}}</button>
+    <app-menu-toggle></app-menu-toggle>
   </div>
 </nav>
+
+<mobile-menu></mobile-menu>

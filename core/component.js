@@ -116,8 +116,21 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     }
     this.mount?.();
     this.#hydrating = false;
-    // Only update after hydration if not SSR'd (SSR content is already correct)
     if (!hadSSR && Object.keys(this.#local).length) this.update();
+    // Re-sync if store changed since SSR render (locale race condition).
+    // Compare against __INITIAL_STATE__ (SSR snapshot) — by the time connectedCallback resolves
+    // initLocale() has already updated the store. Components that use t.* also check locale.
+    if (hadSSR) {
+      const usesMessages = /(^|[^a-zA-Z0-9_])t\.[a-z]/.test(this.#tpl);
+      const checkKeys = usesMessages
+        ? [...new Set([...this.constructor.store, 'locale'])]
+        : this.constructor.store;
+      if (checkKeys.length > 0) {
+        const ssrState = (isBrowser && window.__INITIAL_STATE__) || {};
+        const now = store.get();
+        if (checkKeys.some(k => ssrState[k] !== now[k])) { this.state = now; this.update(); }
+      }
+    }
   }
 
   disconnectedCallback() { this.#ac?.abort(); this.#subs.forEach(fn => fn()); this.unmount?.(); }

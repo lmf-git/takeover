@@ -46,11 +46,12 @@ const moduleKey = (abs, root) => '/' + relative(root, abs).replace(/\\/g, '/');
 
 // ─── Module graph builder ─────────────────────────────────────────────────────
 
-async function buildGraph(entry, root, graph = new Map(), order = []) {
+async function buildGraph(entry, root, graph = new Map(), order = [], transform = null) {
   const key = moduleKey(entry, root);
   if (graph.has(key)) return;
 
-  const src = await readFile(entry, 'utf-8');
+  let src = await readFile(entry, 'utf-8');
+  if (transform) src = await transform(src, entry);
   const deps = [];
 
   // Collect all specifiers
@@ -76,7 +77,7 @@ async function buildGraph(entry, root, graph = new Map(), order = []) {
 
   // Recurse (depth-first, skipping dynamic)
   for (const dep of deps.filter(d => !d.dynamic)) {
-    await buildGraph(dep.abs, root, graph, order);
+    await buildGraph(dep.abs, root, graph, order, transform);
   }
   order.push(key);
 }
@@ -95,13 +96,12 @@ function transformModule(key, src, deps, root) {
     return `__r(${JSON.stringify(moduleKey(dep, root))});`;
   });
 
-  // 2. Static imports: import ... from 'x'
+  // 2. Static imports: import ... from 'x'  → destructured/aliased const decls
+  // (compact form keeps the bundle smaller than the prior __dep_long_name copy chain)
+  let tmpCounter = 0;
   out = out.replace(RE_IMPORT, (_, clause, spec) => {
     const dep = resolveImport(spec, join(root, key), root);
-    if (!dep) {
-      // External/node — drop (shouldn't appear in client bundles)
-      return `/* external: ${spec} */`;
-    }
+    if (!dep) return `/* external: ${spec} */`;
     const depKey = JSON.stringify(moduleKey(dep, root));
     const c = clause.trim();
 
@@ -109,34 +109,27 @@ function transformModule(key, src, deps, root) {
     const nsMatch = c.match(/^\*\s+as\s+(\w+)$/);
     if (nsMatch) return `const ${nsMatch[1]}=__r(${depKey});`;
 
-    // import def from 'x' or import def, { ... } from 'x'
     const defaultMatch = c.match(/^(\w+)(?:\s*,\s*(.+))?$/);
     const braceMatch = c.match(/^\{([^}]+)\}$/);
 
-    let lines = [`const __dep${depKey.slice(1,-1).replace(/[^a-z0-9]/gi,'_')}=__r(${depKey});`];
-    const tmp = `__dep${depKey.slice(1,-1).replace(/[^a-z0-9]/gi,'_')}`;
+    // Format a `{ orig as alias, ... }` clause as destructure-with-rename
+    const destruct = names => names.split(',').map(p => {
+      const [orig, alias] = p.trim().split(/\s+as\s+/);
+      return alias ? `${orig.trim()}:${alias.trim()}` : orig.trim();
+    }).filter(Boolean).join(',');
 
     if (defaultMatch) {
-      lines.push(`const ${defaultMatch[1]}=${tmp}.default??${tmp};`);
-      if (defaultMatch[2]) {
-        // has named part too
-        const named = defaultMatch[2].replace(/^\{|\}$/g,'').trim();
-        for (const part of named.split(',')) {
-          const [orig, alias] = part.trim().split(/\s+as\s+/);
-          if (orig?.trim()) lines.push(`const ${(alias||orig).trim()}=${tmp}.${orig.trim()};`);
-        }
+      const [, def, named] = defaultMatch;
+      const tmp = `__m${tmpCounter++}`;
+      const parts = [`const ${tmp}=__r(${depKey})`, `${def}=${tmp}.default??${tmp}`];
+      if (named) {
+        const inner = named.replace(/^\{|\}$/g,'').trim();
+        if (inner) parts.push(`{${destruct(inner)}}=${tmp}`);
       }
-    } else if (braceMatch) {
-      for (const part of braceMatch[1].split(',')) {
-        const [orig, alias] = part.trim().split(/\s+as\s+/);
-        if (orig?.trim()) lines.push(`const ${(alias||orig).trim()}=${tmp}.${orig.trim()};`);
-      }
-    } else {
-      // fallback
-      lines = [`const __imp=__r(${depKey});`];
+      return parts.join(',') + ';';
     }
-
-    return lines.join('');
+    if (braceMatch) return `const{${destruct(braceMatch[1])}}=__r(${depKey});`;
+    return `__r(${depKey});`;
   });
 
   // 3. export * from / export * as ns from
@@ -207,10 +200,10 @@ function transformModule(key, src, deps, root) {
 
 // ─── Bundle emitter ───────────────────────────────────────────────────────────
 
-export async function bundle(entryAbs, root, { minify = false } = {}) {
+export async function bundle(entryAbs, root, { minify = false, transform = null } = {}) {
   const graph = new Map();
   const order = [];
-  await buildGraph(entryAbs, root, graph, order);
+  await buildGraph(entryAbs, root, graph, order, transform);
 
   const entryKey = moduleKey(entryAbs, root);
 
@@ -218,7 +211,10 @@ export async function bundle(entryAbs, root, { minify = false } = {}) {
     '(function(){\n"use strict";\n',
     'const __m={};\n',
     'const __r=id=>{\n  if(__m[id])return __m[id];\n  throw new Error("Module not found: "+id);\n};\n',
-    'const __d=(id,fn)=>{\n  const e={__esModule:true};\n  __m[id]=e;\n  fn(e,__r);\n  return e;\n};\n\n',
+    'const __d=(id,fn)=>{\n  const e={__esModule:true};\n  __m[id]=e;\n  fn(e,__r);\n  return e;\n};\n',
+    // Expose registry so dynamically-imported route scripts can reuse already-bundled modules
+    // instead of fetching them again over the network.
+    'globalThis.__r=__r;globalThis.__m=__m;\n\n',
   ];
 
   for (const key of order) {

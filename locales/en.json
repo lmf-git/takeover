@@ -1,58 +1,142 @@
 {
   "nav": {
-    "home": "Home",
-    "about": "About",
+    "about": "About us",
+    "fleet": "Our Fleet",
+    "products": "Products",
+    "sustainability": "Sustainability",
     "contact": "Contact",
-    "dashboard": "Dashboard"
+    "contactUs": "Contact us"
   },
-  "auth": {
-    "login": "Login",
-    "logout": "Logout",
-    "loginAsAdmin": "Login as Admin",
-    "loggedInAs": "Logged in as",
-    "notLoggedIn": "Not logged in",
-    "persistNote": "Authentication state persists across page refreshes!"
+  "hero": {
+    "eyebrow": "Argentine Fisheries · Since 1992",
+    "title": "Leading provider of <em>Patagonian Toothfish</em> from the austral sea",
+    "subtitle": "Operating from Ushuaia, the world's southernmost port, fishing responsibly in the waters of the Argentine Continental Shelf.",
+    "btnProducts": "Our Products",
+    "btnLearnMore": "Learn more",
+    "stat1Num": "30+",
+    "stat1Label": "Years operating",
+    "stat2Num": "MSC",
+    "stat2Label": "Certified since 2012",
+    "stat3Num": "#1",
+    "stat3Label": "Argentine Toothfish"
   },
-  "theme": {
-    "light": "Light",
-    "dark": "Dark"
+  "about": {
+    "label": "About us",
+    "title": "A <em>leading</em> Argentine fishing company",
+    "body1": "Estremar is one of the largest fishing companies in Argentina. We are leading suppliers of Patagonian Toothfish, and our seafood products are served on the plates of the world's most important markets.",
+    "body2": "We continuously improve our operations and invest in innovative production processes. We have operated from the southernmost port, Ushuaia, since 1992, and have always prided ourselves on employing the right people with the right attitude.",
+    "signatureName": "President's Message",
+    "signatureTitle": "Commitment to excellence and sustainability",
+    "imgAlt": "vessel at sea — Ushuaia port",
+    "badgeText": "Operating from Ushuaia, Tierra del Fuego"
+  },
+  "values": {
+    "v1Title": "Client trust",
+    "v1Body": "Our clients' trust is the foundation of our operations. Every day we strive to exceed their expectations.",
+    "v2Title": "Operational practicality",
+    "v2Body": "We engage and commit, we know what we are doing and we do our work well.",
+    "v3Title": "Safety & environment",
+    "v3Body": "We care and take personal responsibility for the safety of our people and the environment.",
+    "v4Title": "People development",
+    "v4Body": "Our achievements result from team effort. We share knowledge and help each other grow."
+  },
+  "fleet": {
+    "label": "Our Fleet",
+    "title": "Operations in the <em>South Atlantic</em> waters",
+    "desc": "Our fleet operates in the waters of the Argentine Continental Shelf, based in Ushuaia, the world's southernmost port. We employ the most modern responsible fishing technologies.",
+    "card1Type": "Longline fishing",
+    "card1Name": "Longline Vessels",
+    "card1Desc": "Vessels specialized in Patagonian Toothfish capture using the longline system, the most selective and sustainable technique available.",
+    "card1K1": "Target species",
+    "card1K2": "Home port",
+    "card2Type": "Pelagic fishing",
+    "card2Name": "Pelagic Vessels",
+    "card2Desc": "Fleet targeting pelagic species in well-managed and sustainable fisheries of the Argentine Continental Shelf.",
+    "card2K1": "Fishing area",
+    "card2V1": "Continental Shelf",
+    "card2K2": "Zone",
+    "card3Type": "Onboard processing",
+    "card3Name": "Processing Plant",
+    "card3Desc": "Onboard and onshore processing in Ushuaia, with the highest quality standards for the cold chain.",
+    "card3K1": "Location",
+    "card3K2": "Standard"
+  },
+  "products": {
+    "label": "Seafood products",
+    "title": "From the South Atlantic to <em>world markets</em>",
+    "featTag": "Flagship product · MSC Certified",
+    "featName": "Patagonian Toothfish<br><span style=\"font-style:italic;color:var(--teal-light)\">Dissostichus eleginoides</span>",
+    "featDesc": "Considered one of the most prized fish in the world for its rich texture and unrivaled flavor. Caught by longline in the cold, rich waters of the South Atlantic at depths of 500–2,000 meters.",
+    "p2Tag": "Pelagic species",
+    "p2Name": "Grenadier",
+    "p2Desc": "First fishery in South America to obtain MSC certification in 2012.",
+    "p3Tag": "Pelagic",
+    "p3Name": "Squid",
+    "p3Desc": "Caught in the rich Patagonian Argentine waters.",
+    "p4Tag": "Format",
+    "p4Name": "Fillets & portions",
+    "p4Desc": "Processed on board and at plant, frozen at –40°C for maximum freshness.",
+    "p5Tag": "Destinations",
+    "p5Name": "Global markets",
+    "p5Desc": "Japan, United States, Europe, China, and the world's major gastronomic markets."
+  },
+  "sustain": {
+    "label": "Sustainability",
+    "title": "Committed to the <em>future of the sea</em>",
+    "body": "Sustainability is the foundation of our operations. The existence of wild seafood products is the foundation of our company and the livelihood of many people.",
+    "cert1Name": "Marine Stewardship Council",
+    "cert1Desc": "Grenadier certified since 2012. First in South America.",
+    "cert2Name": "COLTO Member",
+    "cert2Desc": "Coalition of Legal Toothfish Operators",
+    "cert3Name": "INIDEP",
+    "cert3Desc": "Supporting the National Institute of Fishery Research and Development",
+    "i1Title": "MSC Certification",
+    "i1Body": "Estremar has actively promoted the certification of Argentine fisheries under the Marine Stewardship Council principles, the world's gold standard for sustainable fishing.",
+    "i2Title": "Fighting illegal fishing",
+    "i2Body": "As a COLTO member, we actively work to eliminate illegal, unreported, and unregulated Toothfish fishing, protecting the resource for future generations.",
+    "i3Title": "Marine wildlife protection",
+    "i3Body": "We collaborate with Aves Argentinas to reduce the interaction of seabirds with fishing. Albatross group instructors embark on our voyages to gather data and minimize impact.",
+    "i4Title": "Scientific research",
+    "i4Body": "We support the work of INIDEP, which works under rigorous scientific procedures to achieve sustainable management of Argentina's commercial fish stock."
+  },
+  "contact": {
+    "label": "Contact",
+    "title": "Let's talk about <em>our products</em>",
+    "sub": "We are always available to answer your inquiries about our products, certifications, and sales terms.",
+    "emailLabel": "Email",
+    "phoneLabel": "Phone",
+    "addressLabel": "Address",
+    "address": "Ushuaia, Tierra del Fuego, Argentina",
+    "fName": "Name",
+    "fCompany": "Company",
+    "fCountry": "Country / Market",
+    "fMessage": "Message",
+    "fSubmit": "Send inquiry",
+    "fSuccess": "Message sent!"
   },
   "footer": {
-    "copyright": "© {year} Web Components App"
+    "tagline": "Responsible fishing from the end of the world. Ushuaia, Tierra del Fuego, Argentina.",
+    "colCompany": "Company",
+    "colOperations": "Operations",
+    "colCerts": "Certif. & memberships",
+    "lAbout": "About us",
+    "lValues": "Our values",
+    "lSustain": "Sustainability",
+    "lContact": "Contact",
+    "lFleet": "Our fleet",
+    "lProducts": "Products",
+    "lProcessing": "Processing",
+    "copyright": "© 2024 Estremar. All rights reserved."
   },
-  "home": {
-    "title": "Welcome Home",
-    "welcome": "Welcome to our web component application!",
-    "localState": "Local State Demo",
-    "localStateDesc": "This state is local to this component only:",
-    "propPassing": "Prop Passing Demo",
-    "globalState": "Global State Demo",
-    "globalStateDesc": "This counter is shared across all components:",
-    "currentCounter": "Current counter value:",
-    "authContext": "Auth Context Demo",
-    "typeSomething": "Type something..."
+  "lang": {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French"
   },
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong",
     "notFound": "Page not found",
     "goHome": "Go home"
-  },
-  "about": {
-    "title": "About Us",
-    "intro": "This is the about page of our application using vanilla web components and client-side routing.",
-    "shadowDemo": "This component demonstrates scoped styles using Shadow DOM with a highlighted example.",
-    "stateHeading": "Global State Access",
-    "counterPersists": "The counter value persists across pages:",
-    "currentCounter": "Current counter:",
-    "counterDoubled": "Counter doubled:",
-    "lastPath": "Last visited path:",
-    "currentPage": "You are currently on the About page.",
-    "navigateTo": "Navigate to:"
-  },
-  "lang": {
-    "en": "English",
-    "es": "Spanish",
-    "fr": "French"
   }
 }

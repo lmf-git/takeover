@@ -7,6 +7,27 @@
   node_bundler = "esbuild"
   included_files = ["dist/server/**/*", "dist/client/_template.html"]
 
+# Hashed assets are content-addressed — safe to cache forever
+[[headers]]
+  for = "/_assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/app/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/components/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
 # Serve static assets directly (not through SSR)
 [[redirects]]
   from = "/core/*"

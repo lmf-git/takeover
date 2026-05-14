@@ -1,38 +1,14 @@
 <style>
-  :host {
-    display: block;
-    font-family: Arial, sans-serif;
-  }
-  .layout-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-  header {
-    margin-bottom: 20px;
-  }
+  :host { display: block; }
+
   main {
-    min-height: 400px;
-  }
-  footer {
-    margin-top: 40px;
-    padding: 20px 0;
-    border-top: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    font-size: 14px;
-    text-align: center;
+    padding-top: 72px; /* offset for fixed nav */
+    min-height: 100vh;
   }
 </style>
-<div class="layout-container">
-  <header>
-    <app-navigation></app-navigation>
-  </header>
-  
-  <main>
-    <app-router></app-router>
-  </main>
-  
-  <footer>
-    <p>© {{year}} Web Components App</p>
-  </footer>
-</div>
+
+<app-navigation></app-navigation>
+<main>
+  <app-router></app-router>
+</main>
+<app-footer></app-footer>

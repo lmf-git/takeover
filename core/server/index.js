@@ -11,12 +11,12 @@ const root = resolve(__dirname, '../..');
 const isProd = process.env.NODE_ENV === 'production';
 const port = process.env.PORT || 3000;
 
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2' };
+const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.otf': 'font/otf', '.ttf': 'font/ttf' };
 
 let routesCache = null;
 const getRoutes = async () => routesCache || (routesCache = await scanRoutes(join(root, 'app')));
 
-const SUPPORTED_LOCALES = ['en', 'es', 'fr'];
+const SUPPORTED_LOCALES = ['en', 'es'];
 
 function detectLocale(req) {
   const cookies = req.headers.cookie || '';
@@ -27,7 +27,7 @@ function detectLocale(req) {
   }
   const accept = req.headers['accept-language'] || '';
   const lang = accept.split(',')[0]?.split(';')[0]?.split(/[-_]/)[0]?.trim().toLowerCase();
-  return SUPPORTED_LOCALES.includes(lang) ? lang : 'en';
+  return SUPPORTED_LOCALES.includes(lang) ? lang : 'es';
 }
 
 let wss;
@@ -117,13 +117,13 @@ async function renderSSR(url, res, req) {
       '/lib/nav.js'
     ].map(p => `<link rel="modulepreload" href="${p}">`).join('\n  ');
     
-    const otherPreloads = [
-      '<link rel="preload" href="/routes.json" as="fetch">'
-    ].join('\n  ');
+    // Inline routes so the Router can read them synchronously instead of fetching /routes.json,
+    // matching the production behaviour and avoiding the "preload not used" warning.
+    const routesScript = `<script>window.__ROUTES__=${JSON.stringify(await getRoutes())}</script>`;
 
     let html = template
       .replace('<!--inline-css-->', `<style>${globalsCss}</style>`)
-      .replace('<!--preload-links-->', modulePreloads + '\n  ' + otherPreloads)
+      .replace('<!--preload-links-->', modulePreloads + routesScript)
       .replace('<!--head-meta-->', (result.headMeta || '') + (result.scopedStyles || ''))
       .replace('<!--app-html-->', result.appHtml)
       .replace('<!--initial-state-->', result.initialStateScript + result.localesScript);
@@ -198,6 +198,8 @@ async function handler(req, res) {
   const ext = extname(url);
   if (url !== '/' && !url.endsWith('/')) {
     if (await serveStatic(join(root, url), res)) return;
+    // Serve public/ assets at root path (e.g. /fonts/... → public/fonts/...)
+    if (await serveStatic(join(root, 'public', url), res)) return;
     if (ext && ext !== '.html') return res.writeHead(404).end('Not found');
   }
 

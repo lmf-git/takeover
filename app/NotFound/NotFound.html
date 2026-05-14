@@ -1,22 +1,60 @@
 <style>
-  :host {
-    color: var(--text-color);
-  }
+  :host { display: block; }
+
   section {
+    min-height: calc(100vh - 72px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding: 40px 20px;
+    padding: 40px 24px;
+    background: var(--navy, #0a1825);
   }
+
+  .num {
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: clamp(80px, 15vw, 160px);
+    font-weight: 400;
+    color: rgba(156,192,204,0.15);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
   h1 {
-    font-size: 4em;
-    margin: 0;
-    color: var(--danger-color);
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 16px;
   }
+
+  p {
+    font-size: 15px;
+    color: rgba(247,248,249,0.5);
+    margin-bottom: 36px;
+  }
+
   a {
-    color: var(--primary-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--blue, #2B789D);
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: background 0.2s;
   }
+  a:hover { background: var(--blue-dark, #1d5a7a); }
 </style>
+
 <section>
-  <h1>404</h1>
-  <p>Oops! The page you're looking for could not be found.</p>
-  <a href="/" route>Go back to Home</a>
+  <div class="num">404</div>
+  <h1>{{t.common.notFound}}</h1>
+  <p>The page you're looking for doesn't exist.</p>
+  <a href="/" route>{{t.common.goHome}}</a>
 </section>

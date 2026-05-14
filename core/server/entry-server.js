@@ -21,17 +21,6 @@ async function loadServerLocale(lang) {
   }
 }
 
-let allLocalesCache = null;
-async function loadAllLocales() {
-  if (allLocalesCache) return allLocalesCache;
-  const result = {};
-  await Promise.all(['en', 'es', 'fr'].map(async lang => {
-    result[lang] = await loadServerLocale(lang);
-  }));
-  allLocalesCache = result;
-  return result;
-}
-
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = process.env.SSR_ROOT || resolve(__dirname, '../..');
 const appDir = resolve(root, 'app');
@@ -91,7 +80,14 @@ async function buildRoutes() {
         if (m3) requiresAuth = m3[1] === 'true';
       } catch {}
     }
-    routes.push({ path: routePath, component: relative.split('/').pop().replace('.html', '').toLowerCase() + '-page', html: template, dynamic, matcher: dynamic ? createMatcher(routePath) : null, ssrProps, metadata, requiresAuth });
+    // Module path the browser will dynamically import. Matches what build.js / scan.js emit
+    // in routes data so the modulepreload hint actually preloads the right URL.
+    const isProd = process.env.NODE_ENV === 'production';
+    const hasEmbedded = !!html.match(/<script\b[^>]*>[\s\S]*?<\/script>/i);
+    const module = isProd
+      ? `/app/${relative.replace('.html', hasEmbedded ? '.script.js' : '.js')}`
+      : `/app/${relative}?script`;
+    routes.push({ path: routePath, component: relative.split('/').pop().replace('.html', '').toLowerCase() + '-page', module, html: template, dynamic, matcher: dynamic ? createMatcher(routePath) : null, ssrProps, metadata, requiresAuth });
   }
   const notFound = routes.find(r => r.component === 'notfound-page');
   if (notFound) routes.push({ ...notFound, path: '*', dynamic: false, matcher: null });
@@ -100,13 +96,14 @@ async function buildRoutes() {
 
 const routesPromise = buildRoutes();
 
-export async function render(url, { locale = 'en' } = {}) {
+export async function render(url, { locale = 'es' } = {}) {
   const routes = await routesPromise;
-  const [messages, allLocales] = await Promise.all([loadServerLocale(locale), loadAllLocales()]);
+  const messages = await loadServerLocale(locale);
   store.set({ locale, messages });
   const result = renderPage(url, routes, store.get());
-  const localesScript = `<script>window.__LOCALES__=${JSON.stringify(allLocales)}</script>`;
-  return Object.assign(await result, { localesScript });
+  // __INITIAL_STATE__ already carries the active locale's messages — no need for a
+  // separate __LOCALES__ payload. Other locales are fetched on demand by i18n.js.
+  return Object.assign(await result, { localesScript: '' });
 }
 
 export async function getClientRoutes() {

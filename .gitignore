@@ -5,3 +5,5 @@ node_modules/
 dist/
 
 .wrangler/
+
+.DS_Store

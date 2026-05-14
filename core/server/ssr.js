@@ -38,13 +38,14 @@ export function createRenderer({ loadFile, resolvePaths }) {
     return { tpl, css };
   }
 
-  async function renderComponent(tag, props) {
+  async function renderComponent(tag, props, attrs = '') {
     const { tpl, css } = await load(tag);
     if (!tpl) return null;
     const rendered = renderWithExpressions(tpl, { ...props, $css: css.classes });
     const { content, styles } = extractStyles(rendered);
     const allStyles = (css.css || '') + (styles || '');
-    return `<${tag}><template shadowrootmode="open">${allStyles ? `<style>${allStyles}</style>` : ''}${content}</template></${tag}>`;
+    const safeAttrs = attrs.replace(/\s*:[\w-]+="[^"]*"/g, '');
+    return `<${tag}${safeAttrs}><template shadowrootmode="open">${allStyles ? `<style>${allStyles}</style>` : ''}${content}</template></${tag}>`;
   }
 
   async function renderComponents(html, props, max = 50) {
@@ -66,7 +67,7 @@ export function createRenderer({ loadFile, resolvePaths }) {
           }
           childProps = { ...props, ...boundProps };
         }
-        const rendered = await renderComponent(tag, childProps);
+        const rendered = await renderComponent(tag, childProps, attrs);
         if (rendered) result = result.replace(full, rendered);
       }
     }
@@ -102,7 +103,14 @@ export function createRenderer({ loadFile, resolvePaths }) {
     const appHtml = `<template shadowrootmode="open">${allLayoutStyles ? `<style>${allLayoutStyles}</style>` : ''}${finalLayout}</template>`;
 
     const meta = route.metadata || state.meta || {};
-    const headMeta = [meta.title && `<title>${escapeHtml(meta.title)}</title>`, meta.description && `<meta name="description" content="${escapeHtml(meta.description)}">`].filter(Boolean).join('');
+    // Modulepreload the SSR'd page's script so it fetches in parallel with the core bundle
+    // instead of waiting for core to parse and trigger the Router's dynamic import.
+    const pagePreload = route.module ? `<link rel="modulepreload" href="${route.module}">` : '';
+    const headMeta = [
+      pagePreload,
+      meta.title && `<title>${escapeHtml(meta.title)}</title>`,
+      meta.description && `<meta name="description" content="${escapeHtml(meta.description)}">`,
+    ].filter(Boolean).join('');
 
     return { appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${JSON.stringify(state)}</script>`, headMeta };
   };

@@ -5,8 +5,8 @@ import { getQuery } from '../../lib/nav.js';
 const getClass = mod => mod.default || Object.values(mod).find(v => typeof v === 'function');
 
 /** Check auth and redirect to login if needed. Returns true if redirected. */
-const checkAuth = (Cls, path) => {
-  if (Cls?.requiresAuth && !store.get('isAuthenticated')) {
+const checkAuth = (requiresAuth, path) => {
+  if (requiresAuth && !store.get('isAuthenticated')) {
     history.replaceState(null, '', `/login?from=${encodeURIComponent(path)}`);
     return true;
   }
@@ -17,6 +17,7 @@ export default class Router extends HTMLElement {
   routes = [];
   currentPath = null;
   loading = false;
+  #preloaded = new Set();
 
   /** Route lifecycle hooks - set these to intercept navigation */
   static beforeEach = null; // async (to, from) => true | '/redirect' | false
@@ -27,9 +28,9 @@ export default class Router extends HTMLElement {
     this.outlet = this.querySelector('#outlet') || (this.innerHTML = '<div id="outlet"></div>', this.querySelector('#outlet'));
 
     try {
-      let res = await fetch('/routes.json');
-      if (!res.ok) res = await fetch('/api/routes');
-      this.routes = (await res.json()).map(r => ({ ...r, matcher: r.dynamic ? createMatcher(r.path) : null }));
+      const inlined = globalThis.__ROUTES__;
+      const data = inlined || await (await fetch('/routes.json').then(r => r.ok ? r : fetch('/api/routes'))).json();
+      this.routes = data.map(r => ({ ...r, matcher: r.dynamic ? createMatcher(r.path) : null }));
     } catch (e) {
       console.error('Failed to load routes:', e);
       this.outlet.innerHTML = '<h1>Failed to load app</h1>';
@@ -45,18 +46,24 @@ export default class Router extends HTMLElement {
       const a = e.composedPath().find(el => el.tagName === 'A' && el.hasAttribute?.('route'));
       if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
     });
-    document.addEventListener('pointerenter', e => {
+    document.addEventListener('pointerover', e => {
       const a = e.target.closest?.('a[route]');
-      if (a) this.preload(a.getAttribute('href'));
-    }, true);
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (this.#preloaded.has(href)) return;
+      this.#preloaded.add(href);
+      this.preload(href);
+    });
 
     const page = this.outlet.firstElementChild;
     if (page?.shadowRoot) {
-      // SSR content detected - hydrate without re-render or scroll reset
+      // SSR content detected — hydrate without re-render or scroll reset.
+      // We still must import the page module so customElements.define() runs
+      // and upgrades the SSR'd element, otherwise mount()/bind() never fire.
       const route = matchRoute(this.routes, location.pathname);
       if (route) {
-        const Cls = getClass(await import(route.route.module));
-        if (checkAuth(Cls, location.pathname)) return this.navigate();
+        if (checkAuth(route.route.requiresAuth, location.pathname)) return this.navigate();
+        await import(route.route.module);
       }
       this.currentPath = location.pathname;
       this.hydrated = true;
@@ -100,8 +107,8 @@ export default class Router extends HTMLElement {
     this.dispatchEvent(new CustomEvent('loading', { detail: { loading: true, path } }));
 
     try {
+      if (checkAuth(route.requiresAuth, path)) return this.navigate();
       const Cls = getClass(await import(route.module));
-      if (checkAuth(Cls, path)) return this.navigate();
       if (Cls?.templateUrl) await loadTemplate(Cls.templateUrl);
 
       const el = document.createElement(route.component);

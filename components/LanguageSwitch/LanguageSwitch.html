@@ -1,28 +1,35 @@
 <style>
   :host { display: inline-block; }
 
-  select {
-    appearance: none;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.4);
+  .lang-toggle {
+    display: flex;
+    border: 1px solid rgba(156,192,204,0.3);
     border-radius: 4px;
-    padding: 5px 28px 5px 10px;
-    cursor: pointer;
-    color: white;
-    font-size: 13px;
-    font-family: inherit;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    transition: border-color 0.2s;
+    overflow: hidden;
   }
 
-  select:hover { border-color: rgba(255,255,255,0.8); }
-  select option { background: #264653; color: white; }
+  button {
+    background: none;
+    border: none;
+    color: rgba(247,248,249,0.6);
+    font-family: var(--font-sans, inherit);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  button.active {
+    background: var(--teal, #9CC0CC);
+    color: var(--navy, #0a1825);
+  }
+
+  button:not(.active):hover { color: var(--teal, #9CC0CC); }
 </style>
 
-<select id="lang-select" aria-label="Language">
-  <option value="en">🇬🇧 EN</option>
-  <option value="es">🇪🇸 ES</option>
-  <option value="fr">🇫🇷 FR</option>
-</select>
+<div class="lang-toggle">
+  <button class="{{locale === 'es' ? 'active' : ''}}" @click="switchEs">ES</button>
+  <button class="{{locale === 'en' ? 'active' : ''}}" @click="switchEn">EN</button>
+</div>

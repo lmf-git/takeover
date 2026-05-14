@@ -1,74 +1,113 @@
-/* Global CSS Custom Properties for Theme Switching */
+/* ── Aalto Sans self-hosted ── */
+@font-face {
+  font-family: 'Aalto Sans';
+  src: url('/fonts/aaltosansessential-regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aalto Sans';
+  src: url('/fonts/aaltosansessential-regularit.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aalto Sans';
+  src: url('/fonts/aaltosansessential-medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aalto Sans';
+  src: url('/fonts/aaltosansessential-semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Aalto Sans';
+  src: url('/fonts/aaltosansessential-bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
+/* ── Estremar Design Tokens ── */
 :root {
-  /* Light theme (default) */
-  --bg-color: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-color: #212529;
-  --text-secondary: #6c757d;
-  --border-color: #dee2e6;
-  --hover-bg: #e9ecef;
-  --primary-color: #0d6efd;
-  --primary-hover: #0b5ed7;
+  --blue: #2B789D;
+  --blue-dark: #1d5a7a;
+  --blue-deep: #0d2233;
+  --teal: #9CC0CC;
+  --teal-light: #c8dde4;
+  --navy: #0a1825;
+  --navy-mid: #112233;
+  --white: #f7f8f9;
+  --off-white: #eef2f5;
+  --text-dark: #111820;
+  --text-mid: #3d5162;
+  --text-light: #7a95a8;
+  --font-serif: 'EB Garamond', Georgia, serif;
+  --font-sans: 'Aalto Sans', Helvetica, Arial, sans-serif;
+
+  /* Generic tokens (used by demo components) */
+  --bg-color: var(--white);
+  --bg-secondary: var(--off-white);
+  --text-color: var(--text-dark);
+  --text-secondary: var(--text-light);
+  --border-color: var(--teal-light);
+  --hover-bg: var(--off-white);
+  --primary-color: var(--blue);
+  --primary-hover: var(--blue-dark);
   --success-color: #198754;
   --danger-color: #dc3545;
   --warning-color: #ffc107;
-  --info-color: #0dcaf0;
-  
-  /* Shadows */
-  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-  
-  /* Transitions */
+  --info-color: var(--teal);
+
+  --shadow-sm: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+  --shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+  --shadow-lg: 0 1rem 3rem rgba(0,0,0,0.175);
   --transition: all 0.2s ease;
 }
 
 [data-theme="dark"] {
-  /* Dark theme */
-  --bg-color: #121212;
-  --bg-secondary: #1e1e1e;
-  --text-color: #ffffff;
-  --text-secondary: #b3b3b3;
-  --border-color: #404040;
-  --hover-bg: #2a2a2a;
-  --primary-color: #4dabf7;
-  --primary-hover: #339af0;
-  --success-color: #51cf66;
-  --danger-color: #ff6b6b;
-  --warning-color: #ffd43b;
-  --info-color: #74c0fc;
-  
-  /* Dark shadows */
-  --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
-  --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+  --bg-color: #0d1b24;
+  --bg-secondary: #112233;
+  --text-color: var(--white);
+  --text-secondary: rgba(247,248,249,0.5);
+  --border-color: rgba(156,192,204,0.15);
+  --hover-bg: #162d44;
+  --primary-color: var(--teal);
+  --primary-hover: var(--blue);
 }
 
-/* Prevent layout shift from scrollbar */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 html {
+  scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
 
-/* Global body styles */
 body {
-  background-color: var(--bg-color);
+  font-family: var(--font-sans);
+  background: var(--bg-color);
   color: var(--text-color);
+  overflow-x: hidden;
   transition: var(--transition);
 }
 
-/* Ensure custom elements are block-level before JS defines them (for SSR/DSD) */
-app-layout, app-router, app-navigation, app-counter, theme-toggle, local-state-display,
-home-page, about-page, contact-page, dashboard-page, login-page, notfound-page, user-page {
+/* Custom element display before JS defines them (SSR/DSD) */
+app-layout, app-router, app-navigation, home-page, notfound-page,
+language-switch, app-logo, mobile-menu {
   display: block;
 }
 
-/* Prevent layout shifts during hydration */
-app-layout {
-  contain: layout style;
-}
+app-menu-toggle { display: flex; }
 
-/* Apply theme to web component host elements */
+app-layout { contain: layout style; }
+
 :host {
   --host-bg: var(--bg-color);
   --host-text: var(--text-color);

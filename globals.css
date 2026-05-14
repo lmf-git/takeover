@@ -1,114 +1,87 @@
-/* ── Aalto Sans self-hosted ── */
-@font-face {
-  font-family: 'Aalto Sans';
-  src: url('/fonts/aaltosansessential-regular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Aalto Sans';
-  src: url('/fonts/aaltosansessential-regularit.otf') format('opentype');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Aalto Sans';
-  src: url('/fonts/aaltosansessential-medium.otf') format('opentype');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Aalto Sans';
-  src: url('/fonts/aaltosansessential-semibold.otf') format('opentype');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Aalto Sans';
-  src: url('/fonts/aaltosansessential-bold.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
-/* ── Estremar Design Tokens ── */
 :root {
-  --blue: #2B789D;
-  --blue-dark: #1d5a7a;
-  --blue-deep: #0d2233;
-  --teal: #9CC0CC;
-  --teal-light: #c8dde4;
-  --navy: #0a1825;
-  --navy-mid: #112233;
-  --white: #f7f8f9;
-  --off-white: #eef2f5;
-  --text-dark: #111820;
-  --text-mid: #3d5162;
-  --text-light: #7a95a8;
-  --font-serif: 'EB Garamond', Georgia, serif;
-  --font-sans: 'Aalto Sans', Helvetica, Arial, sans-serif;
-
-  /* Generic tokens (used by demo components) */
-  --bg-color: var(--white);
-  --bg-secondary: var(--off-white);
-  --text-color: var(--text-dark);
-  --text-secondary: var(--text-light);
-  --border-color: var(--teal-light);
-  --hover-bg: var(--off-white);
-  --primary-color: var(--blue);
-  --primary-hover: var(--blue-dark);
-  --success-color: #198754;
-  --danger-color: #dc3545;
-  --warning-color: #ffc107;
-  --info-color: var(--teal);
-
-  --shadow-sm: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-  --shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
-  --shadow-lg: 0 1rem 3rem rgba(0,0,0,0.175);
-  --transition: all 0.2s ease;
+  --bg: oklch(0.16 0.012 265);
+  --bg-elev: oklch(0.20 0.014 265);
+  --bg-elev-2: oklch(0.24 0.016 265);
+  --line: oklch(0.34 0.020 265);
+  --line-soft: oklch(0.27 0.016 265);
+  --fg: oklch(0.97 0.006 265);
+  --fg-muted: oklch(0.72 0.014 265);
+  --fg-dim: oklch(0.52 0.018 265);
+  --cyan: oklch(0.87 0.10 215);
+  --sky: oklch(0.82 0.10 230);
+  --blue: oklch(0.65 0.16 265);
+  --indigo: oklch(0.60 0.18 280);
+  --violet: oklch(0.72 0.18 295);
+  --lavender: oklch(0.82 0.12 305);
+  --accent: var(--indigo);
+  --accent-soft: oklch(0.78 0.13 275);
+  --accent-dim: oklch(0.65 0.16 275 / 0.16);
+  --accent-line: oklch(0.65 0.16 275 / 0.45);
+  --accent-grad: linear-gradient(135deg, #68CBE9 0%, #515DD1 45%, #846CE0 75%, #B985E9 100%);
+  --accent-grad-soft: linear-gradient(135deg, oklch(0.82 0.10 230 / 0.18) 0%, oklch(0.60 0.18 280 / 0.12) 50%, oklch(0.72 0.18 295 / 0.18) 100%);
+  --warn: oklch(0.82 0.16 75);
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shell-max: 1240px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
-[data-theme="dark"] {
-  --bg-color: #0d1b24;
-  --bg-secondary: #112233;
-  --text-color: var(--white);
-  --text-secondary: rgba(247,248,249,0.5);
-  --border-color: rgba(156,192,204,0.15);
-  --hover-bg: #162d44;
-  --primary-color: var(--teal);
-  --primary-hover: var(--blue);
+[data-theme='light'] {
+  --bg: oklch(0.985 0.004 265);
+  --bg-elev: oklch(0.965 0.005 265);
+  --bg-elev-2: oklch(0.945 0.006 265);
+  --line: oklch(0.85 0.012 265);
+  --line-soft: oklch(0.91 0.008 265);
+  --fg: oklch(0.20 0.014 265);
+  --fg-muted: oklch(0.42 0.016 265);
+  --fg-dim: oklch(0.60 0.014 265);
+  --accent: oklch(0.50 0.20 280);
+  --accent-soft: oklch(0.58 0.18 270);
+  --accent-dim: oklch(0.50 0.20 280 / 0.10);
+  --accent-line: oklch(0.50 0.20 280 / 0.40);
+  --accent-grad: linear-gradient(135deg, #5CA6DF 0%, #515DD1 45%, #6958C2 75%, #846CE0 100%);
+  --accent-grad-soft: linear-gradient(135deg, oklch(0.50 0.20 280 / 0.08), oklch(0.50 0.20 295 / 0.08));
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html {
-  scroll-behavior: smooth;
-  scrollbar-gutter: stable;
-}
-
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
 body {
+  background: var(--bg);
+  color: var(--fg);
   font-family: var(--font-sans);
-  background: var(--bg-color);
-  color: var(--text-color);
+  font-size: 15px;
+  line-height: 1.55;
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
   overflow-x: hidden;
-  transition: var(--transition);
+  transition: background 240ms ease, color 240ms ease;
 }
 
-/* Custom element display before JS defines them (SSR/DSD) */
 app-layout, app-router, app-navigation, home-page, notfound-page,
-language-switch, app-logo, mobile-menu {
-  display: block;
-}
-
-app-menu-toggle { display: flex; }
+app-logo, app-footer, triangle-seam, home-quickstart, home-demos,
+home-performance, home-features, home-structure, home-architecture,
+home-cta, hero-counter { display: block; }
 
 app-layout { contain: layout style; }
 
-:host {
-  --host-bg: var(--bg-color);
-  --host-text: var(--text-color);
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(var(--line-soft) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 0%, transparent 75%);
+  opacity: 0.7;
 }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-dim); }

@@ -29,6 +29,14 @@ const loadCSS = async (url, scope) => {
   return cache.css.get(key);
 };
 
+const loadPlainCSS = async url => {
+  if (!cache.css.has(url)) {
+    const raw = await fetchText(url);
+    cache.css.set(url, { styles: raw, classes: {} });
+  }
+  return cache.css.get(url);
+};
+
 const extractStyles = html => {
   let styles = '';
   return { content: html.replace(/<style>([\s\S]*?)<\/style>/gi, (_, css) => (styles += css, '')), styles };
@@ -94,13 +102,33 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
 
   async connectedCallback() {
     this.#ac = new AbortController();
-    const { template, templateUrl, cssModule, metadata } = this.constructor;
+    const { template, templateUrl, cssModule, css: cssFile, metadata } = this.constructor;
 
     const rawTpl = template || (templateUrl ? await loadTemplate(templateUrl) : '');
     const { html, bindings } = extractPropBindings(rawTpl);
     this.#tpl = html;
     this.#bindings = bindings;
-    if (cssModule) this.#css = await loadCSS(cssModule, this.tagName.toLowerCase());
+    const scope = this.tagName.toLowerCase();
+    if (cssModule) {
+      this.#css = await loadCSS(cssModule, scope);
+    } else if (cssFile) {
+      this.#css = await loadPlainCSS(cssFile);
+    } else if (templateUrl) {
+      // Auto-discover adjacent .module.css (scoped) or .css (plain) — dev/SSR convenience,
+      // production uses inlineTemplate which injects static cssModule/css when files exist.
+      const moduleCss = await loadCSS(templateUrl.replace(/\.html$/, '.module.css'), scope);
+      if (moduleCss.styles) {
+        this.#css = moduleCss;
+      } else {
+        const plainCss = await loadPlainCSS(templateUrl.replace(/\.html$/, '.css'));
+        if (plainCss.styles) this.#css = plainCss;
+      }
+    }
+    // Plain CSS (static css) can coexist with scoped cssModule — append to combined styles
+    if (cssModule && cssFile) {
+      const plain = await loadPlainCSS(cssFile);
+      if (plain.styles) this.#css = { styles: (this.#css.styles || '') + plain.styles, classes: this.#css.classes };
+    }
 
     this.state = store.get();
     if (metadata) store.setMeta(metadata);

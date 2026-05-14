@@ -1,0 +1,153 @@
+<style>
+  :host { display: block; }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  section {
+    padding-block: clamp(72px, 10vw, 120px);
+    background: var(--bg-elev);
+  }
+
+  .shell {
+    max-width: var(--shell-max, 1240px);
+    margin: 0 auto;
+    padding: 0 var(--gutter, clamp(20px,4vw,48px));
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 48px;
+    max-width: 720px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 1px; }
+
+  .section-head h2 { font-size: clamp(28px, 3.4vw, 44px); line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; margin: 0; }
+  .section-head p { margin: 0; color: var(--fg-muted); font-size: 17px; line-height: 1.55; }
+
+  .tree-panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg, 10px);
+    background: var(--bg-elev);
+    overflow: hidden;
+  }
+
+  .tree-chrome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--bg-elev-2);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: oklch(0.55 0.16 28); }
+  .dot-y { background: oklch(0.78 0.14 85); }
+  .dot-g { background: oklch(0.72 0.16 145); }
+
+  .tree-body {
+    padding: 20px 24px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.85;
+  }
+
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 1px 8px;
+    border-radius: 3px;
+    transition: background 120ms ease;
+    cursor: default;
+  }
+  .tree-row:hover { background: var(--bg-elev-2); }
+
+  .tree-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .tree-arrow { color: var(--fg-dim); user-select: none; }
+
+  .tree-dots {
+    flex: 1;
+    border-bottom: 1px dotted var(--line-soft);
+    align-self: center;
+    margin-top: 8px;
+  }
+
+  .tree-note {
+    color: var(--fg-dim);
+    font-size: 11px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .tree-legend {
+    display: flex;
+    gap: 18px;
+    padding: 12px 24px;
+    border-top: 1px solid var(--line-soft);
+    background: var(--bg-elev-2);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+  }
+</style>
+
+<section id="structure">
+  <div class="shell">
+    <div class="section-head">
+      <span class="eyebrow">{{t.structure.eyebrow}}</span>
+      <h2>{{t.structure.title}}</h2>
+      <p>{{t.structure.sub}}</p>
+    </div>
+    <div class="tree-panel">
+      <div class="tree-chrome">
+        <span class="dot dot-r"></span>
+        <span class="dot dot-y"></span>
+        <span class="dot dot-g"></span>
+        <span style="font-family:var(--font-mono);margin-left:12px;font-size:11px;color:var(--fg-muted)">~/takeover</span>
+        <span style="flex:1"></span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--fg-dim);letter-spacing:0.08em">FILES · 42</span>
+      </div>
+      <div class="tree-body" id="tree-body"></div>
+      <div class="tree-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--lavender,oklch(0.72 0.12 300))"></span>route</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--sky,oklch(0.72 0.14 240))"></span>component</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--fg)"></span>directory</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--fg-muted)"></span>file</span>
+      </div>
+    </div>
+  </div>
+</section>

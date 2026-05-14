@@ -1,58 +1,73 @@
 {
   "nav": {
-    "home": "Accueil",
-    "about": "À propos",
-    "contact": "Contact",
-    "dashboard": "Tableau de bord"
+    "docs": "Documentation",
+    "github": "GitHub",
+    "getStarted": "Voir la source"
   },
-  "auth": {
-    "login": "Connexion",
-    "logout": "Déconnexion",
-    "loginAsAdmin": "Connexion Admin",
-    "loggedInAs": "Connecté en tant que",
-    "notLoggedIn": "Non connecté",
-    "persistNote": "L'état d'authentification persiste entre les rechargements !"
+  "hero": {
+    "eyebrow": "v1.0 — prêt pour la production",
+    "tagline": "Zéro dépendance.",
+    "tagline2": "Framework complet.",
+    "sub": "Takeover est un framework full-stack — SSR, HMR, bundler, i18n — construit sur les modules natifs de Node et le standard Web Components. Pas de Vite. Pas de Webpack. Pas de node_modules.",
+    "install": "npx create-takeover@latest mon-app",
+    "cta": "Commencer",
+    "ctaSecondary": "Lire la doc",
+    "runtime": "Runtime",
+    "bundle": "Bundle principal",
+    "deps": "Dépendances"
   },
-  "theme": {
-    "light": "Clair",
-    "dark": "Sombre"
+  "counter": {
+    "title": "Store réactif",
+    "sub": "EventTarget en dessous. Abonnements par clé.",
+    "label": "compteur",
+    "inc": "incrémenter",
+    "dec": "décrémenter",
+    "reset": "réinitialiser"
+  },
+  "quickstart": {
+    "eyebrow": "Démarrage rapide",
+    "title": "En marche en trois commandes.",
+    "sub": "Node 18 ou plus. C'est la seule exigence. Vraiment."
+  },
+  "demos": {
+    "eyebrow": "Démos en direct",
+    "title": "Vrais patterns. Code qui tourne.",
+    "sub": "Chaque démo reflète une API réelle. Authentification, formulaires avec validation, gardes de route, fetch asynchrone avec états et événements. Cliquez partout."
+  },
+  "performance": {
+    "eyebrow": "Performance",
+    "title": "Audité. Pas supposé.",
+    "sub": "Zéro dépendance veut dire zéro octet qu'on n'a pas demandé. SSR en edge livre la page déjà parsée en un aller. Les chiffres disent ce qu'ils disent."
+  },
+  "features": {
+    "eyebrow": "Ce qu'il y a dedans",
+    "title": "Tout ce qu'il faut. Rien de plus.",
+    "sub": "Une stack frontend complète assemblée depuis la plateforme. Chaque pièce est petite, lisible, remplaçable."
+  },
+  "structure": {
+    "eyebrow": "Structure",
+    "title": "Routage par système de fichiers.",
+    "sub": "Les pages vivent dans app/. Les composants dans components/. Le framework dans core/. C'est toute l'histoire."
+  },
+  "arch": {
+    "eyebrow": "Architecture",
+    "title": "Comment circule une requête.",
+    "sub": "Pas de virtual DOM. Pas de décalage d'hydratation. Le navigateur analyse le Declarative Shadow DOM avant que le JS ne s'exécute."
+  },
+  "cta": {
+    "title": "Prenez le contrôle.",
+    "sub": "Clonez le starter, livrez dans l'après-midi.",
+    "primary": "Cloner le repo",
+    "secondary": "Lire la doc"
   },
   "footer": {
-    "copyright": "© {year} Application Web Components"
-  },
-  "home": {
-    "title": "Bienvenue",
-    "welcome": "Bienvenue sur notre application de composants web !",
-    "localState": "Démo d'état local",
-    "localStateDesc": "Cet état est local à ce composant uniquement :",
-    "propPassing": "Démo de passage de props",
-    "globalState": "Démo d'état global",
-    "globalStateDesc": "Ce compteur est partagé entre tous les composants :",
-    "currentCounter": "Valeur actuelle du compteur :",
-    "authContext": "Démo de contexte d'authentification",
-    "typeSomething": "Tapez quelque chose..."
+    "built": "Construit avec Node, la plateforme et pas grand-chose d'autre.",
+    "mit": "Licence MIT"
   },
   "common": {
     "loading": "Chargement...",
-    "error": "Une erreur s'est produite",
-    "notFound": "Page introuvable",
-    "goHome": "Retour à l'accueil"
-  },
-  "about": {
-    "title": "À propos de nous",
-    "intro": "Voici la page À propos de notre application utilisant des web components et le routage côté client.",
-    "shadowDemo": "Ce composant illustre les styles encapsulés avec Shadow DOM, avec un exemple en surbrillance.",
-    "stateHeading": "Accès à l'État Global",
-    "counterPersists": "La valeur du compteur persiste entre les pages :",
-    "currentCounter": "Compteur actuel :",
-    "counterDoubled": "Compteur doublé :",
-    "lastPath": "Dernière route visitée :",
-    "currentPage": "Vous êtes actuellement sur la page À propos.",
-    "navigateTo": "Naviguer vers :"
-  },
-  "lang": {
-    "en": "Anglais",
-    "es": "Espagnol",
-    "fr": "Français"
+    "error": "Quelque chose s'est mal passé",
+    "notFound": "Page non trouvée",
+    "goHome": "Accueil"
   }
 }

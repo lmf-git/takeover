@@ -1,7 +1,9 @@
 import store from '/lib/store.js';
 import { initLocale } from '/lib/i18n.js';
-// Always-present components — imported before loader.js so the loader's DOM scan
-// finds them already registered and skips the dynamic import chain.
+// Critical above-the-fold components — eagerly imported so they upgrade in sync
+// with the initial DSD paint. Footer is omitted: it sits below the fold, is
+// marked loading="lazy" in the layout, and is dynamic-imported by the loader's
+// IntersectionObserver when scrolled into view.
 import '/app/_Layout/_Layout.js';
 import '/components/Router/Router.js';
 import '/components/Navigation/Navigation.js';
@@ -10,8 +12,6 @@ import '/components/LanguageSwitch/LanguageSwitch.js';
 import '/components/MobileMenu/MobileMenu.js';
 import '/components/MenuToggle/MenuToggle.js';
 import '/components/HeroGrid/HeroGrid.js';
-import '/components/Footer/Footer.js';
-// Loader must come after the defines above
 import '/core/loader.js';
 
 // Restore scroll position after navigation

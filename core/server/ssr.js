@@ -28,10 +28,17 @@ export function createRenderer({ loadFile, resolvePaths }) {
       const html = await loadFile(paths.tpl);
       tpl = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').trim();
     } catch {}
+    // Load .module.css (scoped) and/or adjacent .css (plain) — both can coexist
     try {
       const raw = await loadFile(paths.css);
       css = processCSS(raw, tag);
     } catch {}
+    if (paths.plainCss) {
+      try {
+        const plain = await loadFile(paths.plainCss);
+        css = { css: (css.css || '') + plain, classes: css.classes };
+      } catch {}
+    }
 
     cache.templates.set(tag, tpl);
     cache.css.set(tag, css);

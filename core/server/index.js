@@ -122,11 +122,12 @@ async function renderSSR(url, res, req) {
     const routesScript = `<script>window.__ROUTES__=${JSON.stringify(await getRoutes())}</script>`;
 
     let html = template
-      .replace('<!--inline-css-->', `<style>${globalsCss}</style>`)
-      .replace('<!--preload-links-->', modulePreloads + routesScript)
-      .replace('<!--head-meta-->', (result.headMeta || '') + (result.scopedStyles || ''))
-      .replace('<!--app-html-->', result.appHtml)
-      .replace('<!--initial-state-->', result.initialStateScript + result.localesScript);
+      .replace(/<html\s+lang="[^"]*"/, () => `<html lang="${locale}"`)
+      .replace('<!--inline-css-->', () => `<style>${globalsCss}</style>`)
+      .replace('<!--preload-links-->', () => modulePreloads + routesScript)
+      .replace('<!--head-meta-->', () => (result.headMeta || '') + (result.scopedStyles || ''))
+      .replace('<!--app-html-->', () => result.appHtml)
+      .replace('<!--initial-state-->', () => result.initialStateScript + result.localesScript);
 
     if (!isProd) html = html.replace('</body>', `<script type="module">
 (function(){
@@ -200,6 +201,23 @@ async function handler(req, res) {
     if (await serveStatic(join(root, url), res)) return;
     // Serve public/ assets at root path (e.g. /fonts/... → public/fonts/...)
     if (await serveStatic(join(root, 'public', url), res)) return;
+    // Fallback: component/app .js not found → extract inline <script> from sibling .html
+    if (ext === '.js') {
+      const htmlPath = join(root, url.replace(/\.js$/, '.html'));
+      const htmlContent = await readFile(htmlPath, 'utf-8').catch(() => null);
+      if (htmlContent) {
+        const match = htmlContent.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
+        if (match) return res.writeHead(200, { 'Content-Type': 'text/javascript' }).end(match[1]);
+      }
+    }
+    // Optional CSS files (module or plain) that don't exist: return empty 200
+    // instead of 404 to avoid console noise. Component auto-discovery tries both
+    // but only uses them if they exist; suppressing the 404s keeps dev clean.
+    if ((ext === '.css' || url.endsWith('.module.css')) && !await serveStatic(join(root, url), res)) {
+      const publicPath = join(root, 'public', url);
+      const exists = await stat(publicPath).then(() => true).catch(() => false);
+      if (!exists) return res.writeHead(200, { 'Content-Type': 'text/css' }).end('');
+    }
     if (ext && ext !== '.html') return res.writeHead(404).end('Not found');
   }
 

@@ -1,0 +1,164 @@
+<style>
+  :host { display: block; }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  section {
+    padding-block: clamp(72px, 10vw, 120px);
+    position: relative;
+    background: var(--bg);
+  }
+
+  .shell {
+    max-width: var(--shell-max, 1240px);
+    margin: 0 auto;
+    padding: 0 var(--gutter, clamp(20px,4vw,48px));
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 48px;
+    max-width: 720px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 1px; }
+
+  .section-head h2 { font-size: clamp(28px, 3.4vw, 44px); line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; margin: 0; }
+  .section-head p { margin: 0; color: var(--fg-muted); font-size: 17px; line-height: 1.55; }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--line-soft);
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .feature-cell {
+    padding: 28px 24px;
+    border-right: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    transition: background 200ms ease;
+    cursor: default;
+  }
+  .feature-cell:hover { background: var(--bg-elev); }
+
+  .cell-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cell-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+
+  .cell-kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid var(--line-soft);
+    border-radius: 3px;
+    color: var(--fg-dim);
+    background: var(--bg);
+  }
+
+  .feature-cell h3 {
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: var(--fg);
+  }
+
+  .feature-cell p {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--fg-muted);
+  }
+
+  @media (max-width: 1100px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .features-grid { grid-template-columns: 1fr; } }
+</style>
+
+<section id="features">
+  <div class="shell">
+    <div class="section-head">
+      <span class="eyebrow">{{t.features.eyebrow}}</span>
+      <h2>{{t.features.title}}</h2>
+      <p>{{t.features.sub}}</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-cell">
+        <div class="cell-header">
+          <span class="cell-tag">00</span>
+          <span class="cell-kbd">node_modules/</span>
+        </div>
+        <h3>Zero dependencies</h3>
+        <p>"dependencies": {} — and we mean it. No Vite, no Webpack, no React, no ws, no chokidar. The framework runs on Node built-ins.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="cell-header"><span class="cell-tag">01</span></div>
+        <h3>SSR + Declarative Shadow DOM</h3>
+        <p>Server-rendered output uses &lt;template shadowrootmode="open"&gt;. The browser attaches shadow roots before JS runs. Hydration is event binding — never DOM replacement.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="cell-header">
+          <span class="cell-tag">02</span>
+          <span class="cell-kbd">fs.watch</span>
+        </div>
+        <h3>Native ESM dev server</h3>
+        <p>The browser fetches modules directly — no transpile step. WebSocket-based HMR with a 50ms debounce. Three strategies: CSS hot-swap, full reload, component re-import.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="cell-header"><span class="cell-tag">03</span></div>
+        <h3>File-system routing</h3>
+        <p>app/About/ → /about. app/Users/[id]/User/ → /users/:id/user. Click handlers on &lt;a route&gt; intercept and push state. Lifecycle hooks: beforeEach, afterEach, onError.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="cell-header">
+          <span class="cell-tag">04</span>
+          <span class="cell-kbd">EventTarget</span>
+        </div>
+        <h3>Reactive store</h3>
+        <p>Proxy over EventTarget. store.on('counter', fn) returns unsubscribe. Components declare static store = ['user', 'theme'] and re-render automatically.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="cell-header"><span class="cell-tag">05</span></div>
+        <h3>Built-in i18n</h3>
+        <p>EN · ES · FR included. Accept-Language detection on the server. Messages are baked into __INITIAL_STATE__ — no flash, no flicker, no client-side fetch.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="cell-header"><span class="cell-tag">06</span></div>
+        <h3>Bundler &amp; minifier</h3>
+        <p>Pure-Node ESM bundler traces static imports into a single IIFE. Character-level tokenizer handles template literals, regex, and comments. ~35–50% reduction.</p>
+      </div>
+      <div class="feature-cell">
+        <div class="cell-header"><span class="cell-tag">07</span></div>
+        <h3>Edge-ready</h3>
+        <p>Cloudflare Pages Worker and Netlify Functions targets. Content-addressed assets (core.d6d6fad4.js) for long-lived caching. SSR at the edge, hydration in the browser.</p>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,14 +1,15 @@
 <style>
   :host { display: block; }
-
   main {
-    padding-top: 72px; /* offset for fixed nav */
+    position: relative;
+    z-index: 1;
     min-height: 100vh;
   }
 </style>
 
+<div class="bg-grid"></div>
 <app-navigation></app-navigation>
 <main>
   <app-router></app-router>
 </main>
-<app-footer></app-footer>
+<app-footer loading="lazy"></app-footer>

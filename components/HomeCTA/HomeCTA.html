@@ -1,0 +1,120 @@
+<style>
+  :host { display: block; }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  section {
+    padding-block: clamp(64px, 9vw, 120px);
+    position: relative;
+    background: var(--bg-elev);
+  }
+
+  .shell {
+    max-width: var(--shell-max, 1240px);
+    margin: 0 auto;
+    padding: 0 var(--gutter, clamp(20px,4vw,48px));
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-box {
+    position: relative;
+    padding: clamp(40px, 6vw, 80px);
+    border-radius: var(--radius-lg, 10px);
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .cta-glow {
+    position: absolute;
+    inset: -40% -10% auto -10%;
+    height: 80%;
+    background: radial-gradient(ellipse at 50% 100%, var(--accent-dim) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .cta-content { position: relative; }
+
+  .logo-wrap {
+    display: inline-flex;
+    margin-bottom: 24px;
+  }
+
+  .cta-box h2 {
+    font-size: clamp(32px, 5vw, 56px);
+    letter-spacing: -0.025em;
+    font-weight: 500;
+    margin: 0 0 12px;
+    line-height: 1.05;
+  }
+
+  .cta-box p {
+    color: var(--fg-muted);
+    font-size: 17px;
+    margin: 0 0 32px;
+    max-width: 480px;
+    margin-inline: auto;
+    margin-bottom: 32px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: var(--radius, 6px);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--fg);
+    text-decoration: none;
+    transition: all 160ms ease;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent-grad);
+    color: oklch(0.16 0.012 265);
+    border-color: transparent;
+  }
+  .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.06); }
+
+  .btn-ghost {
+    border-color: var(--line);
+    color: var(--fg);
+  }
+  .btn-ghost:hover { border-color: var(--fg-muted); background: var(--bg-elev); }
+</style>
+
+<section id="cta">
+  <div class="shell">
+    <div class="cta-box">
+      <div class="cta-glow"></div>
+      <div class="cta-content">
+        <div class="logo-wrap">
+          <app-logo glow style="--logo-size:56px"></app-logo>
+        </div>
+        <h2>{{t.cta.title}}</h2>
+        <p>{{t.cta.sub}}</p>
+        <div class="btn-row">
+          <a href="https://github.com/anthropics/takeover" class="btn btn-primary">
+            {{t.cta.primary}}
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="#quickstart" class="btn btn-ghost">{{t.cta.secondary}}</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

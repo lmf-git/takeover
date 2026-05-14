@@ -26,14 +26,23 @@ const root = process.env.SSR_ROOT || resolve(__dirname, '../..');
 const appDir = resolve(root, 'app');
 const componentsDir = resolve(root, 'components');
 
+// Asset manifest (original path → content-hashed path) emitted by build.js.
+// Production-only; dev server serves un-hashed sources directly. The manifest
+// is already inlined into _template.html at build time — this copy is used to
+// rewrite route.module so the modulepreload <link> matches the hashed URL.
+let assetManifest = {};
+try {
+  assetManifest = JSON.parse(await readFile(resolve(root, '_assets-manifest.json'), 'utf-8'));
+} catch {}
+
 const resolvePaths = tag => {
-  if (tag === 'app-layout') return { tpl: join(appDir, '_Layout/_Layout.html'), css: join(appDir, '_Layout/_Layout.module.css') };
+  if (tag === 'app-layout') return { tpl: join(appDir, '_Layout/_Layout.html'), css: join(appDir, '_Layout/_Layout.module.css'), plainCss: join(appDir, '_Layout/_Layout.css') };
   if (tag === 'app-router') return null;
   const isPage = tag.endsWith('-page');
   const name = isPage ? tag.replace('-page', '') : tag.replace(/^app-/, '');
   const pascal = name.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
   const dir = isPage ? appDir : componentsDir;
-  return { tpl: join(dir, `${pascal}/${pascal}.html`), css: join(dir, `${pascal}/${pascal}.module.css`) };
+  return { tpl: join(dir, `${pascal}/${pascal}.html`), css: join(dir, `${pascal}/${pascal}.module.css`), plainCss: join(dir, `${pascal}/${pascal}.css`) };
 };
 
 const loadFile = path => readFile(path, 'utf-8');
@@ -84,8 +93,9 @@ async function buildRoutes() {
     // in routes data so the modulepreload hint actually preloads the right URL.
     const isProd = process.env.NODE_ENV === 'production';
     const hasEmbedded = !!html.match(/<script\b[^>]*>[\s\S]*?<\/script>/i);
+    const originalModule = `/app/${relative.replace('.html', hasEmbedded ? '.script.js' : '.js')}`;
     const module = isProd
-      ? `/app/${relative.replace('.html', hasEmbedded ? '.script.js' : '.js')}`
+      ? (assetManifest[originalModule] || originalModule)
       : `/app/${relative}?script`;
     routes.push({ path: routePath, component: relative.split('/').pop().replace('.html', '').toLowerCase() + '-page', module, html: template, dynamic, matcher: dynamic ? createMatcher(routePath) : null, ssrProps, metadata, requiresAuth });
   }
@@ -96,14 +106,24 @@ async function buildRoutes() {
 
 const routesPromise = buildRoutes();
 
+const SUPPORTED_LOCALES = ['en', 'es'];
+
 export async function render(url, { locale = 'es' } = {}) {
   const routes = await routesPromise;
   const messages = await loadServerLocale(locale);
   store.set({ locale, messages });
   const result = renderPage(url, routes, store.get());
-  // __INITIAL_STATE__ already carries the active locale's messages — no need for a
-  // separate __LOCALES__ payload. Other locales are fetched on demand by i18n.js.
-  return Object.assign(await result, { localesScript: '' });
+  // Inline non-active supported locales so a client/server locale mismatch
+  // (e.g. Lighthouse runs en-US against an es-default response) resolves
+  // synchronously instead of adding a /locales/*.json fetch to the critical chain.
+  // Active locale's messages already live in __INITIAL_STATE__, so they're skipped here.
+  const others = SUPPORTED_LOCALES.filter(l => l !== locale);
+  const localesData = {};
+  await Promise.all(others.map(async l => { localesData[l] = await loadServerLocale(l); }));
+  const localesScript = Object.keys(localesData).length
+    ? `<script>window.__LOCALES__=${JSON.stringify(localesData)}</script>`
+    : '';
+  return Object.assign(await result, { localesScript });
 }
 
 export async function getClientRoutes() {

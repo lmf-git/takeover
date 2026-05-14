@@ -1,147 +1,63 @@
 <style>
   :host { display: block; }
+  *, *::before, *::after { box-sizing: border-box; }
 
   footer {
-    background: var(--navy, #0a1825);
-    border-top: 1px solid rgba(156,192,204,0.08);
-    padding: 48px 0 32px;
+    border-top: 1px solid var(--line-soft);
+    padding-block: 32px;
   }
 
-  .footer-inner {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 56px;
-  }
-
-  .footer-top {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 56px;
-    margin-bottom: 48px;
-  }
-
-  .footer-brand app-logo { --logo-height: 28px; opacity: 0.6; }
-
-  .footer-tagline {
-    font-size: 13px;
-    color: rgba(247,248,249,0.4);
-    line-height: 1.6;
-    margin-top: 14px;
-    max-width: 240px;
-  }
-
-  .footer-col-title {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--teal, #9CC0CC);
-    margin-bottom: 16px;
-  }
-
-  .footer-links {
-    list-style: none;
+  .inner {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: var(--shell-max, 1240px);
+    margin: 0 auto;
+    padding: 0 var(--gutter, clamp(20px,4vw,48px));
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
     gap: 10px;
   }
 
-  .footer-links a {
-    color: rgba(247,248,249,0.45);
-    text-decoration: none;
+  .version {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg-muted);
+  }
+
+  .dot {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-dim);
+  }
+
+  .built {
     font-size: 13px;
-    transition: color 0.2s;
-    cursor: pointer;
-  }
-  .footer-links a:hover { color: var(--teal, #9CC0CC); }
-
-  .footer-bottom {
-    border-top: 1px solid rgba(156,192,204,0.08);
-    padding-top: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
+    color: var(--fg-muted);
   }
 
-  .footer-copy { font-size: 12px; color: rgba(247,248,249,0.25); }
+  .spacer { flex: 1; }
 
-  .footer-certifications { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-
-  .cert-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgba(156,192,204,0.5);
-    border: 1px solid rgba(156,192,204,0.15);
-    padding: 5px 10px;
-    border-radius: 20px;
-  }
-  .cert-pill::before {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--teal, #9CC0CC);
-  }
-
-  @media (max-width: 900px) {
-    .footer-inner { padding: 0 24px; }
-    .footer-top { grid-template-columns: 1fr 1fr; gap: 40px; }
-  }
-
-  @media (max-width: 600px) {
-    .footer-inner { padding: 0 20px; }
-    .footer-top { grid-template-columns: 1fr; gap: 36px; }
-    .footer-bottom { flex-direction: column; align-items: flex-start; }
+  .mit {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-dim);
   }
 </style>
 
 <footer>
-  <div class="footer-inner">
-    <div class="footer-top">
-      <div class="footer-brand">
-        <app-logo></app-logo>
-        <p class="footer-tagline">{{t.footer.tagline}}</p>
-      </div>
-      <div>
-        <div class="footer-col-title">{{t.footer.colCompany}}</div>
-        <ul class="footer-links">
-          <li><a href="/about" route>{{t.footer.lAbout}}</a></li>
-          <li><a href="/about" route>{{t.footer.lValues}}</a></li>
-          <li><a href="/sustainability" route>{{t.footer.lSustain}}</a></li>
-          <li><a href="/contact" route>{{t.footer.lContact}}</a></li>
-        </ul>
-      </div>
-      <div>
-        <div class="footer-col-title">{{t.footer.colOperations}}</div>
-        <ul class="footer-links">
-          <li><a href="/fleet" route>{{t.footer.lFleet}}</a></li>
-          <li><a href="/products" route>{{t.footer.lProducts}}</a></li>
-          <li><a href="/fleet" route>{{t.footer.lProcessing}}</a></li>
-        </ul>
-      </div>
-      <div>
-        <div class="footer-col-title">{{t.footer.colCerts}}</div>
-        <ul class="footer-links">
-          <li><a href="/sustainability" route>MSC</a></li>
-          <li><a href="/sustainability" route>COLTO</a></li>
-          <li><a href="/sustainability" route>INIDEP</a></li>
-          <li><a href="/sustainability" route>Aves Argentinas</a></li>
-        </ul>
-      </div>
+  <div class="inner">
+    <div class="brand">
+      <app-logo style="--logo-height:22px"></app-logo>
+      <span class="version">takeover@1.0.0</span>
     </div>
-    <div class="footer-bottom">
-      <div class="footer-copy">{{t.footer.copyright}}</div>
-      <div class="footer-certifications">
-        <div class="cert-pill">MSC Certified</div>
-        <div class="cert-pill">COLTO</div>
-        <div class="cert-pill">HACCP</div>
-      </div>
-    </div>
+    <span class="dot">·</span>
+    <span class="built">{{t.footer.built}}</span>
+    <div class="spacer"></div>
+    <span class="mit">{{t.footer.mit}}</span>
   </div>
 </footer>

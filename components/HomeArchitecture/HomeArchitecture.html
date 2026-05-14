@@ -1,0 +1,213 @@
+<style>
+  :host { display: block; }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  section {
+    padding-block: clamp(72px, 10vw, 120px);
+    position: relative;
+    background: var(--bg);
+  }
+
+  .shell {
+    max-width: var(--shell-max, 1240px);
+    margin: 0 auto;
+    padding: 0 var(--gutter, clamp(20px,4vw,48px));
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 48px;
+    max-width: 720px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 1px; }
+
+  .section-head h2 { font-size: clamp(28px, 3.4vw, 44px); line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; margin: 0; }
+  .section-head p { margin: 0; color: var(--fg-muted); font-size: 17px; line-height: 1.55; }
+
+  .arch-panel {
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg, 10px);
+    background: var(--bg-elev);
+    padding: clamp(20px, 3vw, 40px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(16px, 2vw, 32px);
+    position: relative;
+  }
+
+  .col-header {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line-soft);
+    margin-bottom: 8px;
+  }
+
+  .col-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--fg);
+  }
+
+  .col-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-dim);
+    margin-top: 4px;
+  }
+
+  .arch-stage {
+    padding: 16px 18px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius, 6px);
+    background: var(--bg);
+  }
+
+  .arch-stage.wire {
+    grid-column: 1 / 3;
+    background: transparent;
+    border-style: dashed;
+    border-color: var(--accent-line);
+  }
+
+  .stage-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .stage-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--accent-soft);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .stage-stream {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent-soft);
+    white-space: nowrap;
+  }
+
+  .stage-body {
+    font-size: 14px;
+    color: var(--fg);
+    margin-bottom: 4px;
+  }
+
+  .stage-body.mono-body { font-family: var(--font-mono); }
+
+  .stage-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-dim);
+  }
+
+  .arch-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-soft);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .accent { color: var(--accent); }
+
+  @media (max-width: 760px) { .arch-grid { grid-template-columns: 1fr; } .arch-stage.wire { grid-column: 1; } }
+</style>
+
+<section id="architecture">
+  <div class="shell">
+    <div class="section-head">
+      <span class="eyebrow">{{t.arch.eyebrow}}</span>
+      <h2>{{t.arch.title}}</h2>
+      <p>{{t.arch.sub}}</p>
+    </div>
+
+    <div class="arch-panel">
+      <div class="arch-grid">
+        <div class="col-header">
+          <div class="col-label">SERVER</div>
+          <div class="col-sub">node 18 · edge runtime</div>
+        </div>
+        <div class="col-header">
+          <div class="col-label">CLIENT</div>
+          <div class="col-sub">browser · web standards</div>
+        </div>
+
+        <div class="arch-stage">
+          <div class="stage-header"><span class="stage-tag">00 · request</span></div>
+          <div class="stage-body">GET / · Accept-Language: fr</div>
+          <div class="stage-sub">cloudflare worker / netlify fn</div>
+        </div>
+
+        <div class="arch-stage">
+          <div class="stage-header"><span class="stage-tag">03 · parse</span></div>
+          <div class="stage-body">browser attaches shadow roots natively</div>
+          <div class="stage-sub">no JS required for first paint</div>
+        </div>
+
+        <div class="arch-stage">
+          <div class="stage-header"><span class="stage-tag">01 · render</span></div>
+          <div class="stage-body">entry-server.js → Declarative Shadow DOM</div>
+          <div class="stage-sub">locale + store baked into HTML</div>
+        </div>
+
+        <div class="arch-stage">
+          <div class="stage-header"><span class="stage-tag">04 · hydrate</span></div>
+          <div class="stage-body">entry-client.js binds events, no reconstruction</div>
+          <div class="stage-sub">~12kb gzipped, single bundle</div>
+        </div>
+
+        <div class="arch-stage wire">
+          <div class="stage-header">
+            <span class="stage-tag">02 · wire</span>
+            <span class="stage-stream">↓ stream</span>
+          </div>
+          <div class="stage-body mono-body">&lt;template shadowrootmode="open"&gt;</div>
+          <div class="stage-sub">streamed to the browser</div>
+        </div>
+
+        <div class="arch-stage" style="grid-column:2">
+          <div class="stage-header"><span class="stage-tag">05 · live</span></div>
+          <div class="stage-body">store.on('counter', ...) — reactive updates</div>
+          <div class="stage-sub">shadow root patched in place</div>
+        </div>
+      </div>
+
+      <div class="arch-footer">
+        <span><span class="accent">0</span> hydration mismatches</span>
+        <span><span class="accent">0</span> virtual DOM</span>
+        <span><span class="accent">1</span> bundle on the wire</span>
+      </div>
+    </div>
+  </div>
+</section>

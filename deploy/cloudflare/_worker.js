@@ -53,9 +53,9 @@ export default {
       }
 
       const html = template
-        .replace('<!--head-meta-->', result.headMeta || '')
-        .replace('<!--app-html-->', result.appHtml)
-        .replace('<!--initial-state-->', result.initialStateScript);
+        .replace('<!--head-meta-->', () => result.headMeta || '')
+        .replace('<!--app-html-->', () => result.appHtml)
+        .replace('<!--initial-state-->', () => result.initialStateScript);
 
       return new Response(html, { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
     } catch (e) {

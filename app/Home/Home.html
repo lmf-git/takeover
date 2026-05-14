@@ -1,1269 +1,334 @@
 <style>
   :host { display: block; }
-
-  /* ── Reset inside shadow ── */
   *, *::before, *::after { box-sizing: border-box; }
 
-  /* ── Section base ── */
-  section { position: relative; }
+  .hero {
+    padding-top: clamp(72px, 10vw, 140px);
+    padding-bottom: clamp(72px, 10vw, 140px);
+    position: relative;
+    background: var(--bg);
+  }
 
-  .section-inner {
-    max-width: 1280px;
+  .shell {
+    max-width: var(--shell-max, 1240px);
     margin: 0 auto;
-    padding: 0 56px;
+    padding: 0 var(--gutter, clamp(20px,4vw,48px));
   }
 
-  .section-label {
-    display: inline-flex;
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(32px, 5vw, 80px);
     align-items: center;
-    gap: 10px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--blue);
-    margin-bottom: 16px;
-  }
-  .section-label::before {
-    content: '';
-    display: block;
-    width: 24px;
-    height: 1px;
-    background: currentColor;
   }
 
-  /* ── HERO ── */
-  #hero {
-    position: relative;
-    height: calc(100vh - 72px);
-    min-height: 600px;
+  /* Badge */
+  .hero-badge-row {
     display: flex;
-    align-items: flex-end;
-    overflow: hidden;
-    margin-top: -72px;
-  }
-
-  .hero-content {
-    position: relative;
-    z-index: 2;
-    padding: 0 56px 100px;
-    max-width: 820px;
-  }
-
-  .hero-eyebrow {
-    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    color: var(--teal);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    margin-bottom: 24px;
-  }
-  .hero-eyebrow::before {
-    content: '';
-    display: block;
-    width: 32px;
-    height: 1px;
-    background: var(--teal);
-  }
-
-  .hero-title {
-    font-family: var(--font-serif);
-    font-size: clamp(48px, 6vw, 86px);
-    font-weight: 400;
-    line-height: 1.06;
-    color: #fff;
+    gap: 14px;
     margin-bottom: 28px;
   }
 
-  .hero-title em {
-    font-style: italic;
-    color: var(--teal-light);
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    background: var(--accent-dim);
+    color: var(--accent-soft);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--accent-line);
   }
 
-  .hero-subtitle {
-    font-size: 16px;
-    line-height: 1.65;
-    color: rgba(247,248,249,0.62);
+  .badge-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    box-shadow: 0 0 8px var(--accent-soft);
+  }
+
+  /* Headline */
+  h1 {
+    font-size: clamp(44px, 7.2vw, 96px);
+    line-height: 0.95;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    margin: 0 0 28px;
+  }
+
+  .h1-line1 {
+    display: block;
+    color: var(--fg-muted);
+  }
+
+  .h1-line2 {
+    display: block;
+    background: var(--accent-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .cursor-block {
+    display: inline-block;
+    width: 0.45em;
+    height: 0.85em;
+    background: var(--accent-soft);
+    margin-left: 4px;
+    vertical-align: -0.1em;
+    border-radius: 2px;
+    animation: blink 1.2s step-end infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* Sub */
+  .hero-sub {
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--fg-muted);
+    max-width: 560px;
+    margin: 0 0 36px;
+  }
+
+  /* Install bar */
+  .install-bar {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--line);
+    border-radius: var(--radius, 6px);
+    background: var(--bg-elev);
     max-width: 520px;
-    margin-bottom: 44px;
+    margin-bottom: 24px;
+    overflow: hidden;
   }
 
-  .hero-actions { display: flex; gap: 16px; align-items: center; }
+  .install-prompt {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    user-select: none;
+    border-right: 1px solid var(--line-soft);
+    flex-shrink: 0;
+  }
+
+  .install-cmd {
+    flex: 1;
+    padding: 13px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--fg);
+    overflow: auto;
+    white-space: nowrap;
+    background: transparent;
+    border: 0;
+    outline: none;
+    min-width: 0;
+  }
+
+  .install-copy {
+    border: 0;
+    border-left: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--fg-muted);
+    padding: 0 14px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    transition: color 160ms ease;
+    flex-shrink: 0;
+  }
+  .install-copy:hover { color: var(--fg); }
+  .install-copy.copied { color: var(--accent); }
+
+  /* CTA buttons */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: var(--radius, 6px);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--fg);
+    text-decoration: none;
+    transition: all 160ms ease;
+    white-space: nowrap;
+  }
 
   .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--blue);
-    color: #fff;
-    text-decoration: none;
-    padding: 14px 28px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    transition: background 0.2s, transform 0.15s;
-    cursor: pointer;
-    border: none;
-    font-family: var(--font-sans, inherit);
+    background: var(--accent-grad);
+    color: oklch(0.16 0.012 265);
+    border-color: transparent;
   }
-  .btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); }
+  .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.06); }
 
   .btn-ghost {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: rgba(247,248,249,0.7);
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    border-bottom: 1px solid rgba(247,248,249,0.2);
-    padding-bottom: 2px;
-    transition: color 0.2s, border-color 0.2s;
-    cursor: pointer;
-    background: none;
-    border-top: none;
-    border-left: none;
-    border-right: none;
-    font-family: var(--font-sans, inherit);
+    border-color: var(--line);
+    color: var(--fg);
   }
-  .btn-ghost:hover { color: var(--teal); border-color: var(--teal); }
+  .btn-ghost:hover { border-color: var(--fg-muted); background: var(--bg-elev); }
 
+  /* Stats */
   .hero-stats {
-    position: absolute;
-    bottom: 56px;
-    right: 56px;
-    z-index: 2;
-    display: flex;
-    gap: 48px;
-  }
-
-  .hero-stat { text-align: right; }
-
-  .hero-stat-num {
-    font-family: var(--font-serif);
-    font-size: 38px;
-    font-weight: 500;
-    color: #fff;
-    line-height: 1;
-    display: block;
-    margin-bottom: 4px;
-  }
-
-  .hero-stat-label {
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--teal);
-    display: block;
-  }
-
-  .hero-scroll-indicator {
-    position: absolute;
-    bottom: 36px;
-    right: 56px;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    color: rgba(247,248,249,0.3);
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .scroll-line {
-    width: 1px;
-    height: 40px;
-    background: linear-gradient(to bottom, rgba(156,192,204,0.5), transparent);
-    animation: scrollPulse 2s ease-in-out infinite;
-  }
-
-  @keyframes scrollPulse {
-    0%, 100% { opacity: 0.3; transform: scaleY(1); }
-    50% { opacity: 0.8; transform: scaleY(1.1); }
-  }
-
-  /* ── ABOUT ── */
-  #about {
-    padding: 120px 0;
-    background: var(--white, #f7f8f9);
-  }
-
-  .about-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 100px;
-    align-items: center;
-  }
-
-  .about-title {
-    font-family: var(--font-serif);
-    font-size: clamp(32px, 3.5vw, 52px);
-    font-weight: 400;
-    line-height: 1.12;
-    color: var(--text-dark);
-    margin-bottom: 28px;
-  }
-  .about-title em { font-style: italic; color: var(--blue); }
-
-  .about-body {
-    font-size: 15px;
-    line-height: 1.75;
-    color: var(--text-mid);
-    margin-bottom: 20px;
-  }
-
-  .about-signature {
-    margin-top: 36px;
-    padding-top: 28px;
-    border-top: 1px solid var(--teal-light);
-  }
-
-  .signature-name {
-    font-family: var(--font-serif);
-    font-size: 20px;
-    font-weight: 400;
-    font-style: italic;
-    color: var(--text-dark);
-  }
-
-  .signature-title {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-light);
-    margin-top: 4px;
-  }
-
-  .about-visual { position: relative; }
-
-  .about-image-placeholder {
-    width: 100%;
-    aspect-ratio: 4/5;
-    background: linear-gradient(135deg, #c8dde4 0%, #9CC0CC 50%, #6ba8bc 100%);
-    border-radius: 2px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-start;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .about-image-placeholder::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: repeating-linear-gradient(
-      -45deg, transparent, transparent 10px,
-      rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 11px
-    );
-  }
-
-  .img-placeholder-label {
-    font-family: monospace;
-    font-size: 11px;
-    color: rgba(10,24,37,0.5);
-    letter-spacing: 0.04em;
-    z-index: 1;
-  }
-
-  .about-badge {
-    position: absolute;
-    bottom: -20px;
-    left: -24px;
-    background: var(--navy);
-    color: #fff;
-    padding: 20px 24px;
-    border-radius: 2px;
-    width: 180px;
-  }
-
-  .about-badge-num {
-    font-family: var(--font-serif);
-    font-size: 42px;
-    font-weight: 400;
-    color: var(--teal);
-    line-height: 1;
-    display: block;
-  }
-
-  .about-badge-text {
-    font-size: 11px;
-    color: rgba(247,248,249,0.6);
-    margin-top: 4px;
-    line-height: 1.4;
-  }
-
-  /* ── VALUES ── */
-  #values {
-    background: var(--navy);
-    padding: 80px 0;
-    border-top: 1px solid rgba(156,192,204,0.1);
-    border-bottom: 1px solid rgba(156,192,204,0.1);
-  }
-
-  .values-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    background: rgba(156,192,204,0.08);
-  }
-
-  .value-card {
-    background: var(--navy);
-    padding: 40px 32px;
-    transition: background 0.25s;
-  }
-  .value-card:hover { background: #112233; }
-
-  .value-icon {
-    width: 40px;
-    height: 40px;
-    border: 1px solid rgba(156,192,204,0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    color: var(--teal);
-  }
-
-  .value-title {
-    font-family: var(--font-serif);
-    font-size: 18px;
-    font-weight: 500;
-    color: #fff;
-    margin-bottom: 10px;
-    line-height: 1.2;
-  }
-
-  .value-body {
-    font-size: 13px;
-    line-height: 1.65;
-    color: rgba(247,248,249,0.5);
-  }
-
-  /* ── FLEET ── */
-  #operations {
-    padding: 120px 0;
-    background: var(--off-white, #eef2f5);
-  }
-
-  .ops-header {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
-    align-items: end;
-    margin-bottom: 60px;
-  }
-
-  .ops-title {
-    font-family: var(--font-serif);
-    font-size: clamp(32px, 3.5vw, 52px);
-    font-weight: 400;
-    line-height: 1.1;
-    color: var(--text-dark);
-  }
-  .ops-title em { font-style: italic; color: var(--blue); }
-
-  .ops-description {
-    font-size: 15px;
-    line-height: 1.7;
-    color: var(--text-mid);
-  }
-
-  .fleet-cards {
+    margin-top: 56px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
+    gap: 0;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 24px;
   }
 
-  .fleet-card {
-    background: #fff;
-    padding: 36px 32px;
-    border-bottom: 3px solid transparent;
-    transition: border-color 0.2s, box-shadow 0.2s;
+  .stat {
+    padding-right: 24px;
+    border-right: 1px solid var(--line-soft);
   }
-  .fleet-card:hover {
-    border-color: var(--blue);
-    box-shadow: 0 4px 24px rgba(43,120,157,0.08);
-  }
+  .stat:last-child { border-right: 0; }
 
-  .fleet-card-type {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--blue);
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
-  .fleet-card-name {
-    font-family: var(--font-serif);
+  .stat-value {
     font-size: 22px;
     font-weight: 500;
-    color: var(--text-dark);
-    margin-bottom: 16px;
+    letter-spacing: -0.015em;
+    line-height: 1;
   }
 
-  .fleet-card-desc {
-    font-size: 13px;
-    line-height: 1.65;
-    color: var(--text-mid);
-  }
-
-  .fleet-card-stats {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid var(--teal-light);
-  }
-
-  .fleet-stat-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .fleet-stat-key {
+  .stat-sub {
+    font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--text-light);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    color: var(--fg-dim);
+    margin-top: 4px;
   }
 
-  .fleet-stat-val {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-dark);
+  @media (max-width: 960px) {
+    .hero-grid { grid-template-columns: 1fr; }
   }
-
-  .cert-ok { color: var(--blue); }
-
-  /* ── PRODUCTS ── */
-  #products {
-    padding: 120px 0;
-    background: var(--navy);
-    overflow: hidden;
-  }
-
-  .products-header { margin-bottom: 64px; }
-
-  .products-label { color: var(--teal); }
-  .products-label::before { background: var(--teal); }
-
-  .products-title {
-    font-family: var(--font-serif);
-    font-size: clamp(32px, 3.5vw, 52px);
-    font-weight: 400;
-    color: #fff;
-    line-height: 1.1;
-    max-width: 600px;
-  }
-  .products-title em { font-style: italic; color: var(--teal-light); }
-
-  .products-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 2px;
-  }
-
-  .product-card {
-    background: #112233;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    transition: background 0.25s;
-    border: 1px solid rgba(156,192,204,0.05);
-  }
-  .product-card:hover { background: #162d44; }
-
-  .product-card.featured {
-    grid-row: 1 / 3;
-    background: var(--blue-dark);
-    padding: 52px 48px;
-  }
-  .product-card.featured:hover { background: var(--blue); }
-
-  .product-tag {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--teal);
-  }
-
-  .product-name {
-    font-family: var(--font-serif);
-    font-size: 26px;
-    font-weight: 500;
-    color: #fff;
-    line-height: 1.2;
-    flex: 1;
-  }
-  .product-card.featured .product-name { font-size: 36px; }
-
-  .product-desc {
-    font-size: 13px;
-    line-height: 1.65;
-    color: rgba(247,248,249,0.55);
-  }
-
-  .product-img-placeholder {
-    width: 100%;
-    aspect-ratio: 3/2;
-    background: rgba(156,192,204,0.08);
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 8px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .product-img-placeholder::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: repeating-linear-gradient(
-      45deg, transparent, transparent 12px,
-      rgba(156,192,204,0.06) 12px, rgba(156,192,204,0.06) 13px
-    );
-  }
-
-  .product-img-label {
-    font-family: monospace;
-    font-size: 10px;
-    color: rgba(156,192,204,0.3);
-    letter-spacing: 0.06em;
-    z-index: 1;
-  }
-
-  /* ── SUSTAINABILITY ── */
-  #sustainability {
-    padding: 120px 0;
-    background: var(--white, #f7f8f9);
-  }
-
-  .sustain-grid {
-    display: grid;
-    grid-template-columns: 5fr 7fr;
-    gap: 100px;
-    align-items: start;
-  }
-
-  .sustain-sticky {
-    position: sticky;
-    top: 100px;
-  }
-
-  .sustain-title {
-    font-family: var(--font-serif);
-    font-size: clamp(32px, 3.2vw, 48px);
-    font-weight: 400;
-    line-height: 1.12;
-    color: var(--text-dark);
-    margin-bottom: 20px;
-  }
-  .sustain-title em { font-style: italic; color: var(--blue); }
-
-  .sustain-body {
-    font-size: 15px;
-    line-height: 1.75;
-    color: var(--text-mid);
-    margin-bottom: 36px;
-  }
-
-  .cert-badges {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .cert-badge {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
-    background: var(--off-white);
-    border-left: 3px solid var(--teal);
-    border-radius: 0 4px 4px 0;
-  }
-
-  .cert-badge-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--teal-light);
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    color: var(--blue-dark);
-    font-weight: 700;
-    font-family: monospace;
-  }
-
-  .cert-badge-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-dark);
-    margin-bottom: 2px;
-  }
-
-  .cert-badge-desc {
-    font-size: 12px;
-    color: var(--text-light);
-    line-height: 1.4;
-  }
-
-  .sustain-items {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sustain-item {
-    padding: 36px 0;
-    border-bottom: 1px solid var(--teal-light);
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    gap: 24px;
-    align-items: start;
-  }
-  .sustain-item:first-child { border-top: 1px solid var(--teal-light); }
-
-  .sustain-num {
-    font-family: var(--font-serif);
-    font-size: 14px;
-    font-style: italic;
-    color: var(--text-light);
-    padding-top: 4px;
-  }
-
-  .sustain-item-title {
-    font-family: var(--font-serif);
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--text-dark);
-    margin-bottom: 10px;
-  }
-
-  .sustain-item-body {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--text-mid);
-  }
-
-  /* ── CONTACT ── */
-  #contact {
-    padding: 100px 0;
-    background: var(--blue-deep, #0d2233);
-  }
-
-  .contact-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 100px;
-    align-items: center;
-  }
-
-  .contact-section-label { color: var(--teal); }
-  .contact-section-label::before { background: var(--teal); }
-
-  .contact-title {
-    font-family: var(--font-serif);
-    font-size: clamp(32px, 3.5vw, 52px);
-    font-weight: 400;
-    line-height: 1.1;
-    color: #fff;
-    margin-bottom: 16px;
-  }
-  .contact-title em { font-style: italic; color: var(--teal-light); }
-
-  .contact-sub {
-    font-size: 15px;
-    color: rgba(247,248,249,0.55);
-    line-height: 1.65;
-    margin-bottom: 40px;
-  }
-
-  .contact-details { display: flex; flex-direction: column; gap: 20px; }
-
-  .contact-detail {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .contact-detail-icon {
-    width: 36px;
-    height: 36px;
-    border: 1px solid rgba(156,192,204,0.2);
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--teal);
-    margin-top: 2px;
-  }
-
-  .contact-detail-label {
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--teal);
-    margin-bottom: 4px;
-  }
-
-  .contact-detail-value {
-    font-size: 14px;
-    color: rgba(247,248,249,0.8);
-    line-height: 1.5;
-  }
-
-  .contact-form {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-
-  .form-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgba(247,248,249,0.45);
-  }
-
-  .form-input, .form-textarea {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(156,192,204,0.15);
-    border-radius: 3px;
-    padding: 12px 14px;
-    color: #fff;
-    font-family: var(--font-sans, inherit);
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s, background 0.2s;
-    width: 100%;
-  }
-  .form-input::placeholder, .form-textarea::placeholder { color: rgba(247,248,249,0.2); }
-  .form-input:focus, .form-textarea:focus {
-    border-color: var(--teal);
-    background: rgba(255,255,255,0.09);
-  }
-  .form-textarea { resize: vertical; min-height: 100px; }
-
-  .form-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
-
-  .form-submit {
-    background: var(--blue);
-    color: #fff;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 3px;
-    font-family: var(--font-sans, inherit);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .form-submit:hover { background: var(--blue-dark); }
-  .form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .form-success {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    color: var(--teal);
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  /* ── Fade-up animation ── */
-  .fade-up {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-  .fade-up.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* ── Responsive: tablet ── */
-  @media (max-width: 900px) {
-    .section-inner { padding: 0 24px; }
-    .hero-content { padding: 0 24px 120px; }
-    .hero-stats { display: none; }
-    .about-grid, .ops-header, .contact-grid, .sustain-grid { grid-template-columns: 1fr; gap: 40px; }
-    .fleet-cards { grid-template-columns: 1fr; }
-    .values-grid { grid-template-columns: 1fr 1fr; }
-    .products-grid { grid-template-columns: 1fr; }
-    .product-card.featured { grid-row: auto; }
-    .form-row { grid-template-columns: 1fr; }
-    #hero { height: 100vh; }
-  }
-
-  /* ── Responsive: mobile ── */
   @media (max-width: 600px) {
-    section { padding: 72px 0; }
-    .section-inner { padding: 0 20px; }
-    .section-label { font-size: 10px; }
-    .section-title { font-size: clamp(28px, 8vw, 40px); }
-    .hero-content { padding: 0 20px 100px; }
-    .hero-title { font-size: clamp(36px, 10vw, 56px); }
-    .hero-subtitle { font-size: 15px; }
-    .hero-actions { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .btn-primary, .btn-ghost { width: 100%; justify-content: center; }
-    .values-grid { grid-template-columns: 1fr; }
-    .about-text h2, .sustain-text h2 { font-size: clamp(28px, 7vw, 40px); }
-    .fleet-card { padding: 28px 24px; }
-    .product-card { padding: 28px 24px; }
-    .contact-form-col { padding: 32px 24px; }
+    .btn-row { flex-direction: column; }
+    .btn { justify-content: center; }
   }
 </style>
 
-<!-- ══════════════ HERO ══════════════ -->
-<section id="hero">
-  <hero-grid></hero-grid>
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="hero">
+  <div class="shell">
+    <div class="hero-grid">
 
-  <div class="hero-content">
-    <div class="hero-eyebrow">{{t.hero.eyebrow}}</div>
-    <h1 class="hero-title">{{{t.hero.title}}}</h1>
-    <p class="hero-subtitle">{{t.hero.subtitle}}</p>
-    <div class="hero-actions">
-      <button class="btn-primary" id="btn-products">
-        {{t.hero.btnProducts}}
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button class="btn-ghost" id="btn-about">{{t.hero.btnLearnMore}}</button>
-    </div>
-  </div>
-
-  <div class="hero-stats">
-    <div class="hero-stat">
-      <span class="hero-stat-num">{{t.hero.stat1Num}}</span>
-      <span class="hero-stat-label">{{t.hero.stat1Label}}</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num">{{t.hero.stat2Num}}</span>
-      <span class="hero-stat-label">{{t.hero.stat2Label}}</span>
-    </div>
-    <div class="hero-stat">
-      <span class="hero-stat-num">{{t.hero.stat3Num}}</span>
-      <span class="hero-stat-label">{{t.hero.stat3Label}}</span>
-    </div>
-  </div>
-
-  <div class="hero-scroll-indicator">
-    <div class="scroll-line"></div>
-  </div>
-</section>
-
-<!-- ══════════════ ABOUT ══════════════ -->
-<section id="about">
-  <div style="background: var(--white, #f7f8f9); padding: 120px 0;">
-    <div class="section-inner">
-      <div class="about-grid">
-        <div class="fade-up">
-          <span class="section-label">{{t.about.label}}</span>
-          <h2 class="about-title">{{{t.about.title}}}</h2>
-          <p class="about-body">{{t.about.body1}}</p>
-          <p class="about-body">{{t.about.body2}}</p>
-          <div class="about-signature">
-            <div class="signature-name">{{t.about.signatureName}}</div>
-            <div class="signature-title">{{t.about.signatureTitle}}</div>
-          </div>
+      <!-- Left: text + install + CTAs + stats -->
+      <div>
+        <div class="hero-badge-row">
+          <app-logo style="--logo-size:36px" glow></app-logo>
+          <span class="badge">
+            <span class="badge-dot"></span>
+            {{t.hero.eyebrow}}
+          </span>
         </div>
-        <div class="about-visual fade-up" style="transition-delay:0.15s">
-          <div class="about-image-placeholder">
-            <span class="img-placeholder-label">// {{t.about.imgAlt}}</span>
+
+        <h1>
+          <span class="h1-line1">{{t.hero.tagline}}</span>
+          <span class="h1-line2">{{t.hero.tagline2}}<span class="cursor-block"></span></span>
+        </h1>
+
+        <p class="hero-sub">{{t.hero.sub}}</p>
+
+        <div class="install-bar">
+          <span class="install-prompt">$</span>
+          <code class="install-cmd" id="install-cmd">{{t.hero.install}}</code>
+          <button class="install-copy" id="install-copy" aria-label="Copy">COPY</button>
+        </div>
+
+        <div class="btn-row">
+          <a href="#cta" class="btn btn-primary">
+            {{t.hero.cta}}
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a href="#quickstart" class="btn btn-ghost">{{t.hero.ctaSecondary}}</a>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-label">{{t.hero.deps}}</div>
+            <div class="stat-value">0</div>
           </div>
-          <div class="about-badge">
-            <span class="about-badge-num">1992</span>
-            <div class="about-badge-text">{{t.about.badgeText}}</div>
+          <div class="stat">
+            <div class="stat-label">{{t.hero.bundle}}</div>
+            <div class="stat-value">~12 kb</div>
+            <div class="stat-sub">gzipped</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">{{t.hero.runtime}}</div>
+            <div class="stat-value">Node 18+</div>
+            <div class="stat-sub">no toolchain</div>
           </div>
         </div>
       </div>
+
+      <!-- Right: interactive browser window with live counter -->
+      <hero-counter></hero-counter>
     </div>
   </div>
 </section>
 
-<!-- ══════════════ VALUES ══════════════ -->
-<section id="values">
-  <div style="background: var(--navy, #0a1825); padding: 80px 0; border-top: 1px solid rgba(156,192,204,0.1); border-bottom: 1px solid rgba(156,192,204,0.1);">
-    <div class="section-inner">
-      <div class="values-grid">
-        <div class="value-card fade-up">
-          <div class="value-icon">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6 9l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="value-title">{{t.values.v1Title}}</div>
-          <p class="value-body">{{t.values.v1Body}}</p>
-        </div>
-        <div class="value-card fade-up" style="transition-delay:0.1s">
-          <div class="value-icon">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v14M2 9h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-          <div class="value-title">{{t.values.v2Title}}</div>
-          <p class="value-body">{{t.values.v2Body}}</p>
-        </div>
-        <div class="value-card fade-up" style="transition-delay:0.2s">
-          <div class="value-icon">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 16s-6-4.5-6-8.5A6 6 0 0 1 15 7.5C15 11.5 9 16 9 16z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="value-title">{{t.values.v3Title}}</div>
-          <p class="value-body">{{t.values.v3Body}}</p>
-        </div>
-        <div class="value-card fade-up" style="transition-delay:0.3s">
-          <div class="value-icon">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2c3.866 0 7 3.134 7 7s-3.134 7-7 7S2 12.866 2 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 9l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="value-title">{{t.values.v4Title}}</div>
-          <p class="value-body">{{t.values.v4Body}}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════ FLEET ══════════════ -->
-<section id="operations">
-  <div style="background: var(--off-white, #eef2f5); padding: 120px 0;">
-    <div class="section-inner">
-      <div class="ops-header fade-up">
-        <div>
-          <span class="section-label">{{t.fleet.label}}</span>
-          <h2 class="ops-title">{{{t.fleet.title}}}</h2>
-        </div>
-        <p class="ops-description">{{t.fleet.desc}}</p>
-      </div>
-
-      <div class="fleet-cards">
-        <div class="fleet-card fade-up">
-          <div class="fleet-card-type">{{t.fleet.card1Type}}</div>
-          <div class="fleet-card-name">{{t.fleet.card1Name}}</div>
-          <p class="fleet-card-desc">{{t.fleet.card1Desc}}</p>
-          <div class="fleet-card-stats">
-            <div class="fleet-stat-row">
-              <span class="fleet-stat-key">{{t.fleet.card1K1}}</span>
-              <span class="fleet-stat-val">Merluza Negra</span>
-            </div>
-            <div class="fleet-stat-row">
-              <span class="fleet-stat-key">{{t.fleet.card1K2}}</span>
-              <span class="fleet-stat-val">Ushuaia, TDF</span>
-            </div>
-            <div class="fleet-stat-row">
-              <span class="fleet-stat-key">Certif.</span>
-              <span class="fleet-stat-val cert-ok">MSC ✓</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="fleet-card fade-up" style="transition-delay:0.1s">
-          <div class="fleet-card-type">{{t.fleet.card2Type}}</div>
-          <div class="fleet-card-name">{{t.fleet.card2Name}}</div>
-          <p class="fleet-card-desc">{{t.fleet.card2Desc}}</p>
-          <div class="fleet-card-stats">
-            <div class="fleet-stat-row">
-              <span class="fleet-stat-key">{{t.fleet.card2K1}}</span>
-              <span class="fleet-stat-val">{{t.fleet.card2V1}}</span>
-            </div>
-            <div class="fleet-stat-row">
-              <span class="fleet-stat-key">{{t.fleet.card2K2}}</span>
-              <span class="fleet-stat-val">FAO 41</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="fleet-card fade-up" style="transition-delay:0.2s">
-          <div class="fleet-card-type">{{t.fleet.card3Type}}</div>
-          <div class="fleet-card-name">{{t.fleet.card3Name}}</div>
-          <p class="fleet-card-desc">{{t.fleet.card3Desc}}</p>
-          <div class="fleet-card-stats">
-            <div class="fleet-stat-row">
-              <span class="fleet-stat-key">{{t.fleet.card3K1}}</span>
-              <span class="fleet-stat-val">Ushuaia, Argentina</span>
-            </div>
-            <div class="fleet-stat-row">
-              <span class="fleet-stat-key">{{t.fleet.card3K2}}</span>
-              <span class="fleet-stat-val cert-ok">HACCP ✓</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════ PRODUCTS ══════════════ -->
-<section id="products">
-  <div style="background: var(--navy, #0a1825); padding: 120px 0;">
-    <div class="section-inner">
-      <div class="products-header fade-up">
-        <span class="section-label products-label">{{t.products.label}}</span>
-        <h2 class="products-title">{{{t.products.title}}}</h2>
-      </div>
-
-      <div class="products-grid">
-        <div class="product-card featured fade-up">
-          <div class="product-tag">{{t.products.featTag}}</div>
-          <div class="product-name">{{{t.products.featName}}}</div>
-          <p class="product-desc">{{t.products.featDesc}}</p>
-          <div class="product-img-placeholder" style="aspect-ratio:16/9;margin-top:auto;">
-            <span class="product-img-label">// merluza negra — product photography</span>
-          </div>
-        </div>
-
-        <div class="product-card fade-up" style="transition-delay:0.1s">
-          <div class="product-tag">{{t.products.p2Tag}}</div>
-          <div class="product-name">{{t.products.p2Name}}</div>
-          <p class="product-desc">{{t.products.p2Desc}}</p>
-          <div class="product-img-placeholder">
-            <span class="product-img-label">// grenadier photo</span>
-          </div>
-        </div>
-
-        <div class="product-card fade-up" style="transition-delay:0.15s">
-          <div class="product-tag">{{t.products.p3Tag}}</div>
-          <div class="product-name">{{t.products.p3Name}}</div>
-          <p class="product-desc">{{t.products.p3Desc}}</p>
-          <div class="product-img-placeholder">
-            <span class="product-img-label">// squid photo</span>
-          </div>
-        </div>
-
-        <div class="product-card fade-up" style="transition-delay:0.2s">
-          <div class="product-tag">{{t.products.p4Tag}}</div>
-          <div class="product-name">{{t.products.p4Name}}</div>
-          <p class="product-desc">{{t.products.p4Desc}}</p>
-        </div>
-
-        <div class="product-card fade-up" style="transition-delay:0.25s">
-          <div class="product-tag">{{t.products.p5Tag}}</div>
-          <div class="product-name">{{t.products.p5Name}}</div>
-          <p class="product-desc">{{t.products.p5Desc}}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════ SUSTAINABILITY ══════════════ -->
-<section id="sustainability">
-  <div style="background: var(--white, #f7f8f9); padding: 120px 0;">
-    <div class="section-inner">
-      <div class="sustain-grid">
-        <div class="sustain-sticky fade-up">
-          <span class="section-label">{{t.sustain.label}}</span>
-          <h2 class="sustain-title">{{{t.sustain.title}}}</h2>
-          <p class="sustain-body">{{t.sustain.body}}</p>
-          <div class="cert-badges">
-            <div class="cert-badge">
-              <div class="cert-badge-icon">MSC</div>
-              <div>
-                <div class="cert-badge-name">{{t.sustain.cert1Name}}</div>
-                <div class="cert-badge-desc">{{t.sustain.cert1Desc}}</div>
-              </div>
-            </div>
-            <div class="cert-badge">
-              <div class="cert-badge-icon">COL</div>
-              <div>
-                <div class="cert-badge-name">{{t.sustain.cert2Name}}</div>
-                <div class="cert-badge-desc">{{t.sustain.cert2Desc}}</div>
-              </div>
-            </div>
-            <div class="cert-badge">
-              <div class="cert-badge-icon">INI</div>
-              <div>
-                <div class="cert-badge-name">{{t.sustain.cert3Name}}</div>
-                <div class="cert-badge-desc">{{t.sustain.cert3Desc}}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sustain-items fade-up" style="transition-delay:0.15s">
-          <div class="sustain-item">
-            <span class="sustain-num">01</span>
-            <div>
-              <div class="sustain-item-title">{{t.sustain.i1Title}}</div>
-              <p class="sustain-item-body">{{t.sustain.i1Body}}</p>
-            </div>
-          </div>
-          <div class="sustain-item">
-            <span class="sustain-num">02</span>
-            <div>
-              <div class="sustain-item-title">{{t.sustain.i2Title}}</div>
-              <p class="sustain-item-body">{{t.sustain.i2Body}}</p>
-            </div>
-          </div>
-          <div class="sustain-item">
-            <span class="sustain-num">03</span>
-            <div>
-              <div class="sustain-item-title">{{t.sustain.i3Title}}</div>
-              <p class="sustain-item-body">{{t.sustain.i3Body}}</p>
-            </div>
-          </div>
-          <div class="sustain-item">
-            <span class="sustain-num">04</span>
-            <div>
-              <div class="sustain-item-title">{{t.sustain.i4Title}}</div>
-              <p class="sustain-item-body">{{t.sustain.i4Body}}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════════════ CONTACT ══════════════ -->
-<section id="contact">
-  <div style="background: var(--blue-deep, #0d2233); padding: 100px 0;">
-    <div class="section-inner">
-      <div class="contact-grid">
-        <div class="fade-up">
-          <span class="section-label contact-section-label">{{t.contact.label}}</span>
-          <h2 class="contact-title">{{{t.contact.title}}}</h2>
-          <p class="contact-sub">{{t.contact.sub}}</p>
-          <div class="contact-details">
-            <div class="contact-detail">
-              <div class="contact-detail-icon">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3h12v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3zm0 0l6 5 6-5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-              </div>
-              <div>
-                <div class="contact-detail-label">{{t.contact.emailLabel}}</div>
-                <div class="contact-detail-value">infoc@estremar.com</div>
-              </div>
-            </div>
-            <div class="contact-detail">
-              <div class="contact-detail-icon">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2h3l1.5 3.5L5 7a9 9 0 0 0 2 2l1.5-1.5L12 9v3a1 1 0 0 1-1 1C5.4 13 1 8.6 1 3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-              </div>
-              <div>
-                <div class="contact-detail-label">{{t.contact.phoneLabel}}</div>
-                <div class="contact-detail-value">+54 11 5032-4971</div>
-              </div>
-            </div>
-            <div class="contact-detail">
-              <div class="contact-detail-icon">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.79 1 3 2.79 3 5c0 3.25 4 8 4 8s4-4.75 4-8c0-2.21-1.79-4-4-4zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-              </div>
-              <div>
-                <div class="contact-detail-label">{{t.contact.addressLabel}}</div>
-                <div class="contact-detail-value">{{t.contact.address}}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="fade-up" style="transition-delay:0.15s">
-          <form class="contact-form" id="contact-form" @submit="submitContact">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">{{t.contact.fName}}</label>
-                <input type="text" class="form-input" placeholder="—" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">{{t.contact.fCompany}}</label>
-                <input type="text" class="form-input" placeholder="—">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Email</label>
-              <input type="email" class="form-input" placeholder="—" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">{{t.contact.fCountry}}</label>
-              <input type="text" class="form-input" placeholder="—">
-            </div>
-            <div class="form-group">
-              <label class="form-label">{{t.contact.fMessage}}</label>
-              <textarea class="form-textarea" placeholder="—" required></textarea>
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="form-submit" id="submit-btn">
-                {{t.contact.fSubmit}}
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-              <div class="form-success" id="form-success">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                {{t.contact.fSuccess}}
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+<triangle-seam variant="wave"   seed="1" from-color="var(--bg)"      to-color="var(--bg-elev)"></triangle-seam>
+<home-quickstart   loading="lazy"></home-quickstart>
+<triangle-seam variant="sharp"  seed="2" from-color="var(--bg-elev)" to-color="var(--bg)"></triangle-seam>
+<home-demos        loading="lazy"></home-demos>
+<triangle-seam variant="fine"   seed="3" from-color="var(--bg)"      to-color="var(--bg-elev)"></triangle-seam>
+<home-performance  loading="lazy"></home-performance>
+<triangle-seam variant="sparse" seed="4" from-color="var(--bg-elev)" to-color="var(--bg)"></triangle-seam>
+<home-features     loading="lazy"></home-features>
+<triangle-seam variant="wave"   seed="5" from-color="var(--bg)"      to-color="var(--bg-elev)"></triangle-seam>
+<home-structure    loading="lazy"></home-structure>
+<triangle-seam variant="sharp"  seed="6" from-color="var(--bg-elev)" to-color="var(--bg)"></triangle-seam>
+<home-architecture loading="lazy"></home-architecture>
+<triangle-seam variant="fine"   seed="7" from-color="var(--bg)"      to-color="var(--bg-elev)"></triangle-seam>
+<home-cta          loading="lazy"></home-cta>
 
 <script>
 import { Component, define } from '/core/component.js';
 
 export default class HomePage extends Component {
   static templateUrl = '/app/Home/Home.html';
-  static metadata = { title: 'Estremar – Pesca', description: 'Proveedor líder de Merluza Negra del mar austral.' };
+  static metadata = { title: 'Takeover – Zero-dependency full-stack framework', description: 'SSR, HMR, bundling, i18n — built on Node built-ins and the Web Components standard. No Vite. No Webpack. No node_modules.' };
 
   mount() {
-    window.addEventListener('goto-section', e => {
-      this.$('#' + e.detail.id)?.scrollIntoView({ behavior: 'smooth' });
-    }, { signal: this.signal });
-
-    this._observer = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.12 });
-    this.$$('.fade-up').forEach(el => this._observer.observe(el));
-
-    this.on('#btn-products', 'click', () => this.$('#products')?.scrollIntoView({ behavior: 'smooth' }));
-    this.on('#btn-about', 'click', () => this.$('#about')?.scrollIntoView({ behavior: 'smooth' }));
-
-  }
-
-  bind() {
-    this.delegate('click', '[data-section]', (el, e) => {
-      e.preventDefault();
-      this.$('#' + el.dataset.section)?.scrollIntoView({ behavior: 'smooth' });
-    });
-    // Re-observe after re-render. The observer's initial callback fires async with
-    // the current intersection state, so we don't need a synchronous getBoundingClientRect
-    // check (which forces layout for every .fade-up element).
-    if (this._observer) this.$$('.fade-up').forEach(el => this._observer.observe(el));
-  }
-
-  async submitContact(e) {
-    e.preventDefault();
-    const btn = this.$('#submit-btn');
-    const success = this.$('#form-success');
-    btn.disabled = true;
-    await new Promise(r => setTimeout(r, 700));
-    btn.style.display = 'none';
-    success.style.display = 'flex';
-    this.$('#contact-form').reset();
+    const cmd = this.$('#install-cmd');
+    const btn = this.$('#install-copy');
+    if (btn && cmd) {
+      btn.addEventListener('click', () => {
+        navigator.clipboard?.writeText(cmd.textContent.trim()).catch(() => {});
+        btn.textContent = '✓ COPIED';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1400);
+      });
+    }
   }
 }
 

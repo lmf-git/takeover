@@ -1,0 +1,127 @@
+<style>
+  :host { display: block; }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  section {
+    padding-block: clamp(72px, 10vw, 120px);
+    background: var(--bg-elev);
+  }
+
+  .shell {
+    max-width: var(--shell-max, 1240px);
+    margin: 0 auto;
+    padding: 0 var(--gutter, clamp(20px,4vw,48px));
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 48px;
+    max-width: 720px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+
+  .section-head h2 {
+    font-size: clamp(28px, 3.4vw, 44px);
+    line-height: 1.05;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .section-head p {
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 820px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius, 6px);
+    background: var(--bg-elev-2);
+    transition: border-color 160ms ease;
+  }
+  .step:hover { border-color: var(--line); }
+
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.06em;
+  }
+
+  .step-content { min-width: 0; }
+
+  .step-cmd {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .step-cmd .prompt { color: var(--accent); }
+
+  .step-label {
+    font-size: 12px;
+    color: var(--fg-muted);
+    margin-top: 2px;
+  }
+
+  .copy-btn {
+    border: 1px solid var(--line-soft);
+    background: transparent;
+    color: var(--fg-muted);
+    padding: 6px 10px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 160ms ease;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { border-color: var(--line); color: var(--fg); }
+  .copy-btn.copied { color: var(--accent); }
+</style>
+
+<section id="quickstart">
+  <div class="shell">
+    <div class="section-head">
+      <span class="eyebrow">{{t.quickstart.eyebrow}}</span>
+      <h2>{{t.quickstart.title}}</h2>
+      <p>{{t.quickstart.sub}}</p>
+    </div>
+    <div class="steps" id="steps"></div>
+  </div>
+</section>

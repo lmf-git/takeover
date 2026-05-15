@@ -106,7 +106,7 @@ async function buildRoutes() {
 
 const routesPromise = buildRoutes();
 
-const SUPPORTED_LOCALES = ['en', 'es'];
+const SUPPORTED_LOCALES = ['en', 'es', 'fr'];
 
 export async function render(url, { locale = 'es' } = {}) {
   const routes = await routesPromise;

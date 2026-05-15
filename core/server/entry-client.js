@@ -8,10 +8,8 @@ import '/app/_Layout/_Layout.js';
 import '/components/Router/Router.js';
 import '/components/Navigation/Navigation.js';
 import '/components/Logo/Logo.js';
-import '/components/LanguageSwitch/LanguageSwitch.js';
-import '/components/MobileMenu/MobileMenu.js';
-import '/components/MenuToggle/MenuToggle.js';
-import '/components/HeroGrid/HeroGrid.js';
+import '/components/HeroCounter/HeroCounter.js';
+import '/components/TriangleSeam/TriangleSeam.js';
 import '/core/loader.js';
 
 // Restore scroll position after navigation

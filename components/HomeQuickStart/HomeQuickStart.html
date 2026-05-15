@@ -122,6 +122,31 @@
       <h2>{{t.quickstart.title}}</h2>
       <p>{{t.quickstart.sub}}</p>
     </div>
-    <div class="steps" id="steps"></div>
+    <div class="steps" id="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <div class="step-content">
+          <div class="step-cmd"><span class="prompt">$ </span>npx create-takeover@latest my-app</div>
+          <div class="step-label">Scaffold a new project</div>
+        </div>
+        <button class="copy-btn" data-cmd="npx create-takeover@latest my-app">COPY</button>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <div class="step-content">
+          <div class="step-cmd"><span class="prompt">$ </span>cd my-app &amp;&amp; yarn dev</div>
+          <div class="step-label">Native ESM dev server with HMR on :3000</div>
+        </div>
+        <button class="copy-btn" data-cmd="cd my-app && yarn dev">COPY</button>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <div class="step-content">
+          <div class="step-cmd"><span class="prompt">$ </span>yarn build &amp;&amp; yarn deploy:cloudflare</div>
+          <div class="step-label">Bundle, minify, hash assets, ship to the edge</div>
+        </div>
+        <button class="copy-btn" data-cmd="yarn build && yarn deploy:cloudflare">COPY</button>
+      </div>
+    </div>
   </div>
 </section>

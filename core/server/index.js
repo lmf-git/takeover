@@ -16,7 +16,7 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
 let routesCache = null;
 const getRoutes = async () => routesCache || (routesCache = await scanRoutes(join(root, 'app')));
 
-const SUPPORTED_LOCALES = ['en', 'es'];
+const SUPPORTED_LOCALES = ['en', 'es', 'fr'];
 
 function detectLocale(req) {
   const cookies = req.headers.cookie || '';

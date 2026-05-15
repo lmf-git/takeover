@@ -142,7 +142,9 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     if (!this.constructor.store.includes('messages') && /(^|[^a-zA-Z0-9_])t\.[a-z]/.test(this.#tpl)) {
       this.#subs.push(store.on('messages', () => (this.state = store.get(), this.update())));
     }
-    this.mount?.();
+    // For SSR hydration the shadowRoot already exists and update() didn't run,
+    // so mount() hasn't been invoked yet. For client-only !hadSSR, update() already called mount().
+    if (hadSSR) this.mount?.();
     this.#hydrating = false;
     if (!hadSSR && Object.keys(this.#local).length) this.update();
     // Re-sync if store changed since SSR render (locale race condition).
@@ -174,6 +176,7 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     this.#applyPropBindings();
     this.#bind();
     if (focus) { const el = this.$(focus.sel); el?.focus(); focus.start != null && el?.setSelectionRange?.(focus.start, focus.end); }
+    this.mount?.();
   }
 
   #applyPropBindings() {

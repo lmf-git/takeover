@@ -3,13 +3,21 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
-process.env.SSR_ROOT = join(root, 'dist/server');
+const serverRoot = join(root, 'dist/server');
+process.env.SSR_ROOT = serverRoot;
 process.env.NODE_ENV = 'production';
 
-const SUPPORTED = ['en', 'es'];
-const FALLBACK = 'es';
+// Locale negotiation list comes from app.config.yml (copied into dist/server at
+// build). Loaded once via the built config module — same runtime-resolution
+// pattern as entry-server below, so the Netlify bundler doesn't need the path.
+let localeCfgPromise;
+const getLocaleConfig = async () => {
+  localeCfgPromise ??= import(pathToFileURL(join(serverRoot, 'core/config.mjs')).href)
+    .then(m => m.loadConfig(serverRoot).locales);
+  return localeCfgPromise;
+};
 
-function pickLocale(acceptLanguage) {
+function pickLocale(acceptLanguage, supported) {
   if (!acceptLanguage) return null;
   const ranked = acceptLanguage
     .split(',')
@@ -20,25 +28,26 @@ function pickLocale(acceptLanguage) {
     })
     .filter(e => e.code)
     .sort((a, b) => b.q - a.q);
-  for (const { code } of ranked) if (SUPPORTED.includes(code)) return code;
+  for (const { code } of ranked) if (supported.includes(code)) return code;
   return null;
 }
 
-function cookieLocale(cookieHeader) {
+function cookieLocale(cookieHeader, supported) {
   if (!cookieHeader) return null;
   const m = cookieHeader.match(/(?:^|;\s*)locale=([^;]+)/);
   if (!m) return null;
   const code = decodeURIComponent(m[1]).split(/[-_]/)[0].toLowerCase();
-  return SUPPORTED.includes(code) ? code : null;
+  return supported.includes(code) ? code : null;
 }
 
 export async function handler(event) {
   const template = readFileSync(join(root, 'dist/client/_template.html'), 'utf-8');
   const { render } = await import(pathToFileURL(join(root, 'dist/server/core/server/entry-server.mjs')).href);
+  const { supported: SUPPORTED, default: FALLBACK } = await getLocaleConfig();
   const headers = event.headers || {};
   // Cookie wins so explicit user choices override the browser's Accept-Language.
-  const locale = cookieLocale(headers['cookie'] || headers['Cookie'])
-    || pickLocale(headers['accept-language'] || headers['Accept-Language'])
+  const locale = cookieLocale(headers['cookie'] || headers['Cookie'], SUPPORTED)
+    || pickLocale(headers['accept-language'] || headers['Accept-Language'], SUPPORTED)
     || FALLBACK;
   const result = await render(event.path + (event.rawQuery ? `?${event.rawQuery}` : ''), { locale });
 

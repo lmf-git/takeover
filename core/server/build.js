@@ -5,10 +5,12 @@ import { createHash } from 'node:crypto';
 import { pathFromFile } from '../routes.js';
 import { bundle } from './bundle.js';
 import { minifyJS, minifyCSS } from './minify.js';
+import { loadConfig } from '../config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '../..');
 const dist = join(root, 'dist');
+const config = loadConfig(root);
 
 const ensureDir = dir => mkdir(dir, { recursive: true }).catch(() => {});
 const cleanDir = dir => rm(dir, { recursive: true, force: true }).catch(() => {});
@@ -352,16 +354,14 @@ async function build() {
   const globalsCss = await readFile(join(root, 'globals.css'), 'utf-8').catch(() => '');
   const minCss = minifyCSS(globalsCss);
 
-  // Critical-path preloads. Self-hosted Geist woff2 (declared @font-face in the
+  // Critical-path font preloads from app.config.yml (declared @font-face in the
   // inlined globals.css). Preloading them same-origin lets the browser fetch the
   // fonts in parallel with HTML parse instead of waiting for the CSS to apply,
-  // shaving the font swap off LCP. Variable fonts → one file per family.
+  // shaving the font swap off LCP.
   // No modulepreloads here — the core bundle already inlines every static import.
   // No routes.json preload — routes are inlined into the HTML below.
-  const fontPreloads = [
-    '/fonts/geist-latin.woff2',
-    '/fonts/geist-mono-latin.woff2',
-  ].map(p => `<link rel="preload" href="${p}" as="font" type="font/woff2" crossorigin>`).join('');
+  const fontPreloads = config.preload.fonts
+    .map(p => `<link rel="preload" href="${p}" as="font" type="font/woff2" crossorigin>`).join('');
 
   const preloadLinks = fontPreloads;
 
@@ -411,6 +411,13 @@ async function build() {
 
   // 10. Cloudflare worker
   await copyFile(join(root, 'deploy/cloudflare/_worker.js'), join(clientDist, '_worker.js')).catch(() => {});
+
+  // 10b. Project config — entry-server reads it at runtime (SSR_ROOT=dist/server)
+  // to negotiate locales. Copied to both roots so any adapter can find it.
+  for (const name of ['app.config.yml', 'app.config.yaml']) {
+    await copyFile(join(root, name), join(serverDist, name)).catch(() => {});
+    await copyFile(join(root, name), join(clientDist, name)).catch(() => {});
+  }
 
   // 11. Manifest for debugging
   const manifest = {

@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-implementation configuration. Core reads this; nothing here is baked into
+# the framework, so a new project just edits this file (and the app/ directory).
+#
+# Every key is optional — omit it and the loader autodiscovers a sensible
+# default (see core/config.js). Delete this file entirely and the framework
+# still runs with discovered locales and no preloads.
+# ─────────────────────────────────────────────────────────────────────────────
+
+locales:
+  # Supported locale codes. Omit (or set `auto`) to discover from locales/*.json.
+  supported: [en, es, fr]
+  # Locale used when the request matches none of the above.
+  default: es
+
+# Critical-path resource preloads. These are a curated performance decision, so
+# they default to empty when unset — list only what genuinely blocks first paint.
+preload:
+  # Same-origin woff2 fetched in parallel with HTML parse (declared @font-face in
+  # globals.css). Use `auto` to preload every woff2 under public/fonts/.
+  fonts:
+    - /fonts/geist-latin.woff2
+    - /fonts/geist-mono-latin.woff2
+  # Extra modulepreloads for the dev server (production inlines the core bundle,
+  # so these only matter for `yarn dev`). Core's own /core/* modules are always
+  # included — list project modules the first paint depends on here.
+  modules:
+    - /components/Router/Router.js
+    - /lib/store.js
+    - /lib/nav.js

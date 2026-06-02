@@ -64,6 +64,7 @@ takeover/
 │   └── ThemeToggle/
 ├── core/
 │   ├── component.js        # Base Component class
+│   ├── config.js           # app.config.yml loader (zero-dep YAML + autodiscovery)
 │   ├── context.js          # Store (EventTarget Proxy)
 │   ├── loader.js           # Auto-loader (MutationObserver-based)
 │   ├── routes.js           # Route matching + path helpers
@@ -93,9 +94,60 @@ takeover/
 ├── deploy/
 │   ├── cloudflare/_worker.js   # Cloudflare Pages Worker (SSR)
 │   └── netlify/                # Netlify Functions (SSR)
+├── app.config.yml          # Per-project config (locales, preloads)
 ├── globals.css             # Global CSS custom properties + reset
 └── index.html              # Shell HTML (comment placeholders for SSR)
 ```
+
+`core/` is the framework and carries no project-specific values. Everything an
+individual site tunes lives outside it — `app/`, `components/`, `lib/`, `locales/`,
+`globals.css`, and `app.config.yml`. Treat `core/` as a dependency you drop into a
+new project unchanged.
+
+---
+
+## Configuration
+
+Project-specific settings live in **`app.config.yml`** at the repo root. Core reads
+it through `core/config.js` (a minimal zero-dependency YAML parser). Every key is
+optional — omit one and the loader autodiscovers a sensible default. Delete the file
+entirely and the framework still runs with discovered locales and no preloads.
+
+```yaml
+locales:
+  # Supported locale codes. Omit, or set `auto`, to discover from locales/*.json.
+  supported: [en, es, fr]
+  # Locale used when a request matches none of the above.
+  default: es
+
+preload:
+  # Same-origin woff2 fetched in parallel with HTML parse (@font-face in globals.css).
+  # Omit → no font preloads. Use `auto` to preload every woff2 under public/fonts/.
+  fonts:
+    - /fonts/geist-latin.woff2
+    - /fonts/geist-mono-latin.woff2
+  # Extra dev-server modulepreloads (production inlines the core bundle, so these
+  # only matter for `yarn dev`). Core's own /core/* modules are always included.
+  modules:
+    - /components/Router/Router.js
+    - /lib/store.js
+    - /lib/nav.js
+```
+
+| Key | Default when omitted |
+|---|---|
+| `locales.supported` | discovered from `locales/*.json` |
+| `locales.default` | first supported locale |
+| `preload.fonts` | none (empty) — or every `public/fonts/*.woff2` if set to `auto` |
+| `preload.modules` | none (core `/core/*` modules are always preloaded) |
+
+Font/module preloads are a curated performance decision (preloading *every* font
+hurts LCP), so they default to empty — list only what genuinely blocks first paint.
+
+The build copies `app.config.yml` into `dist/` so production SSR (and the Cloudflare /
+Netlify adapters) negotiate locales from the same source. The supported/default
+locales are also inlined as `window.__LOCALE_CONFIG__` so the client i18n layer
+matches the server without hardcoding the list.
 
 ---
 
@@ -320,8 +372,13 @@ getLocale();                           // → 'es'
 ### Adding a locale
 
 1. Create `locales/de.json` following the same shape as `en.json`
-2. Add `'de'` to the `SUPPORTED` array in `lib/i18n.js`
+2. Add `de` to `locales.supported` in `app.config.yml` (or rely on autodiscovery —
+   omit the key / set `supported: auto` and the new file is picked up automatically)
 3. Add an `<option>` to `components/LanguageSwitch/LanguageSwitch.html`
+
+The supported list and default locale are defined once in `app.config.yml`; the
+server, the deploy adapters, and the client i18n layer all read from it (no
+hardcoded locale array in `lib/i18n.js`).
 
 ### SSR locale detection
 

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createMatcher, pathFromFile } from '../routes.js';
 import { scanDir } from '../scan.js';
 import { createRenderer } from './ssr.js';
+import { loadConfig } from '../config.js';
 import store from '../../lib/store.js';
 
 const __dirname_ssr = dirname(fileURLToPath(import.meta.url));
@@ -23,6 +24,7 @@ async function loadServerLocale(lang) {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = process.env.SSR_ROOT || resolve(__dirname, '../..');
+const config = loadConfig(root);
 const appDir = resolve(root, 'app');
 const componentsDir = resolve(root, 'components');
 
@@ -106,9 +108,9 @@ async function buildRoutes() {
 
 const routesPromise = buildRoutes();
 
-const SUPPORTED_LOCALES = ['en', 'es', 'fr'];
+const SUPPORTED_LOCALES = config.locales.supported;
 
-export async function render(url, { locale = 'es' } = {}) {
+export async function render(url, { locale = config.locales.default } = {}) {
   const routes = await routesPromise;
   const messages = await loadServerLocale(locale);
   store.set({ locale, messages });
@@ -120,9 +122,12 @@ export async function render(url, { locale = 'es' } = {}) {
   const others = SUPPORTED_LOCALES.filter(l => l !== locale);
   const localesData = {};
   await Promise.all(others.map(async l => { localesData[l] = await loadServerLocale(l); }));
-  const localesScript = Object.keys(localesData).length
+  // Expose the supported/default locale config so the client i18n layer matches
+  // the server's negotiation without hardcoding the list in lib/.
+  const configScript = `<script>window.__LOCALE_CONFIG__=${JSON.stringify(config.locales)}</script>`;
+  const localesScript = (Object.keys(localesData).length
     ? `<script>window.__LOCALES__=${JSON.stringify(localesData)}</script>`
-    : '';
+    : '') + configScript;
   return Object.assign(await result, { localesScript });
 }
 

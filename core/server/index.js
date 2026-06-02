@@ -5,18 +5,24 @@ import { join, extname, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from './ws.js';
 import { scanRoutes } from '../scan.js';
+import { loadConfig } from '../config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '../..');
 const isProd = process.env.NODE_ENV === 'production';
 const port = process.env.PORT || 3000;
+const config = loadConfig(root);
+
+// Framework-owned modulepreloads (always present). Project modules that the
+// first paint depends on are appended from app.config.yml (preload.modules).
+const CORE_MODULE_PRELOADS = ['/core/server/entry-client.js', '/core/loader.js', '/core/component.js', '/core/template.js', '/core/context.js', '/core/routes.js'];
 
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.otf': 'font/otf', '.ttf': 'font/ttf' };
 
 let routesCache = null;
 const getRoutes = async () => routesCache || (routesCache = await scanRoutes(join(root, 'app')));
 
-const SUPPORTED_LOCALES = ['en', 'es', 'fr'];
+const SUPPORTED_LOCALES = config.locales.supported;
 
 function detectLocale(req) {
   const cookies = req.headers.cookie || '';
@@ -27,7 +33,7 @@ function detectLocale(req) {
   }
   const accept = req.headers['accept-language'] || '';
   const lang = accept.split(',')[0]?.split(';')[0]?.split(/[-_]/)[0]?.trim().toLowerCase();
-  return SUPPORTED_LOCALES.includes(lang) ? lang : 'es';
+  return SUPPORTED_LOCALES.includes(lang) ? lang : config.locales.default;
 }
 
 let wss;
@@ -105,24 +111,13 @@ async function renderSSR(url, res, req) {
     if (result.redirect) return res.writeHead(302, { Location: result.redirect }).end();
 
     const globalsCss = await readFile(join(root, 'globals.css'), 'utf-8').catch(() => '');
-    const modulePreloads = [
-      '/core/server/entry-client.js',
-      '/core/loader.js',
-      '/components/Router/Router.js',
-      '/lib/store.js',
-      '/core/component.js',
-      '/core/template.js',
-      '/core/context.js',
-      '/core/routes.js',
-      '/lib/nav.js'
-    ].map(p => `<link rel="modulepreload" href="${p}">`).join('\n  ');
+    const modulePreloads = [...CORE_MODULE_PRELOADS, ...config.preload.modules]
+      .map(p => `<link rel="modulepreload" href="${p}">`).join('\n  ');
 
-    // Self-hosted font preloads — mirror build.js so local preview matches the
-    // deployed _template.html (fonts fetched in parallel with HTML parse).
-    const fontPreloads = [
-      '/fonts/geist-latin.woff2',
-      '/fonts/geist-mono-latin.woff2',
-    ].map(p => `<link rel="preload" href="${p}" as="font" type="font/woff2" crossorigin>`).join('');
+    // Font preloads from app.config.yml — mirror build.js so local preview matches
+    // the deployed _template.html (fonts fetched in parallel with HTML parse).
+    const fontPreloads = config.preload.fonts
+      .map(p => `<link rel="preload" href="${p}" as="font" type="font/woff2" crossorigin>`).join('');
 
     // Inline routes so the Router can read them synchronously instead of fetching /routes.json,
     // matching the production behaviour and avoiding the "preload not used" warning.

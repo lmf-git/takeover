@@ -11,7 +11,7 @@ No Vite. No Webpack. No React. No npm dependencies at all.
 Takeover is a full-stack web application framework built around the [Web Components](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) standard (Custom Elements + Shadow DOM). It handles the full lifecycle:
 
 - **Dev server** — native ESM serving with WebSocket-based HMR
-- **SSR** — server-side rendering with Declarative Shadow DOM, client hydration
+- **SSR** — server-side rendering with Declarative Shadow DOM, client hydration (plus a static CSR-only build target — see [Deployment](#static--csr-only-hosting))
 - **Bundler** — traces static `import` graphs and emits a single hashed bundle
 - **Minifier** — token-aware JS minifier + CSS minifier, both pure Node.js
 - **i18n** — reactive locale switching (EN / ES / FR) with SSR-first locale detection
@@ -480,6 +480,26 @@ The Cloudflare Worker (`deploy/cloudflare/_worker.js`) handles SSR at the edge a
 ### Netlify
 
 Configure via `netlify.toml`. Static assets are served directly; all other requests hit the SSR Netlify Function in `deploy/netlify/`.
+
+### Static / CSR-only hosting
+
+SSR is the default, but the same `yarn build` also emits a **client-rendered shell** at
+`dist/client/index.html` for hosts with no SSR runtime (GitHub Pages, S3, a CDN bucket).
+It's the SSR template with the per-request placeholders pre-filled: empty `app-layout`,
+no `__INITIAL_STATE__`, only `window.__LOCALE_CONFIG__` inlined so client i18n negotiates
+the same locales the server would. On load the Router finds an empty outlet and renders
+the route in the browser — the identical code path SSR pages take after hydration
+(`core/component.js` falls back to `attachShadow()` + `update()` when no Declarative
+Shadow DOM is present).
+
+Serve `dist/client/` as static files with a **SPA catch-all** rewriting unknown paths to
+`/index.html` (so deep links like `/about` resolve). The SSR adapters keep using
+`_template.html` and are unaffected — CSR is purely additive.
+
+What you trade away vs. SSR: no prerendered HTML (blank first paint until the bundle
+runs), no server locale negotiation (the client fetches `/locales/<lang>.json` on boot),
+and crawlers without JS see an empty shell. Use it where an SSR runtime isn't available;
+prefer SSR everywhere else.
 
 ---
 

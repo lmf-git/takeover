@@ -2,7 +2,12 @@
   "nav": {
     "docs": "Documentación",
     "github": "GitHub",
-    "getStarted": "Ver fuente"
+    "getStarted": "Ver fuente",
+    "quickstart": "Inicio rápido",
+    "demos": "Demos",
+    "speed": "Velocidad",
+    "features": "Características",
+    "structure": "Estructura"
   },
   "hero": {
     "eyebrow": "v1.0 — listo para producción",

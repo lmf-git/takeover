@@ -3,7 +3,11 @@
     "docs": "Docs",
     "github": "GitHub",
     "getStarted": "Get started",
-    "links": ["Quick start", "Demos", "Speed", "Features", "Structure"]
+    "quickstart": "Quick start",
+    "demos": "Demos",
+    "speed": "Speed",
+    "features": "Features",
+    "structure": "Structure"
   },
   "hero": {
     "eyebrow": "v1.0 — production ready",

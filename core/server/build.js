@@ -390,6 +390,21 @@ async function build() {
 
   await writeFile(join(clientDist, '_template.html'), template);
 
+  // 4b. CSR fallback shell — index.html. Same inlined bundle/routes/manifest as
+  // _template.html, but the three SSR placeholders are pre-filled with static
+  // defaults so any plain static host (no SSR runtime) serves a client-rendered
+  // app: the Router finds an empty outlet and renders the route in the browser.
+  // SSR is unaffected — adapters keep filling _template.html per request. We only
+  // inline __LOCALE_CONFIG__ (so client i18n negotiates the same supported/default
+  // locales the server would); __INITIAL_STATE__ / __LOCALES__ are SSR-only and
+  // their absence is already guarded everywhere they're read.
+  const localeConfigScript = `<script>window.__LOCALE_CONFIG__=${JSON.stringify(config.locales)}</script>`;
+  const csrHtml = template
+    .replace('<!--head-meta-->', () => '')
+    .replace('<!--app-html-->', () => '')
+    .replace('<!--initial-state-->', () => localeConfigScript);
+  await writeFile(join(clientDist, 'index.html'), csrHtml);
+
   // 5. Locale JSON files (client for fetch, server for SSR)
   await Promise.all([
     copyDir(join(root, 'locales'), join(clientDist, 'locales')),

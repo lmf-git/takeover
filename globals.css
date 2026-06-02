@@ -1,4 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+/* Self-hosted Geist (variable). One woff2 covers the full 300-700 weight range.
+   latin subset (U+0000-00FF) covers all en/es/fr accents. font-display:swap
+   paints fallback text immediately, then swaps — no render-blocking. */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/geist-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/geist-mono-latin.woff2') format('woff2');
+}
 
 :root {
   --bg: oklch(0.16 0.012 265);
@@ -8,7 +24,8 @@
   --line-soft: oklch(0.27 0.016 265);
   --fg: oklch(0.97 0.006 265);
   --fg-muted: oklch(0.72 0.014 265);
-  --fg-dim: oklch(0.52 0.018 265);
+  /* lightened 0.52 → 0.59 to clear WCAG AA 4.5:1 on dark --bg (was 3.52:1) */
+  --fg-dim: oklch(0.59 0.018 265);
   --cyan: oklch(0.87 0.10 215);
   --sky: oklch(0.82 0.10 230);
   --blue: oklch(0.65 0.16 265);
@@ -38,11 +55,20 @@
   --line-soft: oklch(0.91 0.008 265);
   --fg: oklch(0.20 0.014 265);
   --fg-muted: oklch(0.42 0.016 265);
-  --fg-dim: oklch(0.60 0.014 265);
+  /* fg-dim darkened 0.60 → 0.54 to clear WCAG AA 4.5:1 on --bg (was 3.78:1) for
+     small dim text: .stat-sub, .hmr-label, .card-shadow, .counter-expr, .store-key, .mit */
+  --fg-dim: oklch(0.54 0.016 265);
   --accent: oklch(0.50 0.20 280);
-  --accent-soft: oklch(0.58 0.18 270);
+  /* accent-soft darkened 0.58 → 0.52 so .badge text clears 4.5:1 on --accent-dim
+     (was 3.69:1); also lifts accent-soft links/icons elsewhere in light theme */
+  --accent-soft: oklch(0.52 0.19 270);
   --accent-dim: oklch(0.50 0.20 280 / 0.10);
   --accent-line: oklch(0.50 0.20 280 / 0.40);
+  /* Syntax-highlight text (.val-purple / .val-blue, store viewer). The :root
+     values (L 0.82) are tuned for the dark panel and fail on light --bg
+     (1.6–1.7:1); these light-theme variants clear 4.5:1. */
+  --lavender: oklch(0.50 0.16 305);
+  --sky: oklch(0.50 0.13 230);
   --accent-grad: linear-gradient(135deg, #5CA6DF 0%, #515DD1 45%, #6958C2 75%, #846CE0 100%);
   --accent-grad-soft: linear-gradient(135deg, oklch(0.50 0.20 280 / 0.08), oklch(0.50 0.20 295 / 0.08));
 }

@@ -124,6 +124,17 @@ async function copyDir(src, dest, opts = {}) {
         await copyDir(srcPath, destPath, opts);
     } else if (entry.isFile()) {
       const ext = extname(entry.name);
+      // Only .js (transform/minify/rename) and minified .css are processed as text.
+      // Everything else — fonts, images, etc. — must be copied byte-for-byte;
+      // reading binary as UTF-8 corrupts it (invalid bytes → U+FFFD, size inflates).
+      const needsText = ext === '.js' || (ext === '.css' && doMinify);
+
+      if (!needsText) {
+        await ensureDir(dirname(destPath));
+        await copyFile(srcPath, destPath);
+        continue;
+      }
+
       let content = await readFile(srcPath, 'utf-8');
 
       if (ext === '.js') {
@@ -341,14 +352,16 @@ async function build() {
   const globalsCss = await readFile(join(root, 'globals.css'), 'utf-8').catch(() => '');
   const minCss = minifyCSS(globalsCss);
 
-  // Critical-path preloads. Fonts break the HTML→CSS→font dependency chain.
+  // Critical-path preloads. Self-hosted Geist woff2 (declared @font-face in the
+  // inlined globals.css). Preloading them same-origin lets the browser fetch the
+  // fonts in parallel with HTML parse instead of waiting for the CSS to apply,
+  // shaving the font swap off LCP. Variable fonts → one file per family.
   // No modulepreloads here — the core bundle already inlines every static import.
   // No routes.json preload — routes are inlined into the HTML below.
   const fontPreloads = [
-    '/fonts/aaltosansessential-regular.otf',
-    '/fonts/aaltosansessential-medium.otf',
-    '/fonts/aaltosansessential-semibold.otf',
-  ].map(p => `<link rel="preload" href="${p}" as="font" type="font/otf" crossorigin>`).join('');
+    '/fonts/geist-latin.woff2',
+    '/fonts/geist-mono-latin.woff2',
+  ].map(p => `<link rel="preload" href="${p}" as="font" type="font/woff2" crossorigin>`).join('');
 
   const preloadLinks = fontPreloads;
 

@@ -116,7 +116,14 @@ async function renderSSR(url, res, req) {
       '/core/routes.js',
       '/lib/nav.js'
     ].map(p => `<link rel="modulepreload" href="${p}">`).join('\n  ');
-    
+
+    // Self-hosted font preloads — mirror build.js so local preview matches the
+    // deployed _template.html (fonts fetched in parallel with HTML parse).
+    const fontPreloads = [
+      '/fonts/geist-latin.woff2',
+      '/fonts/geist-mono-latin.woff2',
+    ].map(p => `<link rel="preload" href="${p}" as="font" type="font/woff2" crossorigin>`).join('');
+
     // Inline routes so the Router can read them synchronously instead of fetching /routes.json,
     // matching the production behaviour and avoiding the "preload not used" warning.
     const routesScript = `<script>window.__ROUTES__=${JSON.stringify(await getRoutes())}</script>`;
@@ -124,7 +131,7 @@ async function renderSSR(url, res, req) {
     let html = template
       .replace(/<html\s+lang="[^"]*"/, () => `<html lang="${locale}"`)
       .replace('<!--inline-css-->', () => `<style>${globalsCss}</style>`)
-      .replace('<!--preload-links-->', () => modulePreloads + routesScript)
+      .replace('<!--preload-links-->', () => fontPreloads + modulePreloads + routesScript)
       .replace('<!--head-meta-->', () => (result.headMeta || '') + (result.scopedStyles || ''))
       .replace('<!--app-html-->', () => result.appHtml)
       .replace('<!--initial-state-->', () => result.initialStateScript + result.localesScript);

@@ -3,6 +3,7 @@ import { join, dirname, extname, relative, resolve as pathResolve } from 'node:p
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { pathFromFile } from '../routes.js';
+import { escapeHtml } from '../template.js';
 import { bundle } from './bundle.js';
 import { minifyJS, minifyCSS } from './minify.js';
 import { loadConfig } from '../config.js';
@@ -418,9 +419,18 @@ async function build() {
     `<script>window.__INITIAL_STATE__=${JSON.stringify({ locale: defaultLocale, messages: localeMessages[defaultLocale] || {} })}</script>` +
     (Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${JSON.stringify(otherLocales)}</script>` : '') +
     `<script>window.__LOCALE_CONFIG__=${JSON.stringify(config.locales)}</script>`;
+  // Static <head> meta for the shell. CSR can't negotiate per-route on the server,
+  // so we bake in the home route's metadata: crawlers (and the first paint, before
+  // the bundle runs) get a real title + description. The client meta sync in
+  // entry-client.js then keeps these current as the Router navigates.
+  const homeMeta = routes.find(r => r.path === '/')?.metadata || {};
+  const csrHeadMeta = [
+    homeMeta.title && `<title>${escapeHtml(homeMeta.title)}</title>`,
+    homeMeta.description && `<meta name="description" content="${escapeHtml(homeMeta.description)}">`,
+  ].filter(Boolean).join('');
   const csrHtml = template
     .replace(/<html\s+lang="[^"]*"/, () => `<html lang="${defaultLocale}"`)
-    .replace('<!--head-meta-->', () => '')
+    .replace('<!--head-meta-->', () => csrHeadMeta)
     .replace('<!--app-html-->', () => '')
     .replace('<!--initial-state-->', () => csrState);
   await writeFile(join(clientDist, 'index.html'), csrHtml);

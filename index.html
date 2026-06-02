@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estremar – Pesca</title>
+  <!-- Title + description are injected per route at the head-meta placeholder below:
+       SSR fills it from the matched route's metadata; the CSR build bakes in home's. -->
   <script>
     (function() {
       var theme = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');

@@ -391,18 +391,38 @@ async function build() {
   await writeFile(join(clientDist, '_template.html'), template);
 
   // 4b. CSR fallback shell — index.html. Same inlined bundle/routes/manifest as
-  // _template.html, but the three SSR placeholders are pre-filled with static
-  // defaults so any plain static host (no SSR runtime) serves a client-rendered
-  // app: the Router finds an empty outlet and renders the route in the browser.
-  // SSR is unaffected — adapters keep filling _template.html per request. We only
-  // inline __LOCALE_CONFIG__ (so client i18n negotiates the same supported/default
-  // locales the server would); __INITIAL_STATE__ / __LOCALES__ are SSR-only and
-  // their absence is already guarded everywhere they're read.
-  const localeConfigScript = `<script>window.__LOCALE_CONFIG__=${JSON.stringify(config.locales)}</script>`;
+  // _template.html, but the three SSR placeholders are pre-filled at build time so
+  // any plain static host (no SSR runtime) serves a client-rendered app: the Router
+  // finds an empty outlet and renders the route in the browser. SSR is unaffected —
+  // adapters keep filling _template.html per request.
+  //
+  // Locale state mirrors exactly what entry-server.js injects for SSR:
+  //   __INITIAL_STATE__  default locale + its messages — so the *first* client
+  //                      render already has the catalogue (no raw-{{t.*}} FOUC).
+  //   __LOCALES__        the other supported locales — so a language switch (or a
+  //                      non-default-locale visitor) resolves synchronously instead
+  //                      of fetching /locales/<l>.json (no flash).
+  //   __LOCALE_CONFIG__  supported/default list, so client negotiation matches.
+  // Without this the store seeds messages:{} and every {{t.*}} paints raw until the
+  // first fetch resolves — the CSR locale flash.
+  const localeMessages = {};
+  await Promise.all(config.locales.supported.map(async l => {
+    try { localeMessages[l] = JSON.parse(await readFile(join(root, 'locales', `${l}.json`), 'utf-8')); }
+    catch { localeMessages[l] = {}; }
+  }));
+  const defaultLocale = config.locales.default;
+  const otherLocales = Object.fromEntries(
+    config.locales.supported.filter(l => l !== defaultLocale).map(l => [l, localeMessages[l]])
+  );
+  const csrState =
+    `<script>window.__INITIAL_STATE__=${JSON.stringify({ locale: defaultLocale, messages: localeMessages[defaultLocale] || {} })}</script>` +
+    (Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${JSON.stringify(otherLocales)}</script>` : '') +
+    `<script>window.__LOCALE_CONFIG__=${JSON.stringify(config.locales)}</script>`;
   const csrHtml = template
+    .replace(/<html\s+lang="[^"]*"/, () => `<html lang="${defaultLocale}"`)
     .replace('<!--head-meta-->', () => '')
     .replace('<!--app-html-->', () => '')
-    .replace('<!--initial-state-->', () => localeConfigScript);
+    .replace('<!--initial-state-->', () => csrState);
   await writeFile(join(clientDist, 'index.html'), csrHtml);
 
   // 5. Locale JSON files (client for fetch, server for SSR)

@@ -492,9 +492,19 @@ the route in the browser — the identical code path SSR pages take after hydrat
 (`core/component.js` falls back to `attachShadow()` + `update()` when no Declarative
 Shadow DOM is present).
 
-Serve `dist/client/` as static files with a **SPA catch-all** rewriting unknown paths to
-`/index.html` (so deep links like `/about` resolve). The SSR adapters keep using
-`_template.html` and are unaffected — CSR is purely additive.
+Build and preview it locally with two commands:
+
+```bash
+yarn build         # emits dist/client/index.html (the CSR shell) alongside the SSR template
+yarn preview:csr   # zero-dep static server → http://localhost:4399 (PORT/CSR_ROOT override)
+```
+
+`yarn preview:csr` (`core/server/static.js`) serves `dist/client/` with a **SPA catch-all** —
+any extension-less path that isn't a real file falls back to `/index.html`, so deep links
+like `/about` resolve and the Router renders them client-side. On a real host you express
+the same rule as a rewrite: Netlify `/* /index.html 200`, Cloudflare Pages `_redirects`,
+nginx `try_files $uri /index.html`. The SSR adapters keep using `_template.html` and are
+unaffected — CSR is purely additive.
 
 What you trade away vs. SSR: no prerendered HTML (blank first paint until the bundle
 runs), no server locale negotiation (the client fetches `/locales/<lang>.json` on boot),

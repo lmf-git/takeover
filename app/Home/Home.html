@@ -313,6 +313,7 @@
 
 <script>
 import { Component, define } from '/core/component.js';
+import { scrollToHash } from '/lib/nav.js';
 
 export default class HomePage extends Component {
   static templateUrl = '/app/Home/Home.html';
@@ -329,6 +330,12 @@ export default class HomePage extends Component {
         setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1400);
       });
     }
+    // Section ids live inside sibling components' shadow roots — resolve the
+    // hero's #quickstart / #cta anchors across the boundary and scroll.
+    this.delegate('click', 'a[href^="#"]', (a, e) => {
+      const href = a.getAttribute('href');
+      if (scrollToHash(href)) { e.preventDefault(); history.pushState(null, '', href); }
+    });
   }
 }
 

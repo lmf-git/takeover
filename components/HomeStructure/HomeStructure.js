@@ -15,20 +15,21 @@ export default class HomeStructure extends Component {
   _onTreeClick(e) {
     const row = e.target.closest('.tree-row[data-folder]');
     if (!row) return;
+    row.classList.toggle('collapsed');
+    this._applyVisibility();
+  }
 
-    const depth = parseInt(row.dataset.depth, 10);
-    const collapsed = row.classList.toggle('collapsed');
-
-    let sibling = row.nextElementSibling;
-    while (sibling) {
-      const sibDepth = parseInt(sibling.dataset.depth, 10);
-      if (sibDepth <= depth) break;
-      if (collapsed) {
-        sibling.hidden = true;
-      } else if (sibDepth === depth + 1) {
-        sibling.hidden = false;
-      }
-      sibling = sibling.nextElementSibling;
+  // Recompute every row's visibility from collapsed ancestors. Rows are in
+  // pre-order, so a single pass suffices: anything deeper than the shallowest
+  // collapsed folder above it is hidden. Re-deriving (rather than toggling
+  // siblings) keeps nested collapse state correct across re-expands.
+  _applyVisibility() {
+    let hideBelow = Infinity;
+    for (const r of this.$$('.tree-row')) {
+      const depth = parseInt(r.dataset.depth, 10);
+      if (depth <= hideBelow) hideBelow = Infinity;
+      r.hidden = depth > hideBelow;
+      if (!r.hidden && r.classList.contains('collapsed')) hideBelow = depth;
     }
   }
 }

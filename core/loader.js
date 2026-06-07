@@ -1,11 +1,20 @@
 const loaded = new Set();
 const scanned = new WeakSet();
 
+// Tags whose folder can't be derived by the generic kebab→PascalCase rule
+// below — an alternate location (app-layout), or irregular casing / acronyms
+// where one kebab segment doesn't map to one capitalized word
+// (home-quickstart → HomeQuickStart, home-cta → HomeCTA).
+const OVERRIDES = {
+  'app-layout': '/app/_Layout/_Layout.js',
+  'app-router': '/components/Router/Router.js',
+  'home-quickstart': '/components/HomeQuickStart/HomeQuickStart.js',
+  'home-cta': '/components/HomeCTA/HomeCTA.js',
+};
+
 const pathFor = tag => {
-  let path;
-  if (tag === 'app-layout') path = '/app/_Layout/_Layout.js';
-  else if (tag === 'app-router') path = '/components/Router/Router.js';
-  else {
+  let path = OVERRIDES[tag];
+  if (!path) {
     const pascal = tag.replace(/^app-/, '').split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
     path = `/components/${pascal}/${pascal}.js`;
   }

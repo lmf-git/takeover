@@ -1,5 +1,6 @@
 import { Component, define } from '../../core/component.js';
 import { setLocale } from '../../lib/i18n.js';
+import { scrollToHash } from '../../lib/nav.js';
 
 export default class Navigation extends Component {
   static templateUrl = '/components/Navigation/Navigation.html';
@@ -11,6 +12,12 @@ export default class Navigation extends Component {
     this.on('#lang-en', 'click', () => setLocale('en'));
     this.on('#lang-es', 'click', () => setLocale('es'));
     this.on('#lang-fr', 'click', () => setLocale('fr'));
+    // Section ids live inside each component's shadow root, so native #hash
+    // navigation can't reach them — resolve and scroll across the boundary.
+    this.delegate('click', 'a[href^="#"]', (a, e) => {
+      const href = a.getAttribute('href');
+      if (scrollToHash(href)) { e.preventDefault(); history.pushState(null, '', href); }
+    });
   }
 
   #syncTheme() {

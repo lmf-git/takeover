@@ -42,7 +42,10 @@ const resolvePaths = tag => {
   if (tag === 'app-router') return null;
   const isPage = tag.endsWith('-page');
   const name = isPage ? tag.replace('-page', '') : tag.replace(/^app-/, '');
-  const pascal = name.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
+  // Irregular casing / acronyms where kebab→PascalCase doesn't reproduce the
+  // folder name. Keep in sync with OVERRIDES in core/loader.js.
+  const irregular = { 'home-quickstart': 'HomeQuickStart', 'home-cta': 'HomeCTA' };
+  const pascal = irregular[tag] || name.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
   const dir = isPage ? appDir : componentsDir;
   return { tpl: join(dir, `${pascal}/${pascal}.html`), css: join(dir, `${pascal}/${pascal}.module.css`), plainCss: join(dir, `${pascal}/${pascal}.css`) };
 };

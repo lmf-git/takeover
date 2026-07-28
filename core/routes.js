@@ -13,6 +13,18 @@ export function pathFromFile(filePath, basePath = '') {
   return route.replace(/^\/home$/, '/');
 }
 
+/**
+ * Append a wildcard clone of the NotFound page so unmatched paths render it
+ * instead of the renderer's bare <h1>404</h1>. Every consumer of a route table
+ * needs this — the Node SSR entry, the client Router, and the edge adapters
+ * reading routes.json — so it lives here rather than being repeated per host.
+ */
+export function withNotFound(routes) {
+  const notFound = routes.find(r => r.component === 'notfound-page');
+  if (!notFound || routes.some(r => r.path === '*')) return routes;
+  return [...routes, { ...notFound, path: '*', dynamic: false, matcher: null }];
+}
+
 export function matchRoute(routes, pathname) {
   const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
   const exact = routes.find(r => !r.dynamic && r.path === path);

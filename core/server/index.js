@@ -4,8 +4,9 @@ import { createReadStream, watch, existsSync } from 'node:fs';
 import { join, extname, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from './ws.js';
-import { scanRoutes } from '../scan.js';
+import { scanRoutes, scanTags } from '../scan.js';
 import { loadConfig } from '../config.js';
+import { negotiateLocale } from '../locale.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '../..');
@@ -22,19 +23,17 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
 let routesCache = null;
 const getRoutes = async () => routesCache || (routesCache = await scanRoutes(join(root, 'app')));
 
-const SUPPORTED_LOCALES = config.locales.supported;
+// Discovered tag → directory registry, inlined as window.__TAGS__ so the browser
+// loader resolves component folders the naming convention can't reproduce.
+let tagsCache = null;
+const getTags = async () => tagsCache || (tagsCache = await scanTags(root));
 
-function detectLocale(req) {
-  const cookies = req.headers.cookie || '';
-  const cookie = cookies.match(/(?:^|;\s*)locale=([^;]+)/)?.[1];
-  if (cookie) {
-    const c = cookie.split(/[-_]/)[0].toLowerCase();
-    if (SUPPORTED_LOCALES.includes(c)) return c;
-  }
-  const accept = req.headers['accept-language'] || '';
-  const lang = accept.split(',')[0]?.split(';')[0]?.split(/[-_]/)[0]?.trim().toLowerCase();
-  return SUPPORTED_LOCALES.includes(lang) ? lang : config.locales.default;
-}
+const detectLocale = req => negotiateLocale({
+  cookie: req.headers.cookie,
+  acceptLanguage: req.headers['accept-language'],
+  supported: config.locales.supported,
+  fallback: config.locales.default,
+});
 
 let wss;
 const clients = new Set();
@@ -55,6 +54,7 @@ function setupWatcher() {
       hmrTimers.set(file, setTimeout(() => {
         hmrTimers.delete(file);
         routesCache = null;
+        tagsCache = null;
         // Derive a root-relative URL for the changed file
         // file is relative to the watched dir — but we only know dir, not which watch triggered,
         // so reconstruct by scanning dir prefix from root
@@ -122,11 +122,14 @@ async function renderSSR(url, res, req) {
     // Inline routes so the Router can read them synchronously instead of fetching /routes.json,
     // matching the production behaviour and avoiding the "preload not used" warning.
     const routesScript = `<script>window.__ROUTES__=${JSON.stringify(await getRoutes())}</script>`;
+    // Inline the tag registry so core/loader.js resolves component directories the
+    // kebab→PascalCase convention can't reproduce (HomeCTA, HomeQuickStart).
+    const tagsScript = `<script>window.__TAGS__=${JSON.stringify(await getTags())}</script>`;
 
     let html = template
       .replace(/<html\s+lang="[^"]*"/, () => `<html lang="${locale}"`)
       .replace('<!--inline-css-->', () => `<style>${globalsCss}</style>`)
-      .replace('<!--preload-links-->', () => fontPreloads + modulePreloads + routesScript)
+      .replace('<!--preload-links-->', () => fontPreloads + modulePreloads + tagsScript + routesScript)
       .replace('<!--head-meta-->', () => (result.headMeta || '') + (result.scopedStyles || ''))
       .replace('<!--app-html-->', () => result.appHtml)
       .replace('<!--initial-state-->', () => result.initialStateScript + result.localesScript);

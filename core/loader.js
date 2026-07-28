@@ -1,23 +1,15 @@
+import { pathsForTag } from './tags.js';
+
 const loaded = new Set();
 const scanned = new WeakSet();
 
-// Tags whose folder can't be derived by the generic kebab→PascalCase rule
-// below — an alternate location (app-layout), or irregular casing / acronyms
-// where one kebab segment doesn't map to one capitalized word
-// (home-quickstart → HomeQuickStart, home-cta → HomeCTA).
-const OVERRIDES = {
-  'app-layout': '/app/_Layout/_Layout.js',
-  'app-router': '/components/Router/Router.js',
-  'home-quickstart': '/components/HomeQuickStart/HomeQuickStart.js',
-  'home-cta': '/components/HomeCTA/HomeCTA.js',
-};
-
+// window.__TAGS__ is the discovered tag → directory registry (see core/scan.js
+// scanTags), inlined into the HTML by the dev server and the build. It covers
+// folders the kebab→PascalCase convention can't reproduce — HomeCTA,
+// HomeQuickStart — so nothing has to be hardcoded here. When it's absent
+// (element defined at runtime) pathsForTag falls back to the convention.
 const pathFor = tag => {
-  let path = OVERRIDES[tag];
-  if (!path) {
-    const pascal = tag.replace(/^app-/, '').split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
-    path = `/components/${pascal}/${pascal}.js`;
-  }
+  const path = pathsForTag(tag, typeof window !== 'undefined' ? window.__TAGS__ : null).js;
   // In production, files are content-hashed and served with immutable cache.
   // The build inlines window.__M__ to map original path → hashed path.
   return (typeof window !== 'undefined' && window.__M__ && window.__M__[path]) || path;

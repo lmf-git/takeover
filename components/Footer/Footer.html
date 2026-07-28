@@ -1,63 +1,15 @@
-<style>
-  :host { display: block; }
-  *, *::before, *::after { box-sizing: border-box; }
-
-  footer {
-    border-top: 1px solid var(--line-soft);
-    padding-block: 32px;
-  }
-
-  .inner {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    max-width: var(--shell-max, 1240px);
-    margin: 0 auto;
-    padding: 0 var(--gutter, clamp(20px,4vw,48px));
-    flex-wrap: wrap;
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .version {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--fg-muted);
-  }
-
-  .dot {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--fg-dim);
-  }
-
-  .built {
-    font-size: 13px;
-    color: var(--fg-muted);
-  }
-
-  .spacer { flex: 1; }
-
-  .mit {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--fg-dim);
-  }
-</style>
-
+<!-- Styles live in a sibling CSS Module, so class names come from $css rather than
+     being written literally. Note this comment ships in the SSR response and is
+     itself expression-substituted, so keep template syntax out of it. -->
 <footer>
-  <div class="inner">
-    <div class="brand">
+  <div class="{{$css.inner}}">
+    <div class="{{$css.brand}}">
       <app-logo style="--logo-size:22px"></app-logo>
-      <span class="version">takeover@1.0.0</span>
+      <span class="{{$css.version}}">takeover@1.0.0</span>
     </div>
-    <span class="dot">·</span>
-    <span class="built">{{t.footer.built}}</span>
-    <div class="spacer"></div>
-    <span class="mit">{{t.footer.mit}}</span>
+    <span class="{{$css.dot}}">·</span>
+    <span class="{{$css.built}}">{{t.footer.built}}</span>
+    <div class="{{$css.spacer}}"></div>
+    <span class="{{$css.mit}}">{{t.footer.mit}}</span>
   </div>
 </footer>

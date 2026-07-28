@@ -47,34 +47,31 @@ Dev server starts at `http://localhost:3000`. Set `PORT=xxxx` to change it.
 ```
 takeover/
 ├── app/                    # Pages (file-system routed)
-│   ├── _Layout/            # Root layout (app-layout element)
+│   ├── _Layout/            # Root layout (app-layout element; _ = not a route)
 │   ├── Home/               # → /
-│   ├── About/              # → /about
-│   ├── Contact/            # → /contact
-│   ├── Dashboard/          # → /dashboard
-│   ├── Login/              # → /login
-│   ├── NotFound/           # → /notfound (also used as 404)
-│   └── Users/[id]/User/    # → /users/:id/user  (dynamic segment)
+│   └── NotFound/           # → /notfound (also the wildcard 404)
 ├── components/             # Shared components
-│   ├── Counter/
-│   ├── LanguageSwitch/
-│   ├── LocalStateDisplay/
-│   ├── Navigation/
-│   ├── Router/
-│   └── ThemeToggle/
+│   ├── Router/             # <app-router> — client-side navigation + outlet
+│   ├── Navigation/ Logo/ Footer/
+│   ├── HeroCounter/ TriangleSeam/
+│   └── HomeQuickStart/ HomeDemos/ HomePerformance/
+│       HomeFeatures/ HomeStructure/ HomeArchitecture/ HomeCTA/
 ├── core/
 │   ├── component.js        # Base Component class
 │   ├── config.js           # app.config.yml loader (zero-dep YAML + autodiscovery)
 │   ├── context.js          # Store (EventTarget Proxy)
-│   ├── loader.js           # Auto-loader (MutationObserver-based)
+│   ├── loader.js           # Auto-loader (MutationObserver + IntersectionObserver)
+│   ├── locale.js           # Shared locale negotiation (cookie + Accept-Language)
 │   ├── routes.js           # Route matching + path helpers
-│   ├── scan.js             # Directory scanner for routes
+│   ├── scan.js             # Directory scanner: routes + tag registry
+│   ├── tags.js             # Tag → source directory resolution
 │   ├── template.js         # Template engine (expressions, each, if)
 │   └── server/
 │       ├── index.js        # Dev/prod HTTP server + HMR
 │       ├── build.js        # Production build pipeline
 │       ├── bundle.js       # Zero-dep ESM bundler
 │       ├── minify.js       # Zero-dep JS + CSS minifier
+│       ├── static.js       # Zero-dep static server (CSR preview, SPA catch-all)
 │       ├── entry-client.js # Browser entry point
 │       ├── entry-server.js # SSR entry point
 │       ├── ssr.js          # Shared rendering logic
@@ -92,8 +89,8 @@ takeover/
 │   ├── es.json             # Spanish
 │   └── fr.json             # French
 ├── deploy/
-│   ├── cloudflare/_worker.js   # Cloudflare Pages Worker (SSR)
-│   └── netlify/                # Netlify Functions (SSR)
+│   ├── cloudflare/_worker.js       # Cloudflare Pages Worker (SSR)
+│   └── netlify/functions/ssr.mjs   # Netlify Function (SSR)
 ├── app.config.yml          # Per-project config (locales, preloads)
 ├── globals.css             # Global CSS custom properties + reset
 └── index.html              # Shell HTML (comment placeholders for SSR)
@@ -158,9 +155,12 @@ Pages live in `app/`. The directory name maps directly to the route:
 | Directory | Route |
 |---|---|
 | `app/Home/` | `/` |
+| `app/NotFound/` | `/notfound` + wildcard 404 |
 | `app/About/` | `/about` |
 | `app/Users/[id]/User/` | `/users/:id/user` |
-| `app/NotFound/` | `/notfound` + wildcard 404 |
+
+(The first two ship with this repo; the last two show the naming rules.) Folders and
+files starting with `_` are skipped, which is what keeps `_Layout` out of the route table.
 
 Each page is a folder with two files:
 
@@ -204,10 +204,34 @@ define('about-page', AboutPage);
 
 Shared components live in `components/`. They follow the same two-file pattern as pages but are loaded lazily by `core/loader.js` via `MutationObserver` — as soon as a custom element tag appears in the DOM, the corresponding JS is fetched and registered.
 
-Tag → file mapping (automatic):
-- `<app-counter>` → `components/Counter/Counter.js`
-- `<theme-toggle>` → `components/ThemeToggle/ThemeToggle.js`
-- `<lang-switch>` → `components/LanguageSwitch/LanguageSwitch.js`
+Add `loading="lazy"` to defer that import until the element nears the viewport
+(`IntersectionObserver`, 200px margin). Server-rendered content stays visible throughout;
+only the JS upgrade waits.
+
+```html
+<app-footer loading="lazy"></app-footer>
+```
+
+### Tag → file mapping
+
+Resolution is **discovered, not configured**. At dev-server start and at build time,
+`core/scan.js` walks `app/` and `components/` for `define('<tag>', …)` calls and maps each
+tag to the directory that declares it. The result is inlined as `window.__TAGS__` for the
+browser loader, passed directly to the Node SSR renderer, and written to
+`_ssr-config.json` for the edge adapters — one registry, three consumers, no hand-kept
+override table anywhere.
+
+```
+components/HomeCTA/HomeCTA.js       →  define('home-cta', …)       →  <home-cta>
+components/HomeQuickStart/…         →  define('home-quickstart',…) →  <home-quickstart>
+app/NotFound/NotFound.js            →  define('notfound-page', …)  →  <notfound-page>
+```
+
+Because the folder is read off the `define()` call, names that don't round-trip through
+kebab↔PascalCase — acronyms (`HomeCTA`), compound words (`HomeQuickStart`), internal
+capitals (`NotFound`) — need no special handling. If a tag is missing from the registry
+(defined at runtime, say), resolution falls back to the convention: `<foo-bar>` →
+`components/FooBar/FooBar.js`, `<foo-page>` → `app/Foo/Foo.js`.
 
 ### Component API
 
@@ -218,7 +242,8 @@ export default class MyWidget extends Component {
   // URL of the HTML template (Shadow DOM content)
   static templateUrl = '/components/MyWidget/MyWidget.html';
 
-  // CSS Module — class names are scoped to this element's tag
+  // CSS Module — class names are scoped to this element's tag.
+  // Optional: a sibling MyWidget.module.css is picked up automatically.
   static cssModule = '/components/MyWidget/MyWidget.module.css';
 
   // Store keys to subscribe to — re-renders on change
@@ -264,6 +289,39 @@ define('my-widget', MyWidget);
 | `this.withLoading(fn, key?)` | Sets `local[key]` true while async fn runs |
 | `this.bindForm(fields)` | Bind `<input>` elements to `local` state keys |
 | `this.getFormData(sel?)` | Read form as plain object via `FormData` |
+
+---
+
+## Styling
+
+Two options, usable together:
+
+**Inline `<style>` in the template.** Simplest, and what most components here do. The block
+is hoisted into the shadow root, so selectors are already isolated — no scoping needed.
+
+**A CSS Module file.** Put `MyWidget.module.css` next to `MyWidget.html` and it is
+discovered automatically (no declaration required). Class names get the element's tag
+appended — `.inner` → `.inner_app-footer` — so templates reference them through `$css`:
+
+```html
+<div class="{{$css.inner}}">
+  <span class="{{$c('badge', 'active')}}">…</span>
+</div>
+```
+
+```js
+bind() { this.$('.x')?.classList.add(this.cx('active')); }  // cx() maps names too
+```
+
+`components/Footer/` is a worked example. A plain `MyWidget.css` (no `.module`) is also
+picked up and used **unscoped**, and can coexist with a module sheet.
+
+Element, `:host` and pseudo selectors are left alone by the scoping pass — the shadow
+boundary already isolates those. The pass is a regex over the whole file and does not skip
+comments, so avoid dotted names inside CSS comments.
+
+In production the build folds the stylesheet's source into the component class, so a CSS
+Module costs no extra request at runtime; SSR embeds the same scoped CSS in the shadow root.
 
 ---
 
@@ -333,12 +391,15 @@ const unsub = store.on('counter', (value, oldValue) => {
 });
 unsub();
 
-// Built-in actions
-store.toggleTheme();
-store.login({ username: 'alice', email: 'alice@example.com' });
-store.logout();
+// Merge into the page metadata key (the only action lib/store.js adds)
 store.setMeta({ title: 'My Page' });
 ```
+
+The store ships deliberately bare: `lib/store.js` defines the defaults
+(`{ meta, locale, messages }`) and `setMeta`. Application actions — auth, theme, anything
+domain-specific — belong in your own module on top of it, not in the framework.
+
+Nested paths work too: `store.state.user.name = 'x'` fires `change:user.name`.
 
 Components subscribe declaratively via `static store = ['key1', 'key2']` and re-render automatically when any subscribed key changes.
 
@@ -374,7 +435,8 @@ getLocale();                           // → 'es'
 1. Create `locales/de.json` following the same shape as `en.json`
 2. Add `de` to `locales.supported` in `app.config.yml` (or rely on autodiscovery —
    omit the key / set `supported: auto` and the new file is picked up automatically)
-3. Add an `<option>` to `components/LanguageSwitch/LanguageSwitch.html`
+3. Add a switch control in `components/Navigation/Navigation.html` + `.js` (the language
+   buttons there call `setLocale('en' | 'es' | 'fr')`)
 
 The supported list and default locale are defined once in `app.config.yml`; the
 server, the deploy adapters, and the client i18n layer all read from it (no
@@ -382,7 +444,17 @@ hardcoded locale array in `lib/i18n.js`).
 
 ### SSR locale detection
 
-The dev/prod server reads `Accept-Language` headers and the `locale` cookie. The detected locale is used to pre-render the page in the correct language. The locale and messages are embedded in `window.__INITIAL_STATE__` so the client hydrates without a flash.
+`core/locale.js` implements negotiation once and every SSR host uses it — the dev/prod
+server, the Netlify function and the Cloudflare worker — so all three resolve the same
+language for the same request. The `locale` cookie (an explicit user choice) wins over
+`Accept-Language`, which is ranked by q-value; anything unsupported falls back to
+`locales.default`.
+
+The negotiated locale pre-renders the page, and three globals are inlined so the client
+never flashes: `__INITIAL_STATE__` (active locale + its messages), `__LOCALES__` (the other
+supported catalogues, so a switch needs no fetch) and `__LOCALE_CONFIG__` (the supported
+list, so client negotiation matches the server's). Responses are sent with
+`Vary: Accept-Language, Cookie`.
 
 ---
 
@@ -397,13 +469,15 @@ Output in `dist/client/`:
 ```
 dist/client/
 ├── _assets/
-│   ├── core.[hash].js      # Bundled framework (entry + all static imports)
-│   └── globals.[hash].css  # Minified global CSS
-├── _template.html           # SSR HTML shell
-├── _manifest.json           # Build manifest
+│   └── core.[hash].js       # Bundled framework (also inlined into the HTML)
+├── _template.html           # SSR HTML shell (per-request placeholders left empty)
+├── index.html               # CSR shell (placeholders pre-filled at build time)
+├── _assets-manifest.json    # original URL → content-hashed URL (inlined as __M__)
+├── _ssr-config.json         # locales + tag registry, for edge adapters
+├── _manifest.json           # Build manifest (debugging)
 ├── _worker.js               # Cloudflare Pages Worker
-├── app/                     # Minified page components
-├── components/              # Minified shared components
+├── app/                     # Minified, content-hashed page modules
+├── components/              # Minified, content-hashed component modules
 ├── core/                    # Minified framework files
 ├── lib/                     # Minified utilities
 ├── locales/                 # Locale JSON files
@@ -414,7 +488,14 @@ The **bundler** (`core/server/bundle.js`) traces all static `import` chains from
 
 The **minifier** (`core/server/minify.js`) uses a character-level tokenizer that correctly handles template literals, strings, regex literals, and comments. It produces ~35–50% size reductions without identifier mangling.
 
-Assets get content-addressed filenames (`core.d6d6fad4.js`) for long-lived caching.
+Templates and stylesheets are **inlined into their component class** at build time
+(`static template`, `static cssModuleText` / `static cssText`), so a component costs no
+template or CSS request once its module has loaded.
+
+Assets get content-addressed filenames (`core.d6d6fad4.js`) for long-lived caching. Lazy
+page/component modules are hashed too, and the original → hashed map is inlined as
+`window.__M__`, which is what makes `max-age=31536000, immutable` safe for `/app/*` and
+`/components/*`.
 
 ---
 
@@ -475,11 +556,18 @@ Router.onError = (err, to) => console.error(err);
 yarn deploy:cloudflare   # runs build then wrangler pages deploy
 ```
 
-The Cloudflare Worker (`deploy/cloudflare/_worker.js`) handles SSR at the edge and delegates static assets to the Pages asset store.
+The Cloudflare Worker (`deploy/cloudflare/_worker.js`) handles SSR at the edge and delegates
+static assets to the Pages asset store. It has no `node:fs`, so it can't read
+`app.config.yml` or walk the source tree — the build emits `_ssr-config.json` (supported
+locales + tag registry) for it, and negotiation itself is the shared `core/locale.js`. Net
+effect: the edge renders the same locale, the same components and the same 404 fallback as
+the Node server.
 
 ### Netlify
 
-Configure via `netlify.toml`. Static assets are served directly; all other requests hit the SSR Netlify Function in `deploy/netlify/`.
+Configure via `netlify.toml`. Static assets are served directly; all other requests hit the
+SSR Netlify Function in `deploy/netlify/functions/ssr.mjs`, which runs against `dist/server`
+(the `.mjs` copy of the tree).
 
 ### Static / CSR-only hosting
 
@@ -519,3 +607,10 @@ prefer SSR everywhere else.
 - **No hydration mismatch.** SSR uses [Declarative Shadow DOM](https://developer.chrome.com/docs/css-ui/declarative-shadow-dom) (`<template shadowrootmode="open">`). The browser attaches shadow roots before JS runs, so hydration is just event binding — the DOM is never replaced.
 - **No build tool dependencies.** The bundler, minifier, WebSocket server, file watcher, and HTTP server are all implemented against Node.js built-ins (`node:fs`, `node:http`, `node:crypto`, `node:path`).
 - **CSS Modules without PostCSS.** Class names are scoped by appending the element's tag name as a suffix (`.card` → `.card_my-widget`) via a regex pass at load time. The same transform runs server-side for SSR.
+- **One implementation per cross-cutting concern.** Tag→directory resolution (`core/tags.js`,
+  fed by a discovered registry), locale negotiation (`core/locale.js`) and the 404 fallback
+  route (`withNotFound` in `core/routes.js`) are each written once and shared by the browser,
+  the Node server and every deploy adapter. Anything duplicated per host drifts.
+- **Core stays project-agnostic.** No component names, locale codes or route paths are
+  hardcoded in `core/` — they're discovered from the source tree or read from
+  `app.config.yml`, which is what makes `core/` droppable into a new project unchanged.

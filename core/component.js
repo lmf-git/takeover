@@ -18,14 +18,18 @@ export const loadTemplate = async url => {
   return cache.templates.get(url);
 };
 
+// CSS Modules without PostCSS: every class name gets the element's tag appended
+// (.inner → .inner_app-footer) and the original→scoped map is exposed to templates
+// as $css. Element/pseudo selectors are untouched. ssr.js runs the same transform.
+export const scopeCSS = (raw, scope) => {
+  const classes = {};
+  const styles = raw.replace(/\.([a-zA-Z_][\w-]*)/g, (_, n) => (classes[n] = `${n}_${scope}`, `.${classes[n]}`));
+  return { styles, classes };
+};
+
 const loadCSS = async (url, scope) => {
   const key = `${url}:${scope}`;
-  if (!cache.css.has(key)) {
-    const raw = await fetchText(url);
-    const classes = {};
-    const styles = raw.replace(/\.([a-zA-Z_][\w-]*)/g, (_, n) => (classes[n] = `${n}_${scope}`, `.${classes[n]}`));
-    cache.css.set(key, { styles, classes });
-  }
+  if (!cache.css.has(key)) cache.css.set(key, scopeCSS(await fetchText(url), scope));
   return cache.css.get(key);
 };
 
@@ -67,6 +71,10 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
   static templateUrl = '';
   /** @type {string} URL to CSS module */
   static cssModule = '';
+  /** @type {string} Inline CSS module source — scoped at runtime, no fetch (build-injected) */
+  static cssModuleText = '';
+  /** @type {string} Inline plain CSS source — used verbatim, no fetch (build-injected) */
+  static cssText = '';
   /** @type {string[]} Store keys to subscribe to */
   static store = [];
   /** @type {{title?: string, description?: string}|null} Page metadata */
@@ -102,14 +110,20 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
 
   async connectedCallback() {
     this.#ac = new AbortController();
-    const { template, templateUrl, cssModule, css: cssFile, metadata } = this.constructor;
+    const { template, templateUrl, cssModule, cssModuleText, cssText, css: cssFile, metadata } = this.constructor;
 
     const rawTpl = template || (templateUrl ? await loadTemplate(templateUrl) : '');
     const { html, bindings } = extractPropBindings(rawTpl);
     this.#tpl = html;
     this.#bindings = bindings;
     const scope = this.tagName.toLowerCase();
-    if (cssModule) {
+    if (cssModuleText || cssText) {
+      // Production: build.js inlined the stylesheet's source, so there's no
+      // network request and no unhashed asset to cache-bust. Scoping is a regex
+      // pass, cheap enough to run per tag at upgrade time.
+      const scoped = cssModuleText ? scopeCSS(cssModuleText, scope) : { styles: '', classes: {} };
+      this.#css = { styles: scoped.styles + (cssText || ''), classes: scoped.classes };
+    } else if (cssModule) {
       this.#css = await loadCSS(cssModule, scope);
     } else if (cssFile) {
       this.#css = await loadPlainCSS(cssFile);

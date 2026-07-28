@@ -81,11 +81,25 @@ export function createRenderer({ loadFile, resolvePaths }) {
     return result;
   }
 
-  return async function render(url, routes, state = {}) {
+  /**
+   * @param {Object} [options]
+   * @param {Object} [options.otherLocales] Supported locales *other* than the active
+   *   one, inlined as window.__LOCALES__ so a client/server locale mismatch (or a
+   *   language switch) resolves synchronously instead of adding a fetch to the
+   *   critical chain. The active locale's messages already ride in __INITIAL_STATE__.
+   * @param {Object} [options.localeConfig] { supported, default } from app.config.yml,
+   *   inlined as window.__LOCALE_CONFIG__ so client negotiation matches the server's.
+   */
+  return async function render(url, routes, state = {}, options = {}) {
+    const { otherLocales = null, localeConfig = null } = options;
+    const localesScript =
+      (otherLocales && Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${JSON.stringify(otherLocales)}</script>` : '') +
+      (localeConfig ? `<script>window.__LOCALE_CONFIG__=${JSON.stringify(localeConfig)}</script>` : '');
+
     const [pathname, search] = url.split('?');
     const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
     const result = matchRoute(routes, path);
-    if (!result) return { appHtml: '<h1>404</h1>', initialStateScript: '', headMeta: '' };
+    if (!result) return { appHtml: '<h1>404</h1>', initialStateScript: '', headMeta: '', localesScript };
 
     const { route, params } = result;
     if (route.requiresAuth && !state.isAuthenticated) {
@@ -119,6 +133,6 @@ export function createRenderer({ loadFile, resolvePaths }) {
       meta.description && `<meta name="description" content="${escapeHtml(meta.description)}">`,
     ].filter(Boolean).join('');
 
-    return { appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${JSON.stringify(state)}</script>`, headMeta };
+    return { appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${JSON.stringify(state)}</script>`, headMeta, localesScript };
   };
 }

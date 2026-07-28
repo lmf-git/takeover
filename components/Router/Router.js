@@ -1,5 +1,5 @@
 import { store, define, loadTemplate } from '../../core/component.js';
-import { matchRoute, createMatcher } from '../../core/routes.js';
+import { matchRoute, createMatcher, withNotFound } from '../../core/routes.js';
 import { getQuery } from '../../lib/nav.js';
 
 const getClass = mod => mod.default || Object.values(mod).find(v => typeof v === 'function');
@@ -30,15 +30,12 @@ export default class Router extends HTMLElement {
     try {
       const inlined = globalThis.__ROUTES__;
       const data = inlined || await (await fetch('/routes.json').then(r => r.ok ? r : fetch('/api/routes'))).json();
-      this.routes = data.map(r => ({ ...r, matcher: r.dynamic ? createMatcher(r.path) : null }));
+      this.routes = withNotFound(data.map(r => ({ ...r, matcher: r.dynamic ? createMatcher(r.path) : null })));
     } catch (e) {
       console.error('Failed to load routes:', e);
       this.outlet.innerHTML = '<h1>Failed to load app</h1>';
       return;
     }
-
-    const notFound = this.routes.find(r => r.component === 'notfound-page');
-    if (notFound) this.routes.push({ ...notFound, path: '*' });
 
     addEventListener('popstate', () => this.navigate());
     addEventListener('navigate', e => this.go(e.detail.path));

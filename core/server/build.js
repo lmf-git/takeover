@@ -3,6 +3,7 @@ import { join, dirname, extname, relative, resolve as pathResolve } from 'node:p
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { pathFromFile } from '../routes.js';
+import { scanTags } from '../scan.js';
 import { escapeHtml } from '../template.js';
 import { bundle } from './bundle.js';
 import { minifyJS, minifyCSS } from './minify.js';
@@ -79,9 +80,16 @@ function rewriteImportsToRegistry(src, filePath) {
   return src;
 }
 
-// Replace `static templateUrl = '/path.html'` with `static template = "<inlined>"`.
-// Also injects static cssModule / static css when sibling CSS files exist and none
-// are explicitly declared — preserving the auto-discovery behaviour at runtime.
+// Replace `static templateUrl = '/path.html'` with `static template = "<inlined>"`,
+// and fold any CSS Module / plain stylesheet into the class as source text.
+//
+// Stylesheets are inlined rather than referenced by URL for two reasons: a
+// referenced sheet costs a network request per component at upgrade time, and —
+// unlike the JS, which hashAndCollect content-addresses — it would be an unhashed
+// asset sitting under the `immutable` cache rules for /app/* and /components/*.
+// Inlining sidesteps both. An explicitly declared static cssModule/css URL is
+// resolved the same way; otherwise the sibling <Name>.module.css / <Name>.css is
+// auto-discovered, matching the runtime convention in core/component.js.
 async function inlineTemplate(jsCode) {
   const match = jsCode.match(/static\s+templateUrl\s*=\s*['"]([^'"]+)['"]\s*;?/);
   if (!match) return jsCode;
@@ -91,22 +99,27 @@ async function inlineTemplate(jsCode) {
     const html = (await readFile(tplPath, 'utf-8'))
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
       .trim();
-    let result = jsCode.replace(match[0], `static template = ${JSON.stringify(html)};`);
+    const templateDecl = `static template = ${JSON.stringify(html)};`;
+    let result = jsCode.replace(match[0], templateDecl);
 
-    // Auto-inject CSS references when sibling files exist but no explicit declaration
-    const hasCssModule = /static\s+cssModule\b/.test(jsCode);
-    const hasCssFile = /static\s+css\b/.test(jsCode);
-    if (!hasCssModule) {
-      const moduleCssPath = tplPath.replace(/\.html$/, '.module.css');
-      const moduleCssUrl = tplUrl.replace(/\.html$/, '.module.css');
-      const exists = await stat(moduleCssPath).then(() => true).catch(() => false);
-      if (exists) result = result.replace(`static template = ${JSON.stringify(html)};`, `static template = ${JSON.stringify(html)};\n  static cssModule = ${JSON.stringify(moduleCssUrl)};`);
-    }
-    if (!hasCssFile) {
-      const plainCssPath = tplPath.replace(/\.html$/, '.css');
-      const plainCssUrl = tplUrl.replace(/\.html$/, '.css');
-      const exists = await stat(plainCssPath).then(() => true).catch(() => false);
-      if (exists) result = result.replace(`static template = ${JSON.stringify(html)};`, `static template = ${JSON.stringify(html)};\n  static css = ${JSON.stringify(plainCssUrl)};`);
+    // [static field, declaration regex, sibling suffix] for the scoped and plain sheets
+    const sheets = [
+      ['cssModuleText', /static\s+cssModule\s*=\s*['"]([^'"]+)['"]\s*;?/, '.module.css'],
+      ['cssText', /static\s+css\s*=\s*['"]([^'"]+)['"]\s*;?/, '.css'],
+    ];
+
+    for (const [field, declRe, suffix] of sheets) {
+      const declared = jsCode.match(declRe);
+      const url = declared ? declared[1] : tplUrl.replace(/\.html$/, suffix);
+      const path = join(root, url);
+      if (!declared && !await stat(path).then(() => true).catch(() => false)) continue;
+      const css = await readFile(path, 'utf-8').catch(() => null);
+      if (css == null) continue;
+      const decl = `static ${field} = ${JSON.stringify(minifyCSS(css))};`;
+      // Replace the author's URL declaration, or append after the template.
+      result = declared
+        ? result.replace(declared[0], decl)
+        : result.replace(templateDecl, `${templateDecl}\n  ${decl}`);
     }
     return result;
   } catch {
@@ -116,7 +129,10 @@ async function inlineTemplate(jsCode) {
 
 // ─── Copy + minify individual files ─────────────────────────────────────────
 async function copyDir(src, dest, opts = {}) {
-  const { transformContent = null, renameJsToMjs = false, doMinify = false } = opts;
+  // minifyCss defaults to doMinify, but the server copy sets it independently:
+  // SSR reads .module.css off disk and embeds it in the shadow root of every
+  // response, so it must be minified even though server JS is left readable.
+  const { transformContent = null, renameJsToMjs = false, doMinify = false, minifyCss = doMinify } = opts;
   await ensureDir(dest);
   for (const entry of await readdir(src, { withFileTypes: true })) {
     const srcPath = join(src, entry.name);
@@ -130,7 +146,7 @@ async function copyDir(src, dest, opts = {}) {
       // Only .js (transform/minify/rename) and minified .css are processed as text.
       // Everything else — fonts, images, etc. — must be copied byte-for-byte;
       // reading binary as UTF-8 corrupts it (invalid bytes → U+FFFD, size inflates).
-      const needsText = ext === '.js' || (ext === '.css' && doMinify);
+      const needsText = ext === '.js' || (ext === '.css' && minifyCss);
 
       if (!needsText) {
         await ensureDir(dirname(destPath));
@@ -144,7 +160,7 @@ async function copyDir(src, dest, opts = {}) {
         if (transformContent) content = await transformContent(content, srcPath, ext);
         if (doMinify) content = minifyJS(content);
       }
-      if (ext === '.css' && doMinify) content = minifyCSS(content);
+      if (ext === '.css' && minifyCss) content = minifyCSS(content);
 
       if (renameJsToMjs && ext === '.js') {
         destPath = destPath.replace(/\.js$/, '.mjs');
@@ -375,6 +391,10 @@ async function build() {
   // The dependency-chain gate point — saves a full round-trip on first paint.
   const routesScript = `<script>window.__ROUTES__=${JSON.stringify(routes)}</script>`;
   const manifestScript = `<script>window.__M__=${JSON.stringify(assetManifest)}</script>`;
+  // Discovered tag → directory registry (core/scan.js scanTags), so core/loader.js
+  // resolves folders the kebab→PascalCase convention can't reproduce.
+  const tags = await scanTags(root);
+  const tagsScript = `<script>window.__TAGS__=${JSON.stringify(tags)}</script>`;
 
   let template = await readFile(join(root, 'index.html'), 'utf-8');
   // Inline the bundle into a <script type="module">. Eliminates the separate JS
@@ -385,7 +405,7 @@ async function build() {
   // Use a function replacement to avoid that.
   template = template
     .replace('<!--inline-css-->', () => `<style>${minCss}</style>`)
-    .replace('<!--preload-links-->', () => preloadLinks + manifestScript + routesScript)
+    .replace('<!--preload-links-->', () => preloadLinks + manifestScript + tagsScript + routesScript)
     .replace(/<script type="module" src="\/core\/server\/entry-client\.js"><\/script>/,
       () => `<script type="module">${bundleCode}</script>`);
 
@@ -445,11 +465,12 @@ async function build() {
   await copyDir(join(root, 'public'), clientDist).catch(() => {});
 
   // 8. Server-side copy (for SSR) — .mjs renamed for CF workers
+  const serverOpts = { transformContent: serverTransform, renameJsToMjs: true, minifyCss: true };
   await Promise.all([
-    copyDir(join(root, 'core'), join(serverDist, 'core'), { transformContent: serverTransform, renameJsToMjs: true }),
-    copyDir(join(root, 'lib'), join(serverDist, 'lib'), { transformContent: serverTransform, renameJsToMjs: true }),
-    copyDir(join(root, 'app'), join(serverDist, 'app'), { transformContent: serverTransform, renameJsToMjs: true }),
-    copyDir(join(root, 'components'), join(serverDist, 'components'), { transformContent: serverTransform, renameJsToMjs: true }),
+    copyDir(join(root, 'core'), join(serverDist, 'core'), serverOpts),
+    copyDir(join(root, 'lib'), join(serverDist, 'lib'), serverOpts),
+    copyDir(join(root, 'app'), join(serverDist, 'app'), serverOpts),
+    copyDir(join(root, 'components'), join(serverDist, 'components'), serverOpts),
   ]);
   // Manifest reused by entry-server.mjs to emit hashed modulepreload URLs.
   await writeFile(join(serverDist, '_assets-manifest.json'), JSON.stringify(assetManifest, null, 2));
@@ -463,6 +484,12 @@ async function build() {
     await copyFile(join(root, name), join(serverDist, name)).catch(() => {});
     await copyFile(join(root, name), join(clientDist, name)).catch(() => {});
   }
+
+  // 10c. Runtime config for edge adapters that can't read app.config.yml or walk
+  // the source tree (the Cloudflare worker has no node:fs). Everything an SSR
+  // runtime needs that isn't per-request: the negotiated locale list and the
+  // discovered tag registry. The Node/Netlify path derives both directly instead.
+  await writeFile(join(clientDist, '_ssr-config.json'), JSON.stringify({ locales: config.locales, tags }, null, 2));
 
   // 11. Manifest for debugging
   const manifest = {

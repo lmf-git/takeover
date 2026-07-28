@@ -1,0 +1,56 @@
+/* CSS Module — the alternative to an inline style block. Auto-discovered by
+   sitting beside the template; class names are scoped per element tag and read
+   from templates via $css. See "Styling" in README for the full story.
+
+   Comments are kept prose-only on purpose: the scoping pass is a regex over the
+   whole file and does not skip them, so any dotted token in here would register
+   as a phantom class name (and ships to the client verbatim). */
+
+:host { display: block; }
+*, *::before, *::after { box-sizing: border-box; }
+
+footer {
+  border-top: 1px solid var(--line-soft);
+  padding-block: 32px;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: var(--shell-max, 1240px);
+  margin: 0 auto;
+  padding: 0 var(--gutter, clamp(20px,4vw,48px));
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.version {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.dot {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+
+.built {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.spacer { flex: 1; }
+
+.mit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-dim);
+}

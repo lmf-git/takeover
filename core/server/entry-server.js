@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createMatcher, pathFromFile } from '../routes.js';
-import { scanDir } from '../scan.js';
+import { createMatcher, pathFromFile, withNotFound } from '../routes.js';
+import { scanDir, scanTags } from '../scan.js';
+import { dirForTag, baseName } from '../tags.js';
 import { createRenderer } from './ssr.js';
 import { loadConfig } from '../config.js';
 import store from '../../lib/store.js';
@@ -26,7 +27,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = process.env.SSR_ROOT || resolve(__dirname, '../..');
 const config = loadConfig(root);
 const appDir = resolve(root, 'app');
-const componentsDir = resolve(root, 'components');
 
 // Asset manifest (original path → content-hashed path) emitted by build.js.
 // Production-only; dev server serves un-hashed sources directly. The manifest
@@ -37,17 +37,21 @@ try {
   assetManifest = JSON.parse(await readFile(resolve(root, '_assets-manifest.json'), 'utf-8'));
 } catch {}
 
+// Tag → directory registry, discovered by scanning for define() calls rather
+// than hand-maintained. Resolved at module load so resolvePaths stays sync.
+const tagRegistry = await scanTags(root);
+
 const resolvePaths = tag => {
-  if (tag === 'app-layout') return { tpl: join(appDir, '_Layout/_Layout.html'), css: join(appDir, '_Layout/_Layout.module.css'), plainCss: join(appDir, '_Layout/_Layout.css') };
+  // The router is structural — it has no template of its own; the renderer
+  // splices the matched page into it.
   if (tag === 'app-router') return null;
-  const isPage = tag.endsWith('-page');
-  const name = isPage ? tag.replace('-page', '') : tag.replace(/^app-/, '');
-  // Irregular casing / acronyms where kebab→PascalCase doesn't reproduce the
-  // folder name. Keep in sync with OVERRIDES in core/loader.js.
-  const irregular = { 'home-quickstart': 'HomeQuickStart', 'home-cta': 'HomeCTA' };
-  const pascal = irregular[tag] || name.split('-').map(p => p[0].toUpperCase() + p.slice(1)).join('');
-  const dir = isPage ? appDir : componentsDir;
-  return { tpl: join(dir, `${pascal}/${pascal}.html`), css: join(dir, `${pascal}/${pascal}.module.css`), plainCss: join(dir, `${pascal}/${pascal}.css`) };
+  const dir = dirForTag(tag, tagRegistry);
+  const base = baseName(dir);
+  return {
+    tpl: join(root, dir, `${base}.html`),
+    css: join(root, dir, `${base}.module.css`),
+    plainCss: join(root, dir, `${base}.css`),
+  };
 };
 
 const loadFile = path => readFile(path, 'utf-8');
@@ -104,9 +108,7 @@ async function buildRoutes() {
       : `/app/${relative}?script`;
     routes.push({ path: routePath, component: relative.split('/').pop().replace('.html', '').toLowerCase() + '-page', module, html: template, dynamic, matcher: dynamic ? createMatcher(routePath) : null, ssrProps, metadata, requiresAuth });
   }
-  const notFound = routes.find(r => r.component === 'notfound-page');
-  if (notFound) routes.push({ ...notFound, path: '*', dynamic: false, matcher: null });
-  return routes;
+  return withNotFound(routes);
 }
 
 const routesPromise = buildRoutes();
@@ -117,21 +119,15 @@ export async function render(url, { locale = config.locales.default } = {}) {
   const routes = await routesPromise;
   const messages = await loadServerLocale(locale);
   store.set({ locale, messages });
-  const result = renderPage(url, routes, store.get());
-  // Inline non-active supported locales so a client/server locale mismatch
-  // (e.g. Lighthouse runs en-US against an es-default response) resolves
-  // synchronously instead of adding a /locales/*.json fetch to the critical chain.
-  // Active locale's messages already live in __INITIAL_STATE__, so they're skipped here.
-  const others = SUPPORTED_LOCALES.filter(l => l !== locale);
-  const localesData = {};
-  await Promise.all(others.map(async l => { localesData[l] = await loadServerLocale(l); }));
-  // Expose the supported/default locale config so the client i18n layer matches
-  // the server's negotiation without hardcoding the list in lib/.
-  const configScript = `<script>window.__LOCALE_CONFIG__=${JSON.stringify(config.locales)}</script>`;
-  const localesScript = (Object.keys(localesData).length
-    ? `<script>window.__LOCALES__=${JSON.stringify(localesData)}</script>`
-    : '') + configScript;
-  return Object.assign(await result, { localesScript });
+  // Non-active supported locales ride along inline (see ssr.js render options) so
+  // a client/server mismatch — Lighthouse running en-US against an es-default
+  // response — resolves synchronously instead of adding a fetch to the critical chain.
+  const otherLocales = {};
+  await Promise.all(
+    SUPPORTED_LOCALES.filter(l => l !== locale)
+      .map(async l => { otherLocales[l] = await loadServerLocale(l); })
+  );
+  return renderPage(url, routes, store.get(), { otherLocales, localeConfig: config.locales });
 }
 
 export async function getClientRoutes() {

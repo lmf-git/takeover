@@ -206,7 +206,8 @@ Shared components live in `components/`. They follow the same two-file pattern a
 
 Add `loading="lazy"` to defer that import until the element nears the viewport
 (`IntersectionObserver`, 200px margin). Server-rendered content stays visible throughout;
-only the JS upgrade waits.
+only the JS upgrade waits. Without server-rendered content (client-side render, or a
+parent re-render) there's nothing to show in the meantime, so the import runs right away.
 
 ```html
 <app-footer loading="lazy"></app-footer>

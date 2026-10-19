@@ -1,6 +1,6 @@
 import { store, define, loadTemplate } from '../../core/component.js';
 import { matchRoute, createMatcher, withNotFound } from '../../core/routes.js';
-import { getQuery } from '../../lib/nav.js';
+import { getQuery, scrollToHash } from '../../lib/nav.js';
 
 const getClass = mod => mod.default || Object.values(mod).find(v => typeof v === 'function');
 
@@ -18,6 +18,7 @@ export default class Router extends HTMLElement {
   currentPath = null;
   loading = false;
   #preloaded = new Set();
+  #url = null; // pathname + search last routed — a popstate that keeps it is a #fragment move
 
   /** Route lifecycle hooks - set these to intercept navigation */
   static beforeEach = null; // async (to, from) => true | '/redirect' | false
@@ -37,11 +38,21 @@ export default class Router extends HTMLElement {
       return;
     }
 
-    addEventListener('popstate', () => this.navigate());
+    addEventListener('popstate', () => {
+      // Same page, new #fragment (back/forward across in-page anchors, or a native
+      // fragment jump): scroll to it instead of rebuilding the page from scratch.
+      if (location.pathname + location.search === this.#url) return location.hash ? scrollToHash(location.hash) : scrollTo(0, 0);
+      this.navigate();
+    });
     addEventListener('navigate', e => this.go(e.detail.path));
     document.addEventListener('click', e => {
-      const a = e.composedPath().find(el => el.tagName === 'A' && el.hasAttribute?.('route'));
-      if (a) { e.preventDefault(); this.go(a.getAttribute('href')); }
+      const path = e.composedPath();
+      const a = path.find(el => el.tagName === 'A' && el.hasAttribute?.('route'));
+      if (a) { e.preventDefault(); this.go(a.getAttribute('href')); return; }
+      // In-page #anchors: section ids live inside component shadow roots, out of
+      // reach of native fragment navigation — resolve across the boundary instead.
+      const hash = path.find(el => el.tagName === 'A' && el.getAttribute('href')?.startsWith('#'))?.getAttribute('href');
+      if (hash && scrollToHash(hash)) { e.preventDefault(); history.pushState(null, '', hash); }
     });
     document.addEventListener('pointerover', e => {
       const a = e.target.closest?.('a[route]');
@@ -63,6 +74,7 @@ export default class Router extends HTMLElement {
         await import(route.route.module);
       }
       this.currentPath = location.pathname;
+      this.#url = location.pathname + location.search;
       this.hydrated = true;
     } else {
       this.navigate();
@@ -82,6 +94,7 @@ export default class Router extends HTMLElement {
   async navigate() {
     const path = location.pathname;
     const from = this.currentPath;
+    this.#url = path + location.search;
 
     // beforeEach hook
     if (Router.beforeEach) {

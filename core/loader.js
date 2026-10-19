@@ -38,7 +38,11 @@ const lazyObserver = (typeof IntersectionObserver !== 'undefined')
 
 const load = (tag, el) => {
   if (loaded.has(tag) || customElements.get(tag)) return;
-  if (lazyObserver && el?.getAttribute('loading') === 'lazy') {
+  // Deferring only pays off while SSR'd DSD content stands in for the component.
+  // One created client-side (CSR, or a parent's re-render on a locale switch) has
+  // no shadow root yet — deferring it would leave an empty, zero-height hole with
+  // none of its section ids until it happened to be scrolled near.
+  if (lazyObserver && el?.getAttribute('loading') === 'lazy' && el.shadowRoot) {
     lazyObserver.observe(el);
     return;
   }

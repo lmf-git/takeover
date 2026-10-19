@@ -412,7 +412,9 @@ On connect:
 3. Wire three global listeners: `popstate`, a custom `navigate` event, and a **document
    click handler** that uses `e.composedPath()` to find `<a route>` anchors — necessary
    because the anchor lives inside a shadow root and wouldn't be visible to a normal
-   `e.target` check.
+   `e.target` check. The same handler sends in-page `a[href^="#"]` clicks on any page
+   through `scrollToHash` (below), and a `popstate` that keeps the pathname + search (only
+   the `#fragment` moved) scrolls instead of re-rendering the page.
 4. Wire `pointerover` on `a[route]` to **preload** the target route's module and template on
    hover (once per href).
 5. **Hydrate or navigate**: if the outlet's first child already has a `shadowRoot`, the page
@@ -432,8 +434,8 @@ Router.
 
 `scrollToHash` (`lib/nav.js:63`) exists because every section id on the home page lives
 inside a different component's shadow root — native `#hash` navigation cannot see them. It
-recursively descends shadow roots to find the target, then `scrollIntoView`s it. Both
-`Navigation` and `HomePage` delegate `a[href^="#"]` clicks to it.
+recursively descends shadow roots to find the target, then `scrollIntoView`s it. If a lazy
+section hydrating mid-scroll pushes the target down, it re-aims once the scroll settles.
 
 ---
 
@@ -450,7 +452,9 @@ Anything that is not eagerly imported by the entry gets loaded on demand:
 - Tags ending in `-page` are skipped — pages are the Router's job.
 - `loading="lazy"` elements are registered with an `IntersectionObserver` (200px root
   margin) and only imported when they approach the viewport. The SSR'd DSD content is
-  visible the whole time; only the JS upgrade is deferred.
+  visible the whole time; only the JS upgrade is deferred. A lazy element with no shadow
+  root (client-rendered, or recreated by a parent's re-render on a locale switch) has
+  nothing to show meanwhile, so it's imported immediately.
 - A `MutationObserver` on `document.documentElement` catches dynamically added elements, and
   `Element.prototype.attachShadow` is monkey-patched so every newly created shadow root is
   also scanned and observed. That's how components nested inside other components' shadow

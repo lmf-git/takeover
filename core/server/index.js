@@ -186,7 +186,7 @@ async function renderSSR(url, res, req) {
 })();
 </script></body>`);
 
-    res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' }).end(html);
+    res.writeHead(result.status || 200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' }).end(html);
   } catch (e) {
     console.error('[SSR]', e);
     res.writeHead(500).end(`<h1>500</h1><pre>${e.stack}</pre>`);

@@ -562,13 +562,16 @@ static assets to the Pages asset store. It has no `node:fs`, so it can't read
 `app.config.yml` or walk the source tree — the build emits `_ssr-config.json` (supported
 locales + tag registry) for it, and negotiation itself is the shared `core/locale.js`. Net
 effect: the edge renders the same locale, the same components and the same 404 fallback as
-the Node server.
+the Node server — with a real 404 status. Any path with an extension other than `.html` is
+answered from the asset store, so a missing file is a 404 rather than the app.
 
 ### Netlify
 
 Configure via `netlify.toml`. Static assets are served directly; all other requests hit the
 SSR Netlify Function in `deploy/netlify/functions/ssr.mjs`, which runs against `dist/server`
-(the `.mjs` copy of the tree).
+(the `.mjs` copy of the tree). A file-like path that reaches it (a missing `/llms.txt` or
+`/.well-known/ard.json`) gets a plain 404, and unmatched routes render NotFound with a 404
+status: answering 200 would make crawlers and agents treat the app's HTML as that file.
 
 ### Static / CSR-only hosting
 

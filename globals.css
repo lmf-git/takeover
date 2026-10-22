@@ -61,9 +61,11 @@
      Covers .stat-sub, .hmr-label, .card-shadow, .counter-expr, .store-key, .mit */
   --fg-dim: oklch(0.52 0.016 265);
   --accent: oklch(0.50 0.20 280);
-  /* accent-soft darkened 0.58 → 0.52 so .badge text clears 4.5:1 on --accent-dim
-     (was 3.69:1); also lifts accent-soft links/icons elsewhere in light theme */
-  --accent-soft: oklch(0.52 0.19 270);
+  /* accent-soft darkened 0.58 → 0.49 so .badge text clears 4.5:1 on --accent-dim
+     over the darkest surface a badge sits on, --bg-elev-2 (perf panel chrome):
+     4.90:1 (0.52 passed over --bg but gave 4.33:1 on --bg-elev-2). Also lifts
+     accent-soft links/icons elsewhere in light theme */
+  --accent-soft: oklch(0.49 0.19 270);
   --accent-dim: oklch(0.50 0.20 280 / 0.10);
   --accent-line: oklch(0.50 0.20 280 / 0.40);
   /* Syntax-highlight text (.val-purple / .val-blue, store viewer). The :root

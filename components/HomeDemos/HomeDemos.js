@@ -39,10 +39,10 @@ export default class HomeDemos extends Component {
       } else {
         root.innerHTML = `
           <form id="auth-form">
-            <div class="demo-label">username</div>
+            <label class="demo-label" for="auth-user">username</label>
             <input id="auth-user" type="text" placeholder="alice" autocomplete="off" class="demo-input" style="width:100%"/>
-            <div class="demo-label" style="margin-top:14px">password</div>
-            <input type="password" value="••••••••" class="demo-input" style="width:100%"/>
+            <label class="demo-label" for="auth-pass" style="margin-top:14px">password</label>
+            <input id="auth-pass" type="password" value="••••••••" class="demo-input" style="width:100%"/>
             <div id="auth-err" style="display:none;font-family:var(--font-mono);font-size:11px;color:oklch(0.72 0.16 25);margin-top:8px"></div>
             <button id="auth-submit" type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px">store.login()</button>
             <div style="font-family:var(--font-mono);font-size:10px;color:var(--fg-dim);margin-top:10px;text-align:center">try username <span style="color:var(--accent-soft)">alice</span></div>
@@ -95,10 +95,10 @@ export default class HomeDemos extends Component {
       const err = validate();
       root.innerHTML = `
         <form id="form-demo">
-          <div class="demo-label">email</div>
+          <label class="demo-label" for="form-email">email</label>
           <input id="form-email" class="demo-input${touched.email && err.email ? ' demo-input-error':''}" type="text" placeholder="you@example.com" autocomplete="off" value="${this.#e(v.email)}" style="width:100%"/>
           ${touched.email && err.email ? `<div class="field-error">⚠ ${err.email}</div>` : ''}
-          <div class="demo-label" style="margin-top:12px">name</div>
+          <label class="demo-label" for="form-name" style="margin-top:12px">name</label>
           <input id="form-name" class="demo-input${touched.name && err.name ? ' demo-input-error':''}" type="text" placeholder="Alice Wong" autocomplete="off" value="${this.#e(v.name)}" style="width:100%"/>
           ${touched.name && err.name ? `<div class="field-error">⚠ ${err.name}</div>` : ''}
           <div class="demo-label" style="margin-top:12px">plan</div>

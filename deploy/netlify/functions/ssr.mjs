@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const root = process.cwd();
@@ -22,6 +22,12 @@ const getRuntime = async () => {
 };
 
 export async function handler(event) {
+  // The catch-all rewrite isn't forced, so Netlify only lands here when no static file
+  // matched — a file-like path (/llms.txt, /favicon.ico, /.well-known/ard.json) is
+  // missing. Plain 404, same rule as the dev server, instead of rendering the app.
+  const ext = extname(event.path);
+  if (ext && ext !== '.html') return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, body: 'Not found' };
+
   const template = readFileSync(join(root, 'dist/client/_template.html'), 'utf-8');
   const { render } = await import(pathToFileURL(join(root, 'dist/server/core/server/entry-server.mjs')).href);
   const { locales, negotiateLocale } = await getRuntime();
@@ -39,7 +45,7 @@ export async function handler(event) {
   // Function-form replacers avoid $-pattern interpretation in replacement strings.
   // The inlined bundle and SSR appHtml may legitimately contain $ characters.
   return {
-    statusCode: 200,
+    statusCode: result.status || 200,
     headers: { 'Content-Type': 'text/html', 'Vary': 'Accept-Language, Cookie' },
     body: template
       // Match the served locale on the root element so the client-side

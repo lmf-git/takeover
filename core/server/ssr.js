@@ -89,6 +89,9 @@ export function createRenderer({ loadFile, resolvePaths }) {
    *   critical chain. The active locale's messages already ride in __INITIAL_STATE__.
    * @param {Object} [options.localeConfig] { supported, default } from app.config.yml,
    *   inlined as window.__LOCALE_CONFIG__ so client negotiation matches the server's.
+   * @returns {Promise<Object>} { redirect } or { status, appHtml, headMeta, ... }.
+   *   status is 404 when nothing but the NotFound fallback matched — adapters must send
+   *   it, or every missing URL (llms.txt, /.well-known/*) reads as a real 200 page.
    */
   return async function render(url, routes, state = {}, options = {}) {
     const { otherLocales = null, localeConfig = null } = options;
@@ -99,7 +102,7 @@ export function createRenderer({ loadFile, resolvePaths }) {
     const [pathname, search] = url.split('?');
     const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
     const result = matchRoute(routes, path);
-    if (!result) return { appHtml: '<h1>404</h1>', initialStateScript: '', headMeta: '', localesScript };
+    if (!result) return { status: 404, appHtml: '<h1>404</h1>', initialStateScript: '', headMeta: '', localesScript };
 
     const { route, params } = result;
     if (route.requiresAuth && !state.isAuthenticated) {
@@ -133,6 +136,8 @@ export function createRenderer({ loadFile, resolvePaths }) {
       meta.description && `<meta name="description" content="${escapeHtml(meta.description)}">`,
     ].filter(Boolean).join('');
 
-    return { appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${JSON.stringify(state)}</script>`, headMeta, localesScript };
+    // '*' is withNotFound's clone of the NotFound page (core/routes.js).
+    const status = route.path === '*' ? 404 : 200;
+    return { status, appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${JSON.stringify(state)}</script>`, headMeta, localesScript };
   };
 }

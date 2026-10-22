@@ -13,7 +13,6 @@ import { negotiateLocale } from './core/locale.js';
 import { dirForTag, baseName } from './core/tags.js';
 import store from './lib/store.js';
 
-const STATIC_EXT = ['.js', '.mjs', '.css', '.json', '.svg', '.png', '.jpg', '.webp', '.ico', '.woff', '.woff2', '.otf', '.ttf'];
 const FALLBACK_CONFIG = { locales: { supported: ['en'], default: 'en' }, tags: {} };
 
 // Per-isolate memoisation. Promises (not resolved values) so concurrent requests
@@ -34,10 +33,11 @@ export default {
     const url = new URL(request.url);
     const asset = path => env.ASSETS.fetch(new URL(path, request.url));
 
-    // Static assets and component templates come straight from the Pages store.
-    const isStaticAsset = STATIC_EXT.some(e => url.pathname.endsWith(e));
+    // Files and component templates come straight from the Pages store. Any extension
+    // but .html marks a file — the same rule as the dev server and the Netlify adapter.
+    const ext = url.pathname.match(/\.[^/.]+$/)?.[0];
     const isTemplateFile = url.pathname.endsWith('.html') && (url.pathname.startsWith('/app/') || url.pathname.startsWith('/components/'));
-    if (isStaticAsset || isTemplateFile) return env.ASSETS.fetch(url);
+    if ((ext && ext !== '.html') || isTemplateFile) return env.ASSETS.fetch(url);
 
     try {
       configPromise ??= asset('/_ssr-config.json')
@@ -103,6 +103,7 @@ export default {
         .replace('<!--initial-state-->', () => result.initialStateScript + (result.localesScript || ''));
 
       return new Response(html, {
+        status: result.status || 200,
         headers: {
           'Content-Type': 'text/html;charset=UTF-8',
           // Response body varies by negotiated language — keep caches honest.

@@ -59,6 +59,12 @@
     "title": "How a request flows.",
     "sub": "No virtual DOM. No hydration mismatch. The browser parses Declarative Shadow DOM before JS runs — hydration is just event binding."
   },
+  "internals": {
+    "eyebrow": "Under the hood",
+    "title": "Five diagrams, checked against the source.",
+    "sub": "Each one comes from the developer guide in docs/ and was verified by reading the code and running a build. The numbers beside them were measured on this site.",
+    "guide": "The full developer guide, twelve chapters:"
+  },
   "cta": {
     "title": "Take over your stack.",
     "sub": "Clone the starter, ship in an afternoon.",

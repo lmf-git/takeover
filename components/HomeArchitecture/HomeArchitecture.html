@@ -184,7 +184,7 @@
         <div class="arch-stage">
           <div class="stage-header"><span class="stage-tag">04 · hydrate</span></div>
           <div class="stage-body">entry-client.js binds events, no reconstruction</div>
-          <div class="stage-sub">~12kb gzipped, single bundle</div>
+          <div class="stage-sub">~17 kB gzipped, inlined in the HTML</div>
         </div>
 
         <div class="arch-stage wire">
@@ -199,7 +199,7 @@
         <div class="arch-stage" style="grid-column:2">
           <div class="stage-header"><span class="stage-tag">05 · live</span></div>
           <div class="stage-body">store.on('counter', ...) — reactive updates</div>
-          <div class="stage-sub">shadow root patched in place</div>
+          <div class="stage-sub">shadow root re-rendered, focus kept</div>
         </div>
       </div>
 
@@ -209,5 +209,7 @@
         <span><span class="accent">1</span> bundle on the wire</span>
       </div>
     </div>
+
+    <home-internals loading="lazy"></home-internals>
   </div>
 </section>

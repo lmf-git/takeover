@@ -59,6 +59,12 @@
     "title": "Comment circule une requête.",
     "sub": "Pas de virtual DOM. Pas de décalage d'hydratation. Le navigateur analyse le Declarative Shadow DOM avant que le JS ne s'exécute."
   },
+  "internals": {
+    "eyebrow": "Sous le capot",
+    "title": "Cinq schémas, vérifiés sur le code source.",
+    "sub": "Chacun provient du guide du développeur dans docs/ et a été vérifié en lisant le code et en lançant un build. Les chiffres qui les accompagnent ont été mesurés sur ce site.",
+    "guide": "Le guide complet du développeur, en douze chapitres :"
+  },
   "cta": {
     "title": "Prenez le contrôle.",
     "sub": "Clonez le starter, livrez dans l'après-midi.",

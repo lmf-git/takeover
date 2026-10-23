@@ -1,8 +1,31 @@
 # Takeover
 
-A zero-dependency web component framework with SSR, HMR, bundling, and i18n — built entirely on Node.js built-ins and native browser APIs.
+A zero-dependency web component framework with SSR, live reload, bundling, and i18n — built entirely on Node.js built-ins and native browser APIs.
 
 No Vite. No Webpack. No React. No npm dependencies at all.
+
+![One renderer core, three hosts, one HTML contract](docs/images/architecture.svg)
+
+---
+
+## Documentation
+
+This README is the overview. The [developer guide in `docs/`](docs/README.md) is the deep dive: twelve chapters and five diagrams, each checked against the code and a running build.
+
+| Chapter | Read it for |
+| --- | --- |
+| [1. Architecture](docs/01-architecture.md) | The parts, what runs where, and why the server never imports your classes |
+| [2. Getting started](docs/02-getting-started.md) | Commands, environment variables, and how the dev loop really behaves |
+| [3. Project layout](docs/03-project-layout.md) | Every folder, what to edit, and the naming rules the code relies on |
+| [4. Request and boot lifecycle](docs/04-lifecycle.md) | The server's nine steps per request and the browser's seven |
+| [5. Components](docs/05-components.md) | Statics, hooks, helpers, tag discovery, and how a component's JS arrives |
+| [6. Templates and styling](docs/06-templates-and-styling.md) | `{{ }}` syntax and its limits, events, prop bindings, CSS Modules |
+| [7. State and i18n](docs/07-state-and-i18n.md) | The store, local state, and how a language is chosen and switched |
+| [8. Routing and navigation](docs/08-routing-and-navigation.md) | Folder-to-route rules, the Router element, navigation API, guards |
+| [9. Build and deployment](docs/09-build-and-deploy.md) | The ten build steps, the output trees, bundler, minifier, hosts |
+| [10. Recipes](docs/10-recipes.md) | Step-by-step changes: pages, components, routes, auth, locales, deploys |
+| [11. Gotchas](docs/11-gotchas.md) | Verified pitfalls with causes and fixes, including a path-traversal hole |
+| [12. Reference](docs/12-reference.md) | Config keys, window globals, exports, dev endpoints, numbers |
 
 ---
 
@@ -10,35 +33,47 @@ No Vite. No Webpack. No React. No npm dependencies at all.
 
 Takeover is a full-stack web application framework built around the [Web Components](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) standard (Custom Elements + Shadow DOM). It handles the full lifecycle:
 
-- **Dev server** — native ESM serving with WebSocket-based HMR
-- **SSR** — server-side rendering with Declarative Shadow DOM, client hydration (plus a static CSR-only build target — see [Deployment](#static--csr-only-hosting))
-- **Bundler** — traces static `import` graphs and emits a single hashed bundle
+- **Dev server** — server-rendered pages straight from source, native ESM, a file watcher and WebSocket live reload
+- **SSR** — Declarative Shadow DOM, so pages paint before any JavaScript runs and hydration only binds events (plus a static CSR-only build target — see [Deployment](#deployment))
+- **Bundler** — traces static `import` graphs into one IIFE that is inlined into the HTML
 - **Minifier** — token-aware JS minifier + CSS minifier, both pure Node.js
-- **i18n** — reactive locale switching (EN / ES / FR) with SSR-first locale detection
-- **Routing** — file-system routing from the `app/` directory
+- **i18n** — SSR-first locale negotiation and instant client-side switching (EN / ES / FR included)
+- **Routing** — file-system routing from the `app/` directory, a client Router with guards and hooks
 - **State** — reactive `EventTarget`-based store with per-key subscriptions
+- **Edge adapters** — a Cloudflare Pages worker and a Netlify function that share one renderer with the Node server
 
-Everything runs on `node --version` ≥ 18. There is no `node_modules`.
+It runs on Node 18+ (use Node 20+ on Linux, where the dev watcher needs recursive `fs.watch`). There are no packages to install.
+
+Five ideas explain almost every design choice:
+
+1. **Pages and components are custom elements.** Markup lives in `Name/Name.html`, behaviour in a class extending `Component`, registered with `define('tag-name', Class)`.
+2. **The server emits Declarative Shadow DOM.** Each element is rendered as `<tag><template shadowrootmode="open">…</template></tag>`, so the browser builds shadow roots while it parses.
+3. **The server never runs your classes.** It renders `.html` templates and reads page statics (`metadata`, `local`, `ssrProps`, `requiresAuth`) out of the source text, so component modules may use browser APIs at the top level.
+4. **Re-rendering is wholesale.** A state change re-runs the template into `shadowRoot.innerHTML`. There is no virtual DOM; focus and text selection are restored around the swap.
+5. **Conventions are discovered, not configured.** Routes come from `app/`, the tag-to-folder map from `define()` calls, locales from `locales/*.json`.
 
 ---
 
 ## Quick start
 
 ```bash
-# Dev server with HMR
-yarn dev          # or: node core/server/index.js
-
-# Production build (bundle + minify + hash assets)
-yarn build        # or: node core/server/build.js
-
-# Serve the production build locally
-yarn preview      # or: NODE_ENV=production node core/server/index.js
-
-# Remove dist/
-yarn clean
+yarn dev            # http://localhost:3000 — SSR from source + live reload
+yarn build          # production build into dist/client and dist/server
+yarn preview:csr    # serve dist/client as a static SPA on http://localhost:4399
+yarn clean          # remove dist/
 ```
 
-Dev server starts at `http://localhost:3000`. Set `PORT=xxxx` to change it.
+| Command | Runs | Notes |
+| --- | --- | --- |
+| `yarn dev` | `node core/server/index.js` | Set `PORT` to change the port |
+| `yarn build` | `node core/server/build.js` | 0.1–0.3 s on this repo |
+| `yarn preview`, `yarn start` | `NODE_ENV=production node core/server/index.js` | The dev server without the watcher. It serves the **source tree**, not `dist/` |
+| `yarn preview:csr` | `node core/server/static.js` | Static server with an SPA fallback over `dist/client` (`PORT`, `CSR_ROOT` override) |
+| `yarn deploy:cloudflare` | `yarn build && wrangler pages deploy` | Run `wrangler login` first |
+
+Yarn is only a script runner here; `npm run dev` or the raw `node` commands work the same. Restart `yarn dev` after editing templates, CSS or `app.config.yml`: the SSR template cache and the config live as long as the process (see [Dev server and live reload](#dev-server-and-live-reload)).
+
+→ More: [Getting started](docs/02-getting-started.md)
 
 ---
 
@@ -47,34 +82,34 @@ Dev server starts at `http://localhost:3000`. Set `PORT=xxxx` to change it.
 ```
 takeover/
 ├── app/                    # Pages (file-system routed)
-│   ├── _Layout/            # Root layout (app-layout element; _ = not a route)
+│   ├── _Layout/            # Root layout (<app-layout>; _ = not a route)
 │   ├── Home/               # → /
 │   └── NotFound/           # → /notfound (also the wildcard 404)
 ├── components/             # Shared components
 │   ├── Router/             # <app-router> — client-side navigation + outlet
 │   ├── Navigation/ Logo/ Footer/
 │   ├── HeroCounter/ TriangleSeam/
-│   └── HomeQuickStart/ HomeDemos/ HomePerformance/
-│       HomeFeatures/ HomeStructure/ HomeArchitecture/ HomeCTA/
+│   └── HomeQuickStart/ HomeDemos/ HomePerformance/ HomeFeatures/
+│       HomeStructure/ HomeArchitecture/ HomeInternals/ HomeCTA/
 ├── core/
 │   ├── component.js        # Base Component class
 │   ├── config.js           # app.config.yml loader (zero-dep YAML + autodiscovery)
 │   ├── context.js          # Store (EventTarget Proxy)
 │   ├── loader.js           # Auto-loader (MutationObserver + IntersectionObserver)
 │   ├── locale.js           # Shared locale negotiation (cookie + Accept-Language)
-│   ├── routes.js           # Route matching + path helpers
+│   ├── routes.js           # Route matching + path helpers + 404 fallback
 │   ├── scan.js             # Directory scanner: routes + tag registry
 │   ├── tags.js             # Tag → source directory resolution
 │   ├── template.js         # Template engine (expressions, each, if)
 │   └── server/
-│       ├── index.js        # Dev/prod HTTP server + HMR
+│       ├── index.js        # Dev/prod HTTP server + live reload
 │       ├── build.js        # Production build pipeline
 │       ├── bundle.js       # Zero-dep ESM bundler
 │       ├── minify.js       # Zero-dep JS + CSS minifier
 │       ├── static.js       # Zero-dep static server (CSR preview, SPA catch-all)
-│       ├── entry-client.js # Browser entry point
-│       ├── entry-server.js # SSR entry point
-│       ├── ssr.js          # Shared rendering logic
+│       ├── entry-client.js # Browser entry point (lists the eagerly loaded components)
+│       ├── entry-server.js # Node SSR entry point
+│       ├── ssr.js          # Shared, platform-agnostic rendering logic
 │       └── ws.js           # WebSocket server (no ws package)
 ├── lib/
 │   ├── async.js            # Async helpers
@@ -84,22 +119,20 @@ takeover/
 │   ├── nav.js              # Navigation helpers (navigate, replace, getQuery…)
 │   ├── store.js            # App-level store instance
 │   └── validate.js         # Validation helpers
-├── locales/
-│   ├── en.json             # English
-│   ├── es.json             # Spanish
-│   └── fr.json             # French
+├── locales/                # en.json, es.json, fr.json
 ├── deploy/
 │   ├── cloudflare/_worker.js       # Cloudflare Pages Worker (SSR)
 │   └── netlify/functions/ssr.mjs   # Netlify Function (SSR)
+├── docs/                   # Developer guide (12 chapters) + images/*.svg diagrams
+├── public/                 # Served from the site root (/fonts, /logo.svg, robots.txt)
 ├── app.config.yml          # Per-project config (locales, preloads)
-├── globals.css             # Global CSS custom properties + reset
+├── globals.css             # Design tokens, @font-face, reset (inlined into every page)
 └── index.html              # Shell HTML (comment placeholders for SSR)
 ```
 
-`core/` is the framework and carries no project-specific values. Everything an
-individual site tunes lives outside it — `app/`, `components/`, `lib/`, `locales/`,
-`globals.css`, and `app.config.yml`. Treat `core/` as a dependency you drop into a
-new project unchanged.
+`core/` is the framework; everything an individual site tunes lives outside it — `app/`, `components/`, `lib/`, `locales/`, `globals.css`, and `app.config.yml`. The two places where `core/` still names project specifics are the eager-import list in `core/server/entry-client.js` and the store's `es` default locale in `lib/store.js`.
+
+→ More: [Project layout](docs/03-project-layout.md)
 
 ---
 
@@ -144,7 +177,10 @@ hurts LCP), so they default to empty — list only what genuinely blocks first p
 The build copies `app.config.yml` into `dist/` so production SSR (and the Cloudflare /
 Netlify adapters) negotiate locales from the same source. The supported/default
 locales are also inlined as `window.__LOCALE_CONFIG__` so the client i18n layer
-matches the server without hardcoding the list.
+matches the server without hardcoding the list. The file is read once per process, so
+restart `yarn dev` after editing it.
+
+→ More: [Reference](docs/12-reference.md#appconfigyml)
 
 ---
 
@@ -152,15 +188,20 @@ matches the server without hardcoding the list.
 
 Pages live in `app/`. The directory name maps directly to the route:
 
-| Directory | Route |
-|---|---|
-| `app/Home/` | `/` |
-| `app/NotFound/` | `/notfound` + wildcard 404 |
-| `app/About/` | `/about` |
-| `app/Users/[id]/User/` | `/users/:id/user` |
+| Directory | Route | Page tag |
+|---|---|---|
+| `app/Home/` | `/` | `home-page` |
+| `app/NotFound/` | `/notfound` + wildcard 404 | `notfound-page` |
+| `app/About/` | `/about` | `about-page` |
+| `app/Users/[id]/User/` | `/users/:id/user` | `user-page` |
 
 (The first two ship with this repo; the last two show the naming rules.) Folders and
 files starting with `_` are skipped, which is what keeps `_Layout` out of the route table.
+Three more rules the code relies on:
+
+- **The file stem matches its folder**: `app/About/About.html`, never `index.html`.
+- **The page tag is the lowercased stem plus `-page`**, with no hyphenation: `app/AboutUs/AboutUs.html` must call `define('aboutus-page', …)`.
+- **A route can't end in a parameter**: `app/Items/[slug]/[slug].html` becomes `/items/:slug/:slug`. Keep a static last segment, as in `/users/:id/user`.
 
 Each page is a folder with two files:
 
@@ -178,40 +219,55 @@ The script can live inside a `<script>` tag at the bottom of the `.html` file (e
 <!-- app/About/About.html -->
 <style>
   :host { display: block; }
-  h1 { color: var(--primary-color); }
+  h1 { color: var(--accent); }
 </style>
 
-<h1>{{t.nav.about}}</h1>
+<h1>About</h1>
 <p>{{description}}</p>
 
 <script>
-import { Component, define } from '/core/component.js';
+import { Component, define } from '/core/component.js';  // root-absolute: required in production
 
 export default class AboutPage extends Component {
   static templateUrl = '/app/About/About.html';
-  static store = ['user'];
-  static metadata = { title: 'About' };
-  static ssrProps = { description: 'We build things.' };
+  static metadata = { title: 'About', description: 'Who we are.' };
+  static local = { description: 'We build things.' };     // seen by SSR and by the client
 }
 
 define('about-page', AboutPage);
 </script>
 ```
 
+Page statics must be **literal object expressions**: the server never imports the class,
+it finds them in the source with a regex and `eval`s them. Prefer `static local` over
+`static ssrProps` for template data — `ssrProps` only reaches the server render, so a
+client-side navigation to the page would show `{{description}}` as literal text.
+
+→ More: [Routing and navigation](docs/08-routing-and-navigation.md)
+
 ---
 
 ## Components
 
-Shared components live in `components/`. They follow the same two-file pattern as pages but are loaded lazily by `core/loader.js` via `MutationObserver` — as soon as a custom element tag appears in the DOM, the corresponding JS is fetched and registered.
+Shared components live in `components/`. They follow the same two-file pattern as pages
+and need no registration: `core/loader.js` imports a component's module when its tag
+appears — after `load` (plus an idle callback) for server-rendered markup, and right away
+for elements added later (it watches with a `MutationObserver` and a patched `attachShadow`).
 
-Add `loading="lazy"` to defer that import until the element nears the viewport
-(`IntersectionObserver`, 200px margin). Server-rendered content stays visible throughout;
-only the JS upgrade waits. Without server-rendered content (client-side render, or a
-parent re-render) there's nothing to show in the meantime, so the import runs right away.
+| Strategy | Opt in by | The JS loads |
+|---|---|---|
+| Eager | an `import` in `core/server/entry-client.js` | with the inline core bundle |
+| Automatic | just using the tag | after `load` + idle, or at once if added later |
+| Lazy | `loading="lazy"` on the element | within 200px of the viewport |
 
 ```html
 <app-footer loading="lazy"></app-footer>
 ```
+
+Server-rendered content stays visible throughout; only the JS upgrade waits. Without
+server-rendered content (client-side render, or a parent re-render) there's nothing to show
+in the meantime, so a lazy import runs right away. Write custom elements **empty** in
+templates (`<x-y></x-y>`): SSR only expands elements with no children.
 
 ### Tag → file mapping
 
@@ -222,11 +278,7 @@ browser loader, passed directly to the Node SSR renderer, and written to
 `_ssr-config.json` for the edge adapters — one registry, three consumers, no hand-kept
 override table anywhere.
 
-```
-components/HomeCTA/HomeCTA.js       →  define('home-cta', …)       →  <home-cta>
-components/HomeQuickStart/…         →  define('home-quickstart',…) →  <home-quickstart>
-app/NotFound/NotFound.js            →  define('notfound-page', …)  →  <notfound-page>
-```
+![define() calls become one registry with three consumers](docs/images/tag-registry.svg)
 
 Because the folder is read off the `define()` call, names that don't round-trip through
 kebab↔PascalCase — acronyms (`HomeCTA`), compound words (`HomeQuickStart`), internal
@@ -237,10 +289,10 @@ capitals (`NotFound`) — need no special handling. If a tag is missing from the
 ### Component API
 
 ```js
-import { Component, define, store } from '/core/component.js';
+import { Component, define } from '/core/component.js';
 
 export default class MyWidget extends Component {
-  // URL of the HTML template (Shadow DOM content)
+  // URL of the HTML template (Shadow DOM content); the build inlines it
   static templateUrl = '/components/MyWidget/MyWidget.html';
 
   // CSS Module — class names are scoped to this element's tag.
@@ -248,19 +300,19 @@ export default class MyWidget extends Component {
   static cssModule = '/components/MyWidget/MyWidget.module.css';
 
   // Store keys to subscribe to — re-renders on change
-  static store = ['user', 'theme'];
+  static store = ['user'];
 
   // Initial local (per-instance) state — cloned for each instance
   static local = { count: 0, open: false };
 
-  // Called after Shadow DOM is ready and template is rendered
+  // After every render and on hydration: register listeners here
   bind() {
     this.on('#btn', 'click', () => this.local.count++);
     this.on('form', 'submit', e => this.handleSubmit(e));
     this.delegate('click', '.item', (el, e) => console.log(el));
   }
 
-  // Called when element connects to DOM
+  // After EVERY update(), and once after hydration — not a one-time hook
   mount() {}
 
   // Called when element disconnects
@@ -276,20 +328,30 @@ export default class MyWidget extends Component {
 define('my-widget', MyWidget);
 ```
 
+![connectedCallback branches and the steps of update()](docs/images/component-lifecycle.svg)
+
 #### Helpers
 
 | Method | Description |
 |---|---|
 | `this.$(sel)` | `shadowRoot.querySelector` |
 | `this.$$(sel)` | `shadowRoot.querySelectorAll` → Array |
-| `this.on(target, event, fn)` | Adds event listener, auto-removed on disconnect |
-| `this.emit(name, detail)` | Dispatches a composed CustomEvent |
-| `this.delegate(evt, sel, fn)` | Event delegation on shadow root |
+| `this.on(target, event, fn)` | Adds an event listener, removed before the next render and on disconnect |
+| `this.emit(name, detail)` | Dispatches a bubbling, composed CustomEvent |
+| `this.delegate(evt, sel, fn)` | Event delegation on the shadow root |
+| `this.signal` | The current render's `AbortSignal`, for your own fetches and listeners |
 | `this.cx(...args)` | CSS class helper: strings, objects, arrays → scoped class string |
 | `this.batch(fn)` | Run multiple `local` mutations with a single re-render |
 | `this.withLoading(fn, key?)` | Sets `local[key]` true while async fn runs |
 | `this.bindForm(fields)` | Bind `<input>` elements to `local` state keys |
 | `this.getFormData(sel?)` | Read form as plain object via `FormData` |
+| `this.resetForm(sel?)` | Reset a form |
+| `this.update()` | Re-render now |
+
+Register listeners through `this.on()` / `this.delegate()` rather than raw
+`addEventListener` in `mount()`: `mount()` runs after every render, so raw listeners pile up.
+
+→ More: [Components](docs/05-components.md)
 
 ---
 
@@ -302,12 +364,11 @@ is hoisted into the shadow root, so selectors are already isolated — no scopin
 
 **A CSS Module file.** Put `MyWidget.module.css` next to `MyWidget.html` and it is
 discovered automatically (no declaration required). Class names get the element's tag
-appended — `.inner` → `.inner_app-footer` — so templates reference them through `$css`:
+appended — `.inner` → `.inner_app-footer` — so templates reference them through `$css`
+and JavaScript through `this.cx()`:
 
 ```html
-<div class="{{$css.inner}}">
-  <span class="{{$c('badge', 'active')}}">…</span>
-</div>
+<div class="{{$css.inner}}">…</div>
 ```
 
 ```js
@@ -318,17 +379,23 @@ bind() { this.$('.x')?.classList.add(this.cx('active')); }  // cx() maps names t
 picked up and used **unscoped**, and can coexist with a module sheet.
 
 Element, `:host` and pseudo selectors are left alone by the scoping pass — the shadow
-boundary already isolates those. The pass is a regex over the whole file and does not skip
-comments, so avoid dotted names inside CSS comments.
+boundary already isolates those. The pass is a regex over the whole file, so it also
+rewrites dotted words in comments and in URLs (`url(hero.png)` → `url(hero.png_<tag>)`):
+keep module comments prose-only and images out of module sheets.
+
+Design tokens (`--bg`, `--fg`, `--accent`, …) and `@font-face` live in `globals.css`, which
+is inlined into every page; custom properties cross shadow boundaries, ordinary selectors don't.
 
 In production the build folds the stylesheet's source into the component class, so a CSS
 Module costs no extra request at runtime; SSR embeds the same scoped CSS in the shadow root.
+
+→ More: [Templates and styling](docs/06-templates-and-styling.md#styling)
 
 ---
 
 ## Template engine
 
-Templates use `{{ }}` expressions evaluated against `props` (store state + local state + pageProps + `t` for translations):
+Templates use `{{ }}` expressions evaluated against `props` (store state + local state + page props + `t` for translations):
 
 ```html
 <!-- Interpolation (HTML-escaped) -->
@@ -344,7 +411,7 @@ Templates use `{{ }}` expressions evaluated against `props` (store state + local
   <a href="/login" route>Login</a>
 {{/if}}
 
-<!-- Loops -->
+<!-- Loops: a top-level array; item fields are inserted unescaped -->
 {{#each items}}
   <li>{{this.name}} — {{@index}}</li>
 {{/each}}
@@ -354,17 +421,31 @@ Templates use `{{ }}` expressions evaluated against `props` (store state + local
 
 <!-- CSS Modules -->
 <div class="{{$css.card}}">
-<div class="{{$c('card', 'active')}}">
 
 <!-- Translation -->
-<span>{{t.nav.home}}</span>
+<span>{{t.nav.docs}}</span>
+
+<!-- Events: calls this.save(event); "store.logout" would call store.logout() -->
+<button @click="save">Save</button>
 ```
 
-Prop bindings pass JavaScript values (not strings) to child custom elements:
+The evaluator is a set of regex passes, not a JavaScript parser. Verified limits: an
+expression that evaluates to `undefined` stays on the page as literal `{{expr}}` (`null`
+prints `null`); at most 10 `{{#if}}` blocks resolve per render; `{{#each}}` can't nest or
+take a dotted path; there are no parentheses. Compute anything non-trivial in JS and expose
+the result as a prop.
+
+Prop bindings (experimental) pass JavaScript values (not strings) to child custom elements:
 
 ```html
 <my-widget :count="localCount" :user="user"></my-widget>
 ```
+
+On the client this sets `child.count` as a property after every parent render (the child's
+template sees it only if the child copies it into `local`); on the server the value is
+merged into the child's template props.
+
+→ More: [Templates and styling](docs/06-templates-and-styling.md)
 
 ---
 
@@ -400,9 +481,12 @@ The store ships deliberately bare: `lib/store.js` defines the defaults
 (`{ meta, locale, messages }`) and `setMeta`. Application actions — auth, theme, anything
 domain-specific — belong in your own module on top of it, not in the framework.
 
-Nested paths work too: `store.state.user.name = 'x'` fires `change:user.name`.
+Components subscribe declaratively via `static store = ['key1', 'key2']` and re-render automatically when any subscribed key changes. Two details decide whether they do:
 
-Components subscribe declaratively via `static store = ['key1', 'key2']` and re-render automatically when any subscribed key changes.
+- `store.set()` compares by reference: setting the same (mutated) object fires nothing, so set a new one — `store.set({ user: { ...user, name } })`.
+- A nested write such as `store.state.user.name = 'x'` fires `change:user.name`, not `change:user`, so a component subscribed to `user` won't re-render.
+
+→ More: [State and i18n](docs/07-state-and-i18n.md)
 
 ---
 
@@ -412,12 +496,11 @@ Three locales are included: **English**, **Spanish**, **French**.
 
 ### In templates
 
-`t` is the messages object for the current locale, injected into every component's props automatically:
+`t` is the messages object for the current locale, injected into every component's props automatically. Templates that mention `t.` re-render when the locale changes:
 
 ```html
-<a href="/" route>{{t.nav.home}}</a>
-<button>{{t.auth.login}}</button>
-<span>{{theme === 'dark' ? t.theme.light : t.theme.dark}}</span>
+<a href="#quickstart">{{t.nav.quickstart}}</a>
+<button>{{t.hero.cta}}</button>
 ```
 
 ### In JavaScript
@@ -425,19 +508,22 @@ Three locales are included: **English**, **Spanish**, **French**.
 ```js
 import { t, setLocale, getLocale, initLocale } from '/lib/i18n.js';
 
-t('nav.home')                         // → 'Home'
-t('footer.copyright', { year: 2026 }) // → '© 2026 Web Components App'
-setLocale('es');                       // async — fetches + updates store
-getLocale();                           // → 'es'
+t('nav.docs')                     // → 'Docs'
+t('cart.items', { n: 3 })         // '{n} items' → '3 items', if your catalogue defines it
+setLocale('es');                  // async — loads the catalogue, updates the store, sets a cookie
+getLocale();                      // → 'es'
 ```
+
+`t()` returns the key itself when a message is missing; templates have no `{var}` interpolation.
 
 ### Adding a locale
 
-1. Create `locales/de.json` following the same shape as `en.json`
+1. Create `locales/de.json` following the same shape as `en.json` (a missing key renders as raw `{{t.…}}`)
 2. Add `de` to `locales.supported` in `app.config.yml` (or rely on autodiscovery —
    omit the key / set `supported: auto` and the new file is picked up automatically)
 3. Add a switch control in `components/Navigation/Navigation.html` + `.js` (the language
    buttons there call `setLocale('en' | 'es' | 'fr')`)
+4. Restart `yarn dev`
 
 The supported list and default locale are defined once in `app.config.yml`; the
 server, the deploy adapters, and the client i18n layer all read from it (no
@@ -454,8 +540,10 @@ language for the same request. The `locale` cookie (an explicit user choice) win
 The negotiated locale pre-renders the page, and three globals are inlined so the client
 never flashes: `__INITIAL_STATE__` (active locale + its messages), `__LOCALES__` (the other
 supported catalogues, so a switch needs no fetch) and `__LOCALE_CONFIG__` (the supported
-list, so client negotiation matches the server's). Responses are sent with
-`Vary: Accept-Language, Cookie`.
+list, so client negotiation matches the server's). The Netlify and Cloudflare adapters send
+`Vary: Accept-Language, Cookie`; the Node server does not.
+
+→ More: [State and i18n](docs/07-state-and-i18n.md#how-a-language-is-chosen)
 
 ---
 
@@ -464,6 +552,8 @@ list, so client negotiation matches the server's). Responses are sent with
 ```bash
 yarn build
 ```
+
+![yarn build: one pass from source to two output trees](docs/images/build-pipeline.svg)
 
 Output in `dist/client/`:
 
@@ -485,9 +575,11 @@ dist/client/
 └── routes.json
 ```
 
-The **bundler** (`core/server/bundle.js`) traces all static `import` chains from `entry-client.js` and emits a single IIFE with a minimal module registry — eliminating 9+ separate module requests on the critical path. Dynamic `import()` calls (used by the router for route-level code splitting) are left intact with resolved paths.
+`dist/server/` holds the `.mjs` copy of `core/`, `lib/`, `app/` and `components/` that the Netlify function renders from.
 
-The **minifier** (`core/server/minify.js`) uses a character-level tokenizer that correctly handles template literals, strings, regex literals, and comments. It produces ~35–50% size reductions without identifier mangling.
+The **bundler** (`core/server/bundle.js`) traces all static `import` chains from `entry-client.js` and emits a single IIFE with a minimal module registry — here 17 modules, 59.9 kB minified, about 17 kB gzipped. Dynamic `import()` calls (used by the router for route-level code splitting) are left intact with resolved paths.
+
+The **minifier** (`core/server/minify.js`) uses a character-level tokenizer that correctly handles template literals, strings, regex literals, and comments. It cuts the core bundle by 38% without identifier mangling.
 
 Templates and stylesheets are **inlined into their component class** at build time
 (`static template`, `static cssModuleText` / `static cssText`), so a component costs no
@@ -498,25 +590,37 @@ page/component modules are hashed too, and the original → hashed map is inline
 `window.__M__`, which is what makes `max-age=31536000, immutable` safe for `/app/*` and
 `/components/*`.
 
+Two production-only rules follow from the registry rewrite: lazy modules (everything in
+`app/` and `components/`) may only **statically** import modules that are in the core bundle
+— load anything else, such as `/lib/validate.js`, with `await import()` — and inline
+`<script>` blocks in page `.html` files must import with root-absolute paths.
+
+→ More: [Build and deployment](docs/09-build-and-deploy.md)
+
 ---
 
-## HMR (Hot Module Replacement)
+## Dev server and live reload
 
-The dev server watches `app/`, `components/`, `core/`, and `lib/` with `fs.watch` (recursive). On change it sends a WebSocket message to all connected browsers with three possible strategies:
+The dev server watches `app/`, `components/`, `core/`, and `lib/` with `fs.watch` (recursive,
+50ms debounce) and messages connected browsers over a hand-rolled WebSocket. The client
+knows three strategies — CSS hot-swap, full reload, and re-importing a changed component —
+but as the code stands today:
 
-| Change | Strategy |
+| You change | What happens |
 |---|---|
-| `.css` file | Hot-swap — refetches stylesheet/globals without reload |
-| `core/` or `lib/` file | Full reload (browser already cached the module) |
-| Component or app file | Re-imports with `?t=` cache-bust, reconnects element; falls back to reload |
+| A `.js` or `.html` file | The page reloads (the re-import path falls back to `location.reload()`) |
+| A `*.module.css` file or `globals.css` | Nothing — reload by hand |
+| A template or stylesheet that SSR renders | The server keeps serving the cached copy until `yarn dev` restarts |
 
-A 50ms debounce prevents duplicate triggers from editor temp-file writes.
+New pages and components need no restart; the route and tag tables are rebuilt on every change.
+
+→ Why, and how to fix it: [Gotchas → Dev server](docs/11-gotchas.md#dev-server)
 
 ---
 
 ## Navigation
 
-Use the `route` attribute on `<a>` tags for client-side navigation (the Router intercepts clicks):
+Use the `route` attribute on `<a>` tags for client-side navigation (the Router intercepts clicks, including inside shadow roots):
 
 ```html
 <a href="/about" route>About</a>
@@ -534,7 +638,7 @@ getQuery();                          // → { from: '/dashboard' }
 setQuery({ tab: 'profile' });
 ```
 
-Route lifecycle hooks on the Router:
+Route lifecycle hooks on the Router — set them in a module that loads before the first navigation, such as `app/_Layout/_Layout.js`:
 
 ```js
 import Router from '/components/Router/Router.js';
@@ -546,6 +650,10 @@ Router.beforeEach = async (to, from) => {
 Router.afterEach = (to, from) => analytics.track(to.path);
 Router.onError = (err, to) => console.error(err);
 ```
+
+In-page `#anchor` links work across shadow roots too: the Router resolves the target with `scrollToHash()` from `lib/nav.js`.
+
+→ More: [Routing and navigation](docs/08-routing-and-navigation.md)
 
 ---
 
@@ -565,6 +673,9 @@ effect: the edge renders the same locale, the same components and the same 404 f
 the Node server — with a real 404 status. Any path with an extension other than `.html` is
 answered from the asset store, so a missing file is a 404 rather than the app.
 
+The build emits no `_headers` file and `netlify.toml`'s cache rules don't apply here, so add
+`public/_headers` if you want immutable caching for the hashed files on Cloudflare.
+
 ### Netlify
 
 Configure via `netlify.toml`. Static assets are served directly; all other requests hit the
@@ -573,14 +684,18 @@ SSR Netlify Function in `deploy/netlify/functions/ssr.mjs`, which runs against `
 `/.well-known/ard.json`) gets a plain 404, and unmatched routes render NotFound with a 404
 status: answering 200 would make crawlers and agents treat the app's HTML as that file.
 
+Netlify serves an existing file before applying a non-forced rewrite, and the build writes
+the CSR shell to `dist/client/index.html`, so check that `/` on your deployment is
+server-rendered (its HTML contains `shadowrootmode`).
+
 ### Static / CSR-only hosting
 
 SSR is the default, but the same `yarn build` also emits a **client-rendered shell** at
 `dist/client/index.html` for hosts with no SSR runtime (GitHub Pages, S3, a CDN bucket).
 It's the SSR template with the per-request placeholders pre-filled: empty `app-layout`,
-no `__INITIAL_STATE__`, only `window.__LOCALE_CONFIG__` inlined so client i18n negotiates
-the same locales the server would. On load the Router finds an empty outlet and renders
-the route in the browser — the identical code path SSR pages take after hydration
+the default locale's state, every other catalogue, and `window.__LOCALE_CONFIG__`, so the
+first client render already has its messages. On load the Router finds an empty outlet and
+renders the route in the browser — the identical code path SSR pages take after hydration
 (`core/component.js` falls back to `attachShadow()` + `update()` when no Declarative
 Shadow DOM is present).
 
@@ -599,13 +714,35 @@ nginx `try_files $uri /index.html`. The SSR adapters keep using `_template.html`
 unaffected — CSR is purely additive.
 
 What you trade away vs. SSR: no prerendered HTML (blank first paint until the bundle
-runs), no server locale negotiation (the client fetches `/locales/<lang>.json` on boot),
-and crawlers without JS see an empty shell. Use it where an SSR runtime isn't available;
-prefer SSR everywhere else.
+runs), no server locale negotiation, and crawlers without JS see an empty shell. Use it
+where an SSR runtime isn't available; prefer SSR everywhere else.
+
+### Node (`yarn start`)
+
+`NODE_ENV=production node core/server/index.js` server-renders straight from the source
+tree: no bundle, no minification, and every file in the checkout is reachable by URL —
+including paths outside it via `../`. Use it for local checks only; don't expose it to the
+internet.
+
+→ More: [Build and deployment](docs/09-build-and-deploy.md#deployment-targets)
+
+---
+
+## Known issues
+
+[Gotchas](docs/11-gotchas.md) lists every verified pitfall with its cause and fix. The ones most likely to bite:
+
+- **Path traversal in the Node server** — `core/server/index.js` serves any file it can reach, including `../` paths; keep `yarn dev` and `yarn start` on localhost.
+- **Stale SSR in dev** — template and CSS edits need a `yarn dev` restart.
+- **Production-only import errors** — lazy modules can only statically import bundled modules, and page scripts need root-absolute imports.
+- **Nested components render with the page's props on the server** — their own `local` isn't applied until the client renders them.
+- **`$$`, `$&` and `$'` in templates** are rewritten by SSR's string-based component splicing.
 
 ---
 
 ## Architecture notes
+
+![The server's nine steps beside the browser's seven](docs/images/lifecycle.svg)
 
 - **No virtual DOM.** Components re-render their shadow root's `innerHTML` directly. Focus state is preserved across re-renders by tracking `activeElement` before and restoring it after.
 - **No hydration mismatch.** SSR uses [Declarative Shadow DOM](https://developer.chrome.com/docs/css-ui/declarative-shadow-dom) (`<template shadowrootmode="open">`). The browser attaches shadow roots before JS runs, so hydration is just event binding — the DOM is never replaced.
@@ -615,6 +752,9 @@ prefer SSR everywhere else.
   fed by a discovered registry), locale negotiation (`core/locale.js`) and the 404 fallback
   route (`withNotFound` in `core/routes.js`) are each written once and shared by the browser,
   the Node server and every deploy adapter. Anything duplicated per host drifts.
-- **Core stays project-agnostic.** No component names, locale codes or route paths are
-  hardcoded in `core/` — they're discovered from the source tree or read from
-  `app.config.yml`, which is what makes `core/` droppable into a new project unchanged.
+- **Core stays (almost) project-agnostic.** Component names, locale codes and route paths
+  are discovered from the source tree or read from `app.config.yml`; the exceptions are the
+  eager-import list in `core/server/entry-client.js` and the store's default locale in
+  `lib/store.js`.
+
+→ More: [Architecture](docs/01-architecture.md) and [Request and boot lifecycle](docs/04-lifecycle.md)

@@ -1,0 +1,204 @@
+<style>
+  :host { display: block; margin-top: clamp(56px, 7vw, 96px); }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  .head {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+    max-width: 760px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 1px; }
+
+  h3 { font-size: clamp(22px, 2.4vw, 30px); line-height: 1.15; font-weight: 500; letter-spacing: -0.015em; margin: 0; }
+  .head p { margin: 0; color: var(--fg-muted); font-size: 16px; line-height: 1.55; }
+
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    width: fit-content;
+    max-width: 100%;
+    margin-bottom: 16px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius, 6px);
+    background: var(--bg-elev);
+  }
+
+  .tab {
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--fg-muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: color 140ms ease, background 140ms ease;
+  }
+  .tab:hover { color: var(--fg); }
+  .tab[aria-selected="true"] { background: var(--accent-dim); color: var(--accent-soft); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    gap: clamp(20px, 3vw, 36px);
+    align-items: start;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-lg, 10px);
+    background: var(--bg-elev);
+    padding: clamp(16px, 2.5vw, 32px);
+  }
+  .panel[hidden] { display: none; }
+
+  /* Diagrams are 760 units wide; below ~620px they scroll sideways instead of shrinking
+     their labels past legibility. */
+  .diagram {
+    overflow-x: auto;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius, 6px);
+    background: var(--bg);
+  }
+  .diagram svg { display: block; width: 100%; min-width: 620px; height: auto; }
+
+  .side { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+  .facts { display: flex; flex-direction: column; gap: 16px; list-style: none; margin: 0; padding: 0; }
+  .facts li + li { border-top: 1px solid var(--line-soft); padding-top: 16px; }
+  .fact-k { font-family: var(--font-mono); font-size: 20px; letter-spacing: -0.01em; color: var(--fg); }
+  .fact-v { margin-top: 6px; font-size: 13.5px; line-height: 1.55; color: var(--fg-muted); }
+  .fact-v code { font-family: var(--font-mono); font-size: 12px; color: var(--fg); }
+
+  .doc-link { font-family: var(--font-mono); font-size: 12px; color: var(--accent-soft); text-decoration: none; }
+  .doc-link:hover { text-decoration: underline; }
+
+  .guide { margin: 20px 0 0; font-size: 14px; color: var(--fg-muted); }
+  .guide a { font-family: var(--font-mono); font-size: 13px; color: var(--accent-soft); text-decoration: none; }
+  .guide a:hover { text-decoration: underline; }
+
+  /* Diagram vocabulary (docs/images/*.svg uses the same classes without the dg- prefix). */
+  .dg-panel { fill: var(--bg-elev); stroke: var(--line-soft); stroke-width: 1; }
+  .dg-box { fill: var(--bg); stroke: var(--line); stroke-width: 1; }
+  .dg-accent { fill: var(--accent-dim); stroke: var(--accent-line); stroke-width: 1.5; }
+  .dg-edge { fill: none; stroke: var(--fg-dim); stroke-width: 1.25; }
+  .dg-dash { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 4 4; }
+  .dg-head { fill: var(--fg-dim); }
+  .dg-badge { fill: var(--accent); }
+  .dg-badge-t { fill: #fff; font: 600 11px var(--font-sans); }
+  .dg-title { fill: var(--fg); font: 600 17px var(--font-sans); letter-spacing: -0.01em; }
+  .dg-sub { fill: var(--fg-muted); font: 400 12.5px var(--font-sans); }
+  .dg-label { fill: var(--fg-muted); font: 500 10.5px var(--font-mono); letter-spacing: 0.08em; }
+  .dg-name { fill: var(--fg); font: 600 13px var(--font-sans); }
+  .dg-namem { fill: var(--fg); font: 600 12.5px var(--font-mono); }
+  .dg-body { fill: var(--fg-muted); font: 400 12px var(--font-sans); }
+  .dg-mono { fill: var(--fg-muted); font: 400 11.5px var(--font-mono); }
+  .dg-note { fill: var(--fg-muted); font: 400 11.5px var(--font-sans); }
+
+  @media (max-width: 1100px) {
+    .panel { grid-template-columns: 1fr; }
+    .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+    .facts li + li { border-top: 0; padding-top: 0; }
+  }
+  @media (max-width: 760px) {
+    .facts { grid-template-columns: 1fr; gap: 16px; }
+  }
+</style>
+
+<div class="head">
+  <span class="eyebrow">{{t.internals.eyebrow}}</span>
+  <h3>{{t.internals.title}}</h3>
+  <p>{{t.internals.sub}}</p>
+</div>
+
+<div class="tabs" role="tablist" aria-label="{{t.internals.eyebrow}}">
+  <button class="tab" role="tab" id="tab-architecture" aria-controls="panel-architecture" aria-selected="true" data-tab="architecture">architecture</button>
+  <button class="tab" role="tab" id="tab-lifecycle" aria-controls="panel-lifecycle" aria-selected="false" tabindex="-1" data-tab="lifecycle">request + boot</button>
+  <button class="tab" role="tab" id="tab-components" aria-controls="panel-components" aria-selected="false" tabindex="-1" data-tab="components">components</button>
+  <button class="tab" role="tab" id="tab-registry" aria-controls="panel-registry" aria-selected="false" tabindex="-1" data-tab="registry">tag registry</button>
+  <button class="tab" role="tab" id="tab-build" aria-controls="panel-build" aria-selected="false" tabindex="-1" data-tab="build">build</button>
+</div>
+
+<div class="panel" role="tabpanel" id="panel-architecture" aria-labelledby="tab-architecture">
+  <div class="diagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 778" role="img" aria-label="One renderer core, three hosts, one HTML contract"><title>One renderer core, three hosts, one HTML contract</title><defs><marker id="dg-arrow-architecture" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="dg-head"/></marker></defs><text x="24" y="36" class="dg-title">One renderer core, three hosts, one HTML contract</text><text x="24" y="56" class="dg-sub">Hosts only do I/O. Locale choice, routing, tag lookup and rendering are shared code.</text><rect x="24" y="76" width="712" height="112" rx="10" class="dg-panel"/><text x="38" y="97" class="dg-label">SOURCE TREE (YOU EDIT)</text><g><rect x="40" y="108" width="161" height="64" rx="8" class="dg-box"/><text x="52" y="129" class="dg-namem">app/</text><text x="52" y="146.5" class="dg-body">one folder per page</text><text x="52" y="163" class="dg-body">Name.html + class</text></g><g><rect x="213" y="108" width="161" height="64" rx="8" class="dg-box"/><text x="225" y="129" class="dg-namem">components/</text><text x="225" y="146.5" class="dg-body">shared elements</text><text x="225" y="163" class="dg-body">template, class, CSS</text></g><g><rect x="386" y="108" width="161" height="64" rx="8" class="dg-box"/><text x="398" y="129" class="dg-namem">locales/</text><text x="398" y="146.5" class="dg-body">*.json catalogues</text><text x="398" y="163" class="dg-body">+ app.config.yml</text></g><g><rect x="559" y="108" width="161" height="64" rx="8" class="dg-box"/><text x="571" y="129" class="dg-namem">index.html</text><text x="571" y="146.5" class="dg-body">shell, 5 placeholders</text><text x="571" y="163" class="dg-body">+ globals.css</text></g><path d="M380 188V216" class="dg-edge" marker-end="url(#dg-arrow-architecture)"/><text x="390" y="206" class="dg-note">read by</text><rect x="24" y="218" width="712" height="112" rx="10" class="dg-panel"/><text x="38" y="239" class="dg-label">SERVER HOSTS (I/O ONLY)</text><g><rect x="40" y="250" width="218" height="64" rx="8" class="dg-box"/><text x="52" y="271" class="dg-name">Node server</text><text x="52" y="288.5" class="dg-mono">core/server/index.js</text><text x="52" y="305" class="dg-body">yarn dev, yarn start</text></g><g><rect x="271" y="250" width="218" height="64" rx="8" class="dg-box"/><text x="283" y="271" class="dg-name">Netlify function</text><text x="283" y="288.5" class="dg-mono">deploy/netlify/…/ssr.mjs</text><text x="283" y="305" class="dg-body">imports dist/server</text></g><g><rect x="502" y="250" width="218" height="64" rx="8" class="dg-box"/><text x="514" y="271" class="dg-name">Cloudflare worker</text><text x="514" y="288.5" class="dg-mono">dist/client/_worker.js</text><text x="514" y="305" class="dg-body">files via env.ASSETS</text></g><path d="M380 330V358" class="dg-edge" marker-end="url(#dg-arrow-architecture)"/><text x="390" y="348" class="dg-note">call</text><rect x="24" y="360" width="712" height="112" rx="10" class="dg-panel"/><text x="38" y="381" class="dg-label">SHARED CORE (SAME CODE ON EVERY HOST)</text><g><rect x="40" y="392" width="161" height="64" rx="8" class="dg-box"/><text x="52" y="413" class="dg-namem">core/locale.js</text><text x="52" y="430.5" class="dg-mono">negotiateLocale()</text><text x="52" y="447" class="dg-body">cookie, then header</text></g><g><rect x="213" y="392" width="161" height="64" rx="8" class="dg-box"/><text x="225" y="413" class="dg-namem">core/routes.js</text><text x="225" y="430.5" class="dg-mono">matchRoute()</text><text x="225" y="447" class="dg-body">exact, dynamic, 404</text></g><g><rect x="386" y="392" width="161" height="64" rx="8" class="dg-box"/><text x="398" y="413" class="dg-namem">core/tags.js</text><text x="398" y="430.5" class="dg-body">tag → folder</text><text x="398" y="447" class="dg-body">discovered registry</text></g><g><rect x="559" y="392" width="161" height="64" rx="8" class="dg-box"/><text x="571" y="413" class="dg-namem">core/server/ssr.js</text><text x="571" y="430.5" class="dg-mono">createRenderer()</text><text x="571" y="447" class="dg-body">templates → DSD HTML</text></g><path d="M380 472V500" class="dg-edge" marker-end="url(#dg-arrow-architecture)"/><text x="390" y="490" class="dg-note">emits</text><g><rect x="24" y="502" width="712" height="92" rx="8" class="dg-accent"/><text x="36" y="523" class="dg-name">HTML response</text><text x="36" y="540.5" class="dg-mono">&lt;tag&gt;&lt;template shadowrootmode=&quot;open&quot;&gt;…&lt;/template&gt;&lt;/tag&gt;  for each server-rendered element</text><text x="36" y="557" class="dg-mono">__INITIAL_STATE__ · __LOCALES__ · __LOCALE_CONFIG__ · __ROUTES__ · __TAGS__</text><text x="36" y="573.5" class="dg-body">Production adds __M__ and the whole core bundle, inline.</text></g><path d="M380 594V622" class="dg-edge" marker-end="url(#dg-arrow-architecture)"/><text x="390" y="612" class="dg-note">boots</text><rect x="24" y="624" width="712" height="130" rx="10" class="dg-panel"/><text x="38" y="645" class="dg-label">BROWSER</text><g><rect x="40" y="656" width="218" height="82" rx="8" class="dg-box"/><text x="52" y="677" class="dg-name">Core bundle</text><text x="52" y="694.5" class="dg-mono">entry-client.js</text><text x="52" y="711" class="dg-body">seeds the store, inits locale,</text><text x="52" y="727.5" class="dg-body">defines first-paint elements</text></g><g><rect x="271" y="656" width="218" height="82" rx="8" class="dg-box"/><text x="283" y="677" class="dg-namem">&lt;app-router&gt;</text><text x="283" y="694.5" class="dg-body">hydrates the SSR page or</text><text x="283" y="711" class="dg-body">renders the route; imports</text><text x="283" y="727.5" class="dg-body">page modules from app/</text></g><g><rect x="502" y="656" width="218" height="82" rx="8" class="dg-box"/><text x="514" y="677" class="dg-namem">core/loader.js</text><text x="514" y="694.5" class="dg-body">after load: imports the other</text><text x="514" y="711" class="dg-body">components; lazy ones as</text><text x="514" y="727.5" class="dg-body">they near the viewport</text></g></svg>
+  </div>
+  <div class="side">
+    <ul class="facts">
+      <li><div class="fact-k">3 hosts</div><div class="fact-v">Node, Netlify and Cloudflare run one renderer, <code>core/server/ssr.js</code>. Each host only reads files, picks the locale and fills the shell.</div></li>
+      <li><div class="fact-k">0 classes</div><div class="fact-v">run on the server. SSR renders the <code>.html</code> templates and reads page statics from source, so component code may touch <code>window</code> freely.</div></li>
+      <li><div class="fact-k">1 contract</div><div class="fact-v">DSD markup plus inlined state: <code>__INITIAL_STATE__</code>, <code>__LOCALES__</code>, <code>__ROUTES__</code>, <code>__TAGS__</code>, and <code>__M__</code> in production.</div></li>
+    </ul>
+    <a class="doc-link" href="https://github.com/lmf-git/takeover/blob/main/docs/01-architecture.md" target="_blank" rel="noopener">docs/01-architecture.md →</a>
+  </div>
+</div>
+
+<div class="panel" role="tabpanel" id="panel-lifecycle" aria-labelledby="tab-lifecycle" hidden>
+  <div class="diagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 552" role="img" aria-label="The page is complete HTML before any script runs"><title>The page is complete HTML before any script runs</title><defs><marker id="dg-arrow-lifecycle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="dg-head"/></marker></defs><text x="24" y="36" class="dg-title">The page is complete HTML before any script runs</text><text x="24" y="56" class="dg-sub">Left: what a host does per request. Right: what the browser does with the response.</text><rect x="24" y="76" width="340" height="452" rx="10" class="dg-panel"/><text x="38" y="97" class="dg-label">SERVER, PER REQUEST</text><rect x="396" y="76" width="340" height="452" rx="10" class="dg-panel"/><text x="410" y="97" class="dg-label">BROWSER</text><g><rect x="40" y="108" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="126" r="10" class="dg-badge"/><text x="60" y="130" class="dg-badge-t" text-anchor="middle">1</text><text x="80" y="130.5" class="dg-body">Serve files; a missing one is a 404</text></g><g><rect x="40" y="154" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="172" r="10" class="dg-badge"/><text x="60" y="176" class="dg-badge-t" text-anchor="middle">2</text><text x="80" y="176.5" class="dg-body">Pick locale: cookie, header, default</text></g><g><rect x="40" y="200" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="218" r="10" class="dg-badge"/><text x="60" y="222" class="dg-badge-t" text-anchor="middle">3</text><text x="80" y="222.5" class="dg-body">Load active and other catalogues</text></g><g><rect x="40" y="246" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="264" r="10" class="dg-badge"/><text x="60" y="268" class="dg-badge-t" text-anchor="middle">4</text><text x="80" y="268.5" class="dg-body">Match route: exact, dynamic, 404</text></g><g><rect x="40" y="292" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="310" r="10" class="dg-badge"/><text x="60" y="314" class="dg-badge-t" text-anchor="middle">5</text><text x="80" y="314.5" class="dg-body">requiresAuth? Redirect to /login</text></g><g><rect x="40" y="338" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="356" r="10" class="dg-badge"/><text x="60" y="360" class="dg-badge-t" text-anchor="middle">6</text><text x="80" y="360.5" class="dg-body">Build props: state, local, ssrProps</text></g><g><rect x="40" y="384" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="402" r="10" class="dg-badge"/><text x="60" y="406" class="dg-badge-t" text-anchor="middle">7</text><text x="80" y="406.5" class="dg-body">Render layout, page, nested tags</text></g><g><rect x="40" y="430" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="448" r="10" class="dg-badge"/><text x="60" y="452" class="dg-badge-t" text-anchor="middle">8</text><text x="80" y="452.5" class="dg-body">Splice page into #outlet, wrap DSD</text></g><g><rect x="40" y="476" width="308" height="36" rx="8" class="dg-box"/><circle cx="60" cy="494" r="10" class="dg-badge"/><text x="60" y="498" class="dg-badge-t" text-anchor="middle">9</text><text x="80" y="498.5" class="dg-body">Fill the shell, send 200 or 404</text></g><g><rect x="412" y="108" width="308" height="36" rx="8" class="dg-box"/><circle cx="432" cy="126" r="10" class="dg-badge"/><text x="432" y="130" class="dg-badge-t" text-anchor="middle">1</text><text x="452" y="130.5" class="dg-body">Parse: DSD becomes shadow roots</text></g><path d="M412 168H473.65M658.35 168H720" class="dg-dash"/><text x="566" y="172" class="dg-note" text-anchor="middle">inline core bundle executes</text><g><rect x="412" y="192" width="308" height="36" rx="8" class="dg-box"/><circle cx="432" cy="210" r="10" class="dg-badge"/><text x="432" y="214" class="dg-badge-t" text-anchor="middle">2</text><text x="452" y="214.5" class="dg-body">Store seeded from the snapshot</text></g><g><rect x="412" y="242" width="308" height="36" rx="8" class="dg-box"/><circle cx="432" cy="260" r="10" class="dg-badge"/><text x="432" y="264" class="dg-badge-t" text-anchor="middle">3</text><text x="452" y="264.5" class="dg-body">Eager elements bind, no re-render</text></g><g><rect x="412" y="292" width="308" height="36" rx="8" class="dg-box"/><circle cx="432" cy="310" r="10" class="dg-badge"/><text x="432" y="314" class="dg-badge-t" text-anchor="middle">4</text><text x="452" y="314.5" class="dg-body">Head sync, initLocale(), scroll</text></g><g><rect x="412" y="342" width="308" height="36" rx="8" class="dg-box"/><circle cx="432" cy="360" r="10" class="dg-badge"/><text x="432" y="364" class="dg-badge-t" text-anchor="middle">5</text><text x="452" y="364.5" class="dg-body">Router hydrates the page</text></g><path d="M412 402H470.6M661.4 402H720" class="dg-dash"/><text x="566" y="406" class="dg-note" text-anchor="middle">after window load, when idle</text><g><rect x="412" y="426" width="308" height="36" rx="8" class="dg-box"/><circle cx="432" cy="444" r="10" class="dg-badge"/><text x="432" y="448" class="dg-badge-t" text-anchor="middle">6</text><text x="452" y="448.5" class="dg-body">Loader imports others; lazy near view</text></g><g><rect x="412" y="476" width="308" height="36" rx="8" class="dg-box"/><circle cx="432" cy="494" r="10" class="dg-badge"/><text x="432" y="498" class="dg-badge-t" text-anchor="middle">7</text><text x="452" y="498.5" class="dg-body">Observers catch later elements</text></g><path d="M348 494H388V126H410" class="dg-edge" marker-end="url(#dg-arrow-lifecycle)"/><text x="382" y="300" class="dg-note" text-anchor="middle" transform="rotate(-90 382 300)">HTML response</text></svg>
+  </div>
+  <div class="side">
+    <ul class="facts">
+      <li><div class="fact-k">9 steps</div><div class="fact-v">per request on the server, from the file check to the filled shell. Unmatched routes render NotFound with a real 404.</div></li>
+      <li><div class="fact-k">0 JS</div><div class="fact-v">needed for first paint. The HTML parser attaches every shadow root, so hydration only binds events.</div></li>
+      <li><div class="fact-k">200 px</div><div class="fact-v">before a <code>loading="lazy"</code> section enters the viewport, its module is imported, once the window has loaded and gone idle.</div></li>
+    </ul>
+    <a class="doc-link" href="https://github.com/lmf-git/takeover/blob/main/docs/04-lifecycle.md" target="_blank" rel="noopener">docs/04-lifecycle.md →</a>
+  </div>
+</div>
+
+<div class="panel" role="tabpanel" id="panel-components" aria-labelledby="tab-components" hidden>
+  <div class="diagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 700" role="img" aria-label="A server-rendered component is bound, not re-rendered"><title>A server-rendered component is bound, not re-rendered</title><defs><marker id="dg-arrow-component-lifecycle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="dg-head"/></marker></defs><text x="24" y="36" class="dg-title">A server-rendered component is bound, not re-rendered</text><text x="24" y="56" class="dg-sub">Left: connectedCallback(). Right: update(), which every re-render runs.</text><g><rect x="74" y="76" width="280" height="36" rx="8" class="dg-box"/><text x="214" y="97" class="dg-namem" text-anchor="middle">connectedCallback()</text></g><path d="M214 112V126" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><g><rect x="74" y="128" width="280" height="52" rx="8" class="dg-box"/><text x="86" y="149" class="dg-name">Load the template</text><text x="86" y="166.5" class="dg-body">static template, else fetch templateUrl</text></g><path d="M214 180V194" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><g><rect x="74" y="196" width="280" height="68" rx="8" class="dg-box"/><text x="86" y="217" class="dg-name">Resolve CSS, first match wins</text><text x="86" y="234.5" class="dg-body">inlined text, cssModule, css,</text><text x="86" y="251" class="dg-body">sibling .module.css, sibling .css</text></g><path d="M214 264V278" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><g><rect x="74" y="280" width="280" height="36" rx="8" class="dg-box"/><text x="214" y="301" class="dg-namem" text-anchor="middle">store.setMeta(metadata)</text></g><path d="M214 316V330" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><polygon points="84,372 214,332 344,372 214,412" class="dg-box"/><text x="214" y="369" class="dg-name" text-anchor="middle">Shadow root already there?</text><text x="214" y="386" class="dg-note" text-anchor="middle">it was server-rendered</text><path d="M84 372H60V438" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><text x="36" y="410" class="dg-note">yes</text><path d="M344 372H368V438" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><text x="376" y="410" class="dg-note">no</text><g><rect x="24" y="440" width="184" height="52" rx="8" class="dg-box"/><text x="36" y="461" class="dg-name">Hydrate</text><text x="36" y="478.5" class="dg-body">bind() events, no render</text></g><g><rect x="220" y="440" width="184" height="52" rx="8" class="dg-box"/><text x="232" y="461" class="dg-name">Render</text><text x="232" y="478.5" class="dg-body">attachShadow(), update()</text></g><path d="M116 492V522" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><path d="M312 492V522" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><g><rect x="74" y="524" width="280" height="68" rx="8" class="dg-box"/><text x="86" y="545" class="dg-name">Subscribe to the store</text><text x="86" y="562.5" class="dg-body">static store keys, plus messages</text><text x="86" y="579" class="dg-body">when the template mentions t.</text></g><path d="M214 592V606" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><g><rect x="74" y="608" width="280" height="68" rx="8" class="dg-box"/><text x="86" y="629" class="dg-name">Hydrated only</text><text x="86" y="646.5" class="dg-body">mount(), then update() if the</text><text x="86" y="663" class="dg-body">store differs from the snapshot</text></g><rect x="436" y="76" width="300" height="480" rx="10" class="dg-panel"/><text x="450" y="97" class="dg-label">EVERY RE-RENDER RUNS update()</text><g><rect x="452" y="108" width="268" height="36" rx="8" class="dg-box"/><circle cx="472" cy="126" r="10" class="dg-badge"/><text x="472" y="130" class="dg-badge-t" text-anchor="middle">1</text><text x="492" y="130.5" class="dg-body">Save focus and text selection</text></g><g><rect x="452" y="154" width="268" height="36" rx="8" class="dg-box"/><circle cx="472" cy="172" r="10" class="dg-badge"/><text x="472" y="176" class="dg-badge-t" text-anchor="middle">2</text><text x="492" y="176.5" class="dg-body">Abort the last AbortController</text></g><g><rect x="452" y="200" width="268" height="36" rx="8" class="dg-box"/><circle cx="472" cy="218" r="10" class="dg-badge"/><text x="472" y="222" class="dg-badge-t" text-anchor="middle">3</text><text x="492" y="222.5" class="dg-body">Render template into innerHTML</text></g><g><rect x="452" y="246" width="268" height="36" rx="8" class="dg-box"/><circle cx="472" cy="264" r="10" class="dg-badge"/><text x="472" y="268" class="dg-badge-t" text-anchor="middle">4</text><text x="492" y="268.5" class="dg-body">Apply :prop bindings</text></g><g><rect x="452" y="292" width="268" height="36" rx="8" class="dg-box"/><circle cx="472" cy="310" r="10" class="dg-badge"/><text x="472" y="314" class="dg-badge-t" text-anchor="middle">5</text><text x="492" y="314.5" class="dg-body">Wire @event attributes, bind()</text></g><g><rect x="452" y="338" width="268" height="36" rx="8" class="dg-box"/><circle cx="472" cy="356" r="10" class="dg-badge"/><text x="472" y="360" class="dg-badge-t" text-anchor="middle">6</text><text x="492" y="360.5" class="dg-body">Restore focus and selection</text></g><g><rect x="452" y="384" width="268" height="36" rx="8" class="dg-box"/><circle cx="472" cy="402" r="10" class="dg-badge"/><text x="472" y="406" class="dg-badge-t" text-anchor="middle">7</text><text x="492" y="406.5" class="dg-body">Call mount()</text></g><rect x="452" y="436" width="268" height="104" rx="8" class="dg-box"/><text x="464" y="457" class="dg-label">TRIGGERED BY</text><text x="464" y="478" class="dg-note">a local write (when reactive)</text><text x="464" y="494.5" class="dg-note">a subscribed store key change</text><text x="464" y="511" class="dg-note">the hydration drift check</text><text x="464" y="527.5" class="dg-note">a direct this.update() call</text><path d="M404 466H434" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><text x="410" y="458" class="dg-note">runs</text><path d="M354 642H586V558" class="dg-edge" marker-end="url(#dg-arrow-component-lifecycle)"/><text x="470" y="634" class="dg-note">if drifted</text></svg>
+  </div>
+  <div class="side">
+    <ul class="facts">
+      <li><div class="fact-k">bind()</div><div class="fact-v">is all hydration does. A component re-renders only if a store key it uses drifted from the SSR snapshot.</div></li>
+      <li><div class="fact-k">7 steps</div><div class="fact-v">per <code>update()</code>: save focus, abort listeners, swap <code>innerHTML</code>, apply bindings, wire events, restore focus, <code>mount()</code>.</div></li>
+      <li><div class="fact-k">1 signal</div><div class="fact-v">per render. Listeners added with <code>this.on()</code> are dropped by an <code>AbortController</code> before the next one.</div></li>
+    </ul>
+    <a class="doc-link" href="https://github.com/lmf-git/takeover/blob/main/docs/05-components.md" target="_blank" rel="noopener">docs/05-components.md →</a>
+  </div>
+</div>
+
+<div class="panel" role="tabpanel" id="panel-registry" aria-labelledby="tab-registry" hidden>
+  <div class="diagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 444" role="img" aria-label="define() calls become one registry with three consumers"><title>define() calls become one registry with three consumers</title><defs><marker id="dg-arrow-tag-registry" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="dg-head"/></marker></defs><text x="24" y="36" class="dg-title">define() calls become one registry with three consumers</text><text x="24" y="56" class="dg-sub">scanTags() rebuilds it on every dev change and every build; nothing is configured by hand.</text><rect x="24" y="76" width="236" height="224" rx="10" class="dg-panel"/><text x="38" y="97" class="dg-label">SOURCE FILES</text><g><rect x="36" y="104" width="212" height="52" rx="8" class="dg-box"/><text x="48" y="125" class="dg-namem">components/HomeCTA/</text><text x="48" y="142.5" class="dg-mono">define('home-cta', …)</text></g><g><rect x="36" y="168" width="212" height="52" rx="8" class="dg-box"/><text x="48" y="189" class="dg-namem">app/NotFound/</text><text x="48" y="206.5" class="dg-mono">define('notfound-page', …)</text></g><g><rect x="36" y="232" width="212" height="52" rx="8" class="dg-box"/><text x="48" y="253" class="dg-namem">app/_Layout/</text><text x="48" y="270.5" class="dg-mono">define('app-layout', …)</text></g><path d="M248 130H272M248 194H272M248 258H272" class="dg-edge"/><path d="M272 258V126H282" class="dg-edge" marker-end="url(#dg-arrow-tag-registry)"/><g><rect x="284" y="92" width="260" height="68" rx="8" class="dg-box"/><text x="296" y="113" class="dg-namem">scanTags()</text><text x="296" y="130.5" class="dg-mono">core/scan.js</text><text x="296" y="147" class="dg-body">greps app/ and components/</text></g><path d="M414 160V186" class="dg-edge" marker-end="url(#dg-arrow-tag-registry)"/><g><rect x="284" y="188" width="260" height="104" rx="8" class="dg-accent"/><text x="296" y="209" class="dg-name">Registry: tag → folder</text><text x="296" y="226.5" class="dg-mono">home-cta → components/HomeCTA</text><text x="296" y="243" class="dg-mono">notfound-page → app/NotFound</text><text x="296" y="259.5" class="dg-mono">app-layout → app/_Layout</text><text x="296" y="276" class="dg-body">… one entry per define(), sorted</text></g><path d="M544 240H556M556 126V282" class="dg-edge"/><path d="M556 126H566" class="dg-edge" marker-end="url(#dg-arrow-tag-registry)"/><path d="M556 204H566" class="dg-edge" marker-end="url(#dg-arrow-tag-registry)"/><path d="M556 282H566" class="dg-edge" marker-end="url(#dg-arrow-tag-registry)"/><g><rect x="568" y="92" width="168" height="68" rx="8" class="dg-box"/><text x="580" y="113" class="dg-name">Browser loader</text><text x="580" y="130.5" class="dg-mono">window.__TAGS__</text><text x="580" y="147" class="dg-body">inlined in the HTML</text></g><g><rect x="568" y="170" width="168" height="68" rx="8" class="dg-box"/><text x="580" y="191" class="dg-name">Node SSR</text><text x="580" y="208.5" class="dg-mono">entry-server.js</text><text x="580" y="225" class="dg-body">calls scanTags()</text></g><g><rect x="568" y="248" width="168" height="68" rx="8" class="dg-box"/><text x="580" y="269" class="dg-name">Cloudflare worker</text><text x="580" y="286.5" class="dg-mono">_ssr-config.json</text><text x="580" y="303" class="dg-body">written by the build</text></g><path d="M652 316V346" class="dg-edge" marker-end="url(#dg-arrow-tag-registry)"/><text x="644" y="336" class="dg-note" text-anchor="end">all resolve through</text><g><rect x="24" y="348" width="712" height="72" rx="8" class="dg-box"/><text x="36" y="369" class="dg-namem">core/tags.js</text><text x="36" y="386.5" class="dg-mono">dirForTag('home-cta') → components/HomeCTA → HomeCTA.js · .html · .module.css · .css</text><text x="36" y="403" class="dg-body">Not in the registry? Convention: drop app-, PascalCase the rest (&lt;app-logo&gt; → components/Logo)</text></g></svg>
+  </div>
+  <div class="side">
+    <ul class="facts">
+      <li><div class="fact-k">0 mappings</div><div class="fact-v">kept by hand. Each <code>define()</code> call in <code>app/</code> or <code>components/</code> registers the folder it lives in.</div></li>
+      <li><div class="fact-k">3 readers</div><div class="fact-v">the browser loader via <code>window.__TAGS__</code>, the Node renderer, and the Cloudflare worker via <code>_ssr-config.json</code>.</div></li>
+      <li><div class="fact-k">1 fallback</div><div class="fact-v">for tags defined at runtime: drop <code>app-</code>, PascalCase the rest, so <code>&lt;app-logo&gt;</code> resolves to <code>components/Logo/</code>.</div></li>
+    </ul>
+    <a class="doc-link" href="https://github.com/lmf-git/takeover/blob/main/docs/05-components.md#discovery" target="_blank" rel="noopener">docs/05-components.md#discovery →</a>
+  </div>
+</div>
+
+<div class="panel" role="tabpanel" id="panel-build" aria-labelledby="tab-build" hidden>
+  <div class="diagram">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 562" role="img" aria-label="yarn build: one pass from source to two output trees"><title>yarn build: one pass from source to two output trees</title><defs><marker id="dg-arrow-build-pipeline" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="dg-head"/></marker></defs><text x="24" y="36" class="dg-title">yarn build: one pass from source to two output trees</text><text x="24" y="56" class="dg-sub">Left: what is read. Middle: what core/server/build.js does. Right: what the hosts read.</text><rect x="24" y="76" width="184" height="332" rx="10" class="dg-panel"/><text x="38" y="97" class="dg-label">SOURCE</text><g><rect x="36" y="104" width="160" height="48" rx="8" class="dg-box"/><text x="48" y="125" class="dg-namem">entry-client.js</text><text x="48" y="142.5" class="dg-body">plus static imports</text></g><g><rect x="36" y="164" width="160" height="48" rx="8" class="dg-box"/><text x="48" y="185" class="dg-namem">app/ components/</text><text x="48" y="202.5" class="dg-body">pages, components</text></g><g><rect x="36" y="224" width="160" height="48" rx="8" class="dg-box"/><text x="48" y="245" class="dg-namem">core/ lib/</text><text x="48" y="262.5" class="dg-body">framework, helpers</text></g><g><rect x="36" y="284" width="160" height="48" rx="8" class="dg-box"/><text x="48" y="305" class="dg-namem">index.html</text><text x="48" y="322.5" class="dg-body">plus globals.css</text></g><g><rect x="36" y="344" width="160" height="48" rx="8" class="dg-box"/><text x="48" y="365" class="dg-namem">locales/ public/</text><text x="48" y="382.5" class="dg-body">plus app.config.yml</text></g><path d="M208 256H230" class="dg-edge" marker-end="url(#dg-arrow-build-pipeline)"/><rect x="232" y="76" width="288" height="360" rx="10" class="dg-panel"/><text x="246" y="97" class="dg-label">BUILD.JS, IN ORDER</text><g><rect x="248" y="104" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="118" r="10" class="dg-badge"/><text x="268" y="122" class="dg-badge-t" text-anchor="middle">1</text><text x="288" y="122.5" class="dg-body">Bundle the entry graph (IIFE)</text></g><g><rect x="248" y="136" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="150" r="10" class="dg-badge"/><text x="268" y="154" class="dg-badge-t" text-anchor="middle">2</text><text x="288" y="154.5" class="dg-body">Copy, minify, imports → __r()</text></g><g><rect x="248" y="168" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="182" r="10" class="dg-badge"/><text x="268" y="186" class="dg-badge-t" text-anchor="middle">3</text><text x="288" y="186.5" class="dg-body">Extract inline &lt;script&gt; blocks</text></g><g><rect x="248" y="200" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="214" r="10" class="dg-badge"/><text x="268" y="218" class="dg-badge-t" text-anchor="middle">4</text><text x="288" y="218.5" class="dg-body">Hash app/ + components/ → __M__</text></g><g><rect x="248" y="232" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="246" r="10" class="dg-badge"/><text x="268" y="250" class="dg-badge-t" text-anchor="middle">5</text><text x="288" y="250.5" class="dg-body">Write routes.json</text></g><g><rect x="248" y="264" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="278" r="10" class="dg-badge"/><text x="268" y="282" class="dg-badge-t" text-anchor="middle">6</text><text x="288" y="282.5" class="dg-body">Write _template.html (SSR)</text></g><g><rect x="248" y="296" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="310" r="10" class="dg-badge"/><text x="268" y="314" class="dg-badge-t" text-anchor="middle">7</text><text x="288" y="314.5" class="dg-body">Write index.html (CSR)</text></g><g><rect x="248" y="328" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="342" r="10" class="dg-badge"/><text x="268" y="346" class="dg-badge-t" text-anchor="middle">8</text><text x="288" y="346.5" class="dg-body">Copy locales, public/, worker</text></g><g><rect x="248" y="360" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="374" r="10" class="dg-badge"/><text x="268" y="378" class="dg-badge-t" text-anchor="middle">9</text><text x="288" y="378.5" class="dg-body">Write _ssr-config.json</text></g><g><rect x="248" y="392" width="256" height="28" rx="8" class="dg-box"/><circle cx="268" cy="406" r="10" class="dg-badge"/><text x="268" y="410" class="dg-badge-t" text-anchor="middle">10</text><text x="288" y="410.5" class="dg-body">Copy server tree as .mjs</text></g><path d="M520 168H542" class="dg-edge" marker-end="url(#dg-arrow-build-pipeline)"/><path d="M520 336H542" class="dg-edge" marker-end="url(#dg-arrow-build-pipeline)"/><rect x="544" y="76" width="192" height="184" rx="10" class="dg-panel"/><text x="558" y="97" class="dg-label">DIST/CLIENT (SERVED)</text><text x="558" y="120" class="dg-mono">_template.html</text><text x="558" y="136" class="dg-mono">index.html</text><text x="558" y="152" class="dg-mono">app/**.&lt;hash&gt;.js</text><text x="558" y="168" class="dg-mono">components/**.&lt;hash&gt;.js</text><text x="558" y="184" class="dg-mono">core/ lib/ (minified)</text><text x="558" y="200" class="dg-mono">routes.json</text><text x="558" y="216" class="dg-mono">_ssr-config.json</text><text x="558" y="232" class="dg-mono">_worker.js</text><text x="558" y="248" class="dg-mono">locales/ fonts/</text><rect x="544" y="276" width="192" height="120" rx="10" class="dg-panel"/><text x="558" y="297" class="dg-label">DIST/SERVER (SSR)</text><text x="558" y="320" class="dg-mono">core/ lib/ as .mjs</text><text x="558" y="336" class="dg-mono">app/ components/</text><text x="558" y="352" class="dg-mono">locales/</text><text x="558" y="368" class="dg-mono">app.config.yml</text><text x="558" y="384" class="dg-mono">_assets-manifest.json</text><path d="M640 396V444H136" class="dg-edge"/><path d="M136 444V466" class="dg-edge" marker-end="url(#dg-arrow-build-pipeline)"/><path d="M380 444V466" class="dg-edge" marker-end="url(#dg-arrow-build-pipeline)"/><path d="M624 444V466" class="dg-edge" marker-end="url(#dg-arrow-build-pipeline)"/><text x="160" y="438" class="dg-note">deployed to</text><g><rect x="24" y="468" width="224" height="70" rx="8" class="dg-box"/><text x="36" y="489" class="dg-name">Netlify</text><text x="36" y="506.5" class="dg-body">files from dist/client,</text><text x="36" y="523" class="dg-body">function renders from dist/server</text></g><g><rect x="268" y="468" width="224" height="70" rx="8" class="dg-box"/><text x="280" y="489" class="dg-name">Static host</text><text x="280" y="506.5" class="dg-body">index.html plus an SPA</text><text x="280" y="523" class="dg-body">rewrite; no server rendering</text></g><g><rect x="512" y="468" width="224" height="70" rx="8" class="dg-box"/><text x="524" y="489" class="dg-name">Cloudflare Pages</text><text x="524" y="506.5" class="dg-body">_worker.js renders,</text><text x="524" y="523" class="dg-body">env.ASSETS serves files</text></g></svg>
+  </div>
+  <div class="side">
+    <ul class="facts">
+      <li><div class="fact-k">17 → 1</div><div class="fact-v">modules bundled into one IIFE, 59.9 kB minified, inlined into the HTML so first paint needs no script request.</div></li>
+      <li><div class="fact-k">17.2 kB</div><div class="fact-v">for that bundle gzipped. Lazy page and component modules are content-hashed, so hosts can cache them as immutable.</div></li>
+      <li><div class="fact-k">2 shells</div><div class="fact-v"><code>_template.html</code> for SSR hosts and a pre-filled <code>index.html</code> for static hosts, from one build in 0.1–0.3 s.</div></li>
+    </ul>
+    <a class="doc-link" href="https://github.com/lmf-git/takeover/blob/main/docs/09-build-and-deploy.md" target="_blank" rel="noopener">docs/09-build-and-deploy.md →</a>
+  </div>
+</div>
+
+<p class="guide">{{t.internals.guide}} <a href="https://github.com/lmf-git/takeover/tree/main/docs" target="_blank" rel="noopener">github.com/lmf-git/takeover/tree/main/docs</a></p>

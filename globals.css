@@ -96,7 +96,7 @@ body {
 app-layout, app-router, app-navigation, home-page, notfound-page,
 app-logo, app-footer, triangle-seam, home-quickstart, home-demos,
 home-performance, home-features, home-structure, home-architecture,
-home-cta, hero-counter { display: block; }
+home-cta, home-internals, hero-counter { display: block; }
 
 app-layout { contain: layout style; }
 

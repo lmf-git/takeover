@@ -59,6 +59,12 @@
     "title": "Cómo fluye una petición.",
     "sub": "Sin virtual DOM. Sin desajuste de hidratación. El navegador procesa Declarative Shadow DOM antes que el JS — hidratar es sólo enlazar eventos."
   },
+  "internals": {
+    "eyebrow": "Bajo el capó",
+    "title": "Cinco diagramas, contrastados con el código.",
+    "sub": "Cada uno viene de la guía para desarrolladores en docs/ y se verificó leyendo el código y ejecutando un build. Las cifras que los acompañan se midieron en este sitio.",
+    "guide": "La guía completa para desarrolladores, en doce capítulos:"
+  },
   "cta": {
     "title": "Toma el control.",
     "sub": "Clona el starter, lanza en una tarde.",

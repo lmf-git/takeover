@@ -25,6 +25,8 @@ export default class Navigation extends Component {
     const current = document.documentElement.getAttribute('data-theme') || 'dark';
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
+    // index.html reads this before first paint, so the choice survives a reload.
+    try { localStorage.setItem('theme', next); } catch {}
     this.#syncTheme();
   }
 }

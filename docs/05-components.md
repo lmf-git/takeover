@@ -47,7 +47,7 @@ Use it as `<app-greeting></app-greeting>`, written empty so SSR can expand it. T
 | `reactive` | boolean, default `true` | `false` stops `local` writes from re-rendering |
 | `metadata` | `{ title, description }` | Merged into the store's `meta` on connect; for pages SSR also writes it into `<head>` |
 | `requiresAuth` | boolean | Pages only: redirect to `/login?from=…` unless `isAuthenticated` |
-| `ssrProps` | object | Pages only; read by SSR from the source text, never by the class |
+| `ssrProps` | object | Pages only: fixed template data. Read from the source text by SSR and carried in the route table, so the Router passes the same values to the client as `pageProps` |
 | `cssModule`, `css` | string | Explicit stylesheet URLs; default to the sibling `Name.module.css` and `Name.css` |
 | `cssModuleText`, `cssText` | string | Filled in by the build; don't set them by hand |
 
@@ -64,7 +64,9 @@ Use it as `<app-greeting></app-greeting>`, written empty so SSR can expand it. T
 
 `connectedCallback` loads the template (inline or fetched), resolves CSS (inlined text, then `cssModule`, then `css`, then a sibling `.module.css`, then a sibling `.css`) and merges `metadata` into the store. With a server-rendered shadow root it only binds events; otherwise it attaches a shadow root and calls `update()`. It then subscribes to the `static store` keys, plus `messages` when the template mentions `t.`; a hydrated component finally calls `mount()` and re-renders only if one of those keys drifted from the SSR snapshot.
 
-`update()` saves the focused element and its selection, aborts the previous render's `AbortController` (dropping every listener added through `this.on`), renders the template into `shadowRoot.innerHTML`, applies `:prop` bindings, wires `@event` attributes, calls `bind()`, restores focus and calls `mount()`. Client-rendered components with `static local` render twice on connect.
+`update()` saves the focused element and its selection, aborts the previous render's `AbortController` (dropping every listener added through `this.on`), renders the template into `shadowRoot.innerHTML`, applies `:prop` bindings, wires `@event` attributes, calls `bind()`, restores focus and calls `mount()`.
+
+Writes to `local` and changes to subscribed store keys do not call `update()` on the spot: they queue one render for the end of the current task, so `this.local.a = 1; this.local.b = 2` (or a locale switch, which changes both `locale` and `messages`) re-renders once. Call `update()` yourself when the DOM has to be current on the very next line.
 
 ## Instance helpers
 
@@ -83,14 +85,14 @@ Use it as `<app-greeting></app-greeting>`, written empty so SSR can expand it. T
 | `this.cx(...)` | Class names from strings, arrays and `{ name: bool }`, mapped through the CSS Module |
 | `this.state` | Store snapshot, refreshed when a subscribed key changes |
 | `this.props` | What the template sees (see [Templates and styling](06-templates-and-styling.md#what-a-template-can-see)) |
-| `this.pageProps` | `{ path, params, query }`, set by the Router on client-side navigation only |
+| `this.pageProps` | `{ ...ssrProps, path, params, query }`, set by the Router on pages — on client navigation and when it hydrates a server-rendered page |
 | `this.update()` | Re-render now |
 
 ## Discovery
 
 ![define() calls become one registry with three consumers](images/tag-registry.svg)
 
-`scanTags()` in `core/scan.js` greps `app/` and `components/` for `define('<tag>'` (including `_`-prefixed folders and `.html` and `.mjs` files) and records the declaring folder, sorted so build hashes stay stable. The browser loader gets the registry as `window.__TAGS__`, the Node SSR entry calls `scanTags()` directly, and the Cloudflare worker reads `dist/client/_ssr-config.json`. All three resolve file paths through `core/tags.js`. A tag missing from the registry falls back to convention: drop an `app-` prefix, PascalCase the rest, and look in `components/`, or in `app/` for `-page` tags.
+`scanComponents()` in `core/scan.js` greps `app/` and `components/` for `define('<tag>'` (including `_`-prefixed folders and `.html` and `.mjs` files) and records the declaring file without its extension (`components/HomeCTA/HomeCTA`), sorted so build hashes stay stable; it also collects each component's `static local` for SSR. The browser loader gets the registry as `window.__TAGS__`, the Node SSR entry calls `scanComponents()` directly, and the Cloudflare worker reads `dist/client/_ssr-config.json`. All three resolve file paths through `core/tags.js`. A tag missing from the registry falls back to convention: drop an `app-` prefix, PascalCase the rest, and look in `components/`, or in `app/` for `-page` tags.
 
 ## How a component's JavaScript arrives
 

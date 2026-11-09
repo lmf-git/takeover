@@ -1,21 +1,36 @@
 // Shared SSR rendering logic - platform agnostic
-import { renderWithExpressions, escapeHtml } from '../template.js';
+import { renderWithExpressions, escapeHtml, evaluate, extractStyles, scopeCSS, jsonForScript } from '../template.js';
 import { matchRoute } from '../routes.js';
 
-const cache = { templates: new Map(), css: new Map() };
-
-const extractStyles = html => {
-  let styles = '';
-  return { content: html.replace(/<style>([\s\S]*?)<\/style>/gi, (_, c) => (styles += c, '')), styles };
-};
-
+// Same class-scoping transform the client runs (core/template.js scopeCSS).
 const processCSS = (raw, scope) => {
-  const classes = {};
-  const css = raw.replace(/\.([a-zA-Z_][\w-]*)/g, (_, c) => (classes[c] = `${c}_${scope}`, `.${classes[c]}`));
-  return { css, classes };
+  const { styles, classes } = scopeCSS(raw, scope);
+  return { css: styles, classes };
 };
 
-export function createRenderer({ loadFile, resolvePaths }) {
+// The opening tag of a custom element that has no declarative shadow root yet.
+// Expanding from the opening tag (rather than an empty `<x-y></x-y>` pair) keeps
+// whatever the element contains as light DOM, so components with children —
+// slotted content — are server-rendered too.
+const DSD_OPEN = '<template shadowrootmode="open">';
+const HOST_RE = /<([a-z][a-z0-9]*(?:-[a-z0-9]+)+)((?:\s[^>]*)?)>(?!<template shadowrootmode=)/g;
+const PROP_BINDING_RE = /\s:([a-zA-Z_][\w-]*)="([^"]+)"/g;
+
+// The CSS-module helpers a template sees, same as the client's `props`.
+const cssProps = classes => ({ $css: classes, $c: (...names) => names.map(n => classes[n] || n).join(' ') });
+
+/**
+ * @param {Object} deps
+ * @param {(path: string) => Promise<string>} deps.loadFile
+ * @param {(tag: string) => ({ tpl, css, plainCss } | null)} deps.resolvePaths
+ * @param {Object<string, Object>} [deps.locals] tag → the component's `static local`
+ *   (core/scan.js scanComponents). The server never imports component modules, so
+ *   this is how a nested component's initial state reaches its template.
+ */
+export function createRenderer({ loadFile, resolvePaths, locals = {} }) {
+  // Per-renderer, not per-module: the dev server builds a fresh renderer whenever
+  // a source file changes, which is what drops stale templates and CSS.
+  const cache = { templates: new Map(), css: new Map() };
 
   async function load(tag) {
     if (cache.templates.has(tag)) return { tpl: cache.templates.get(tag), css: cache.css.get(tag) };
@@ -45,38 +60,37 @@ export function createRenderer({ loadFile, resolvePaths }) {
     return { tpl, css };
   }
 
-  async function renderComponent(tag, props, attrs = '') {
+  /** The element's declarative shadow root, or null when the tag has no template. */
+  async function renderShadow(tag, props) {
     const { tpl, css } = await load(tag);
     if (!tpl) return null;
-    const rendered = renderWithExpressions(tpl, { ...props, $css: css.classes });
+    const rendered = renderWithExpressions(tpl, { ...props, ...cssProps(css.classes) });
     const { content, styles } = extractStyles(rendered);
     const allStyles = (css.css || '') + (styles || '');
-    const safeAttrs = attrs.replace(/\s*:[\w-]+="[^"]*"/g, '');
-    return `<${tag}${safeAttrs}><template shadowrootmode="open">${allStyles ? `<style>${allStyles}</style>` : ''}${content}</template></${tag}>`;
+    return `${DSD_OPEN}${allStyles ? `<style>${allStyles}</style>` : ''}${content}</template>`;
   }
 
+  // Expand every custom element in `html`, then the ones their templates bring
+  // in, pass by pass. Each element renders with the surrounding props, its own
+  // `static local` on top (as on the client), and any :prop="expr" bindings.
   async function renderComponents(html, props, max = 50) {
     let result = html;
+    // Tags with no template (unknown elements, the router) can never expand —
+    // remember them so they don't keep the loop spinning to `max`.
+    const inert = new Set(['app-router']);
     for (let i = 0; i < max; i++) {
-      const matches = [...result.matchAll(/<([a-z]+-[a-z-]+)([^>]*)><\/\1>/g)];
-      if (!matches.length) break;
-      for (const [full, tag, attrs] of matches) {
-        if (tag === 'app-router') continue;
-        // Extract :prop="expr" bindings from attributes and evaluate them
-        let childProps = props;
-        const propBindings = [...(attrs || '').matchAll(/\s:([a-zA-Z_][\w-]*)="([^"]+)"/g)];
-        if (propBindings.length) {
-          const boundProps = {};
-          for (const [, propName, expr] of propBindings) {
-            // Simple expression evaluation for SSR
-            const value = expr.split('.').reduce((o, k) => o?.[k], props);
-            boundProps[propName] = value;
-          }
-          childProps = { ...props, ...boundProps };
-        }
-        const rendered = await renderComponent(tag, childProps, attrs);
-        if (rendered) result = result.replace(full, rendered);
+      const pending = new Map(); // opening tag as written → its replacement
+      for (const [open, tag, attrs] of result.matchAll(HOST_RE)) {
+        if (inert.has(tag) || pending.has(open)) continue;
+        const bound = {};
+        // Same evaluator as the client, so both sides agree on the value.
+        for (const [, name, expr] of attrs.matchAll(PROP_BINDING_RE)) bound[name] = evaluate(expr, props);
+        const shadow = await renderShadow(tag, { ...props, ...locals[tag], ...bound });
+        if (shadow == null) { inert.add(tag); continue; }
+        pending.set(open, `<${tag}${attrs.replace(PROP_BINDING_RE, '')}>${shadow}`);
       }
+      if (!pending.size) break;
+      result = result.replace(HOST_RE, open => pending.get(open) ?? open);
     }
     return result;
   }
@@ -96,8 +110,8 @@ export function createRenderer({ loadFile, resolvePaths }) {
   return async function render(url, routes, state = {}, options = {}) {
     const { otherLocales = null, localeConfig = null } = options;
     const localesScript =
-      (otherLocales && Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${JSON.stringify(otherLocales)}</script>` : '') +
-      (localeConfig ? `<script>window.__LOCALE_CONFIG__=${JSON.stringify(localeConfig)}</script>` : '');
+      (otherLocales && Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${jsonForScript(otherLocales)}</script>` : '') +
+      (localeConfig ? `<script>window.__LOCALE_CONFIG__=${jsonForScript(localeConfig)}</script>` : '');
 
     const [pathname, search] = url.split('?');
     const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
@@ -111,22 +125,30 @@ export function createRenderer({ loadFile, resolvePaths }) {
 
     const ssrProps = typeof route.ssrProps === 'function' ? route.ssrProps({ path: url, params }) : route.ssrProps || {};
     const query = Object.fromEntries(new URLSearchParams(search || ''));
-    const props = { ...state, ...ssrProps, path: url, params, query, redirectFrom: query.from || null, timestamp: new Date().toLocaleString(), year: new Date().getFullYear(), t: state.messages || {} };
+    // Same layering as the client's `props`: store, the page's `static local`, then
+    // what the route supplies.
+    const props = { ...state, ...locals[route.component], ...ssrProps, path: url, params, query, redirectFrom: query.from || null, timestamp: new Date().toLocaleString(), year: new Date().getFullYear(), t: state.messages || {} };
 
     const { tpl: layoutTpl, css: layoutCss } = await load('app-layout');
-    const layoutRendered = renderWithExpressions(layoutTpl, { ...props, $css: layoutCss.classes });
+    const layoutRendered = renderWithExpressions(layoutTpl, { ...props, ...cssProps(layoutCss.classes) });
     const { content: layoutContent, styles: layoutStyles } = extractStyles(layoutRendered);
 
-    let pageHtml = await renderComponent(route.component, props) || '<h1>Page not found</h1>';
+    const pageShadow = await renderShadow(route.component, props);
+    let pageHtml = pageShadow ? `<${route.component}>${pageShadow}</${route.component}>` : '<h1>Page not found</h1>';
     pageHtml = await renderComponents(pageHtml, props);
 
-    let finalLayout = layoutContent.replace(/<app-router[^>]*><\/app-router>/g, `<app-router><div id="outlet">${pageHtml}</div></app-router>`);
+    // Function-form replacement: the rendered HTML may contain $&, $$, $' …
+    let finalLayout = layoutContent.replace(/<app-router[^>]*><\/app-router>/g, () => `<app-router><div id="outlet">${pageHtml}</div></app-router>`);
     finalLayout = await renderComponents(finalLayout, props);
 
     const allLayoutStyles = (layoutCss.css || '') + (layoutStyles || '');
-    const appHtml = `<template shadowrootmode="open">${allLayoutStyles ? `<style>${allLayoutStyles}</style>` : ''}${finalLayout}</template>`;
+    const appHtml = `${DSD_OPEN}${allLayoutStyles ? `<style>${allLayoutStyles}</style>` : ''}${finalLayout}</template>`;
 
-    const meta = route.metadata || state.meta || {};
+    // state.site carries the site-wide defaults (app.config.yml site.title /
+    // site.description); the page's own metadata wins field by field. The resolved
+    // meta is what the client store starts from, so the <head> it syncs matches
+    // the one rendered here.
+    const meta = { ...state.site, ...state.meta, ...route.metadata };
     // Modulepreload the SSR'd page's script so it fetches in parallel with the core bundle
     // instead of waiting for core to parse and trigger the Router's dynamic import.
     const pagePreload = route.module ? `<link rel="modulepreload" href="${route.module}">` : '';
@@ -136,8 +158,9 @@ export function createRenderer({ loadFile, resolvePaths }) {
       meta.description && `<meta name="description" content="${escapeHtml(meta.description)}">`,
     ].filter(Boolean).join('');
 
-    // '*' is withNotFound's clone of the NotFound page (core/routes.js).
-    const status = route.path === '*' ? 404 : 200;
-    return { status, appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${JSON.stringify(state)}</script>`, headMeta, localesScript };
+    // '*' is withNotFound's clone of the NotFound page (core/routes.js); the page's
+    // own URL (/notfound) is a 404 too, not a real 200 document.
+    const status = route.path === '*' || route.component === 'notfound-page' ? 404 : 200;
+    return { status, appHtml, initialStateScript: `<script>window.__INITIAL_STATE__=${jsonForScript({ ...state, meta })}</script>`, headMeta, localesScript };
   };
 }

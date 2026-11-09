@@ -1,5 +1,5 @@
 import store from '../lib/store.js';
-import { renderWithExpressions, extractPropBindings, evaluatePropBindings } from './template.js';
+import { renderWithExpressions, extractPropBindings, evaluatePropBindings, extractStyles, scopeCSS } from './template.js';
 
 const isBrowser = typeof window !== 'undefined';
 const cache = { templates: new Map(), css: new Map() };
@@ -18,14 +18,8 @@ export const loadTemplate = async url => {
   return cache.templates.get(url);
 };
 
-// CSS Modules without PostCSS: every class name gets the element's tag appended
-// (.inner → .inner_app-footer) and the original→scoped map is exposed to templates
-// as $css. Element/pseudo selectors are untouched. ssr.js runs the same transform.
-export const scopeCSS = (raw, scope) => {
-  const classes = {};
-  const styles = raw.replace(/\.([a-zA-Z_][\w-]*)/g, (_, n) => (classes[n] = `${n}_${scope}`, `.${classes[n]}`));
-  return { styles, classes };
-};
+// CSS Modules scoping lives in core/template.js so ssr.js runs the identical transform.
+export { scopeCSS };
 
 const loadCSS = async (url, scope) => {
   const key = `${url}:${scope}`;
@@ -39,11 +33,6 @@ const loadPlainCSS = async url => {
     cache.css.set(url, { styles: raw, classes: {} });
   }
   return cache.css.get(url);
-};
-
-const extractStyles = html => {
-  let styles = '';
-  return { content: html.replace(/<style>([\s\S]*?)<\/style>/gi, (_, css) => (styles += css, '')), styles };
 };
 
 /**
@@ -86,7 +75,7 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
   /** @type {boolean} Auto-update on local state changes (default: true) */
   static reactive = true;
 
-  #subs = []; #ac = null; #local = {}; #tpl = ''; #bindings = []; #css = { classes: {}, styles: '' }; #hydrating = false; #batching = false;
+  #subs = []; #ac = null; #local = {}; #tpl = ''; #bindings = []; #css = { classes: {}, styles: '' }; #hydrating = false; #batching = false; #queued = false;
 
   constructor() {
     super();
@@ -99,7 +88,7 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
         t[k] = v;
         this.onLocalChange?.(k, v);
         // Auto-update if reactive (default), not batching, and onLocalChange didn't handle it
-        if (this.constructor.reactive && !this.#batching && !this.onLocalChange) this.update();
+        if (this.constructor.reactive && !this.#batching && !this.onLocalChange) this.#schedule();
         return true;
       },
       get: (t, k) => t[k]
@@ -109,7 +98,7 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
   get signal() { return this.#ac?.signal; }
 
   async connectedCallback() {
-    this.#ac = new AbortController();
+    const ac = this.#ac = new AbortController();
     const { template, templateUrl, cssModule, cssModuleText, cssText, css: cssFile, metadata } = this.constructor;
 
     const rawTpl = template || (templateUrl ? await loadTemplate(templateUrl) : '');
@@ -144,6 +133,10 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
       if (plain.styles) this.#css = { styles: (this.#css.styles || '') + plain.styles, classes: this.#css.classes };
     }
 
+    // Removed (or removed and re-added) while the template/CSS were loading:
+    // this connect is stale. Subscribing now would leak a detached element.
+    if (ac.signal.aborted || !this.isConnected) return;
+
     this.state = store.get();
     if (metadata) store.setMeta(metadata);
 
@@ -151,16 +144,18 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     if (hadSSR) { this.#hydrating = true; this.#bind(); }
     else { this.attachShadow({ mode: 'open' }); this.update(); }
 
-    this.constructor.store.forEach(p => this.#subs.push(store.on(p, () => (this.state = store.get(), this.update()))));
+    // Store-driven renders are coalesced: store.set({ locale, messages }) fires two
+    // change events, and a component listening to both should render once, not twice.
+    const onStore = () => { this.state = store.get(); this.#schedule(); };
+    this.constructor.store.forEach(p => this.#subs.push(store.on(p, onStore)));
     // Auto-subscribe to messages only if the template actually uses t.* expressions
     if (!this.constructor.store.includes('messages') && /(^|[^a-zA-Z0-9_])t\.[a-z]/.test(this.#tpl)) {
-      this.#subs.push(store.on('messages', () => (this.state = store.get(), this.update())));
+      this.#subs.push(store.on('messages', onStore));
     }
     // For SSR hydration the shadowRoot already exists and update() didn't run,
     // so mount() hasn't been invoked yet. For client-only !hadSSR, update() already called mount().
     if (hadSSR) this.mount?.();
     this.#hydrating = false;
-    if (!hadSSR && Object.keys(this.#local).length) this.update();
     // Re-sync if store changed since SSR render (locale race condition).
     // Compare against __INITIAL_STATE__ (SSR snapshot) — by the time connectedCallback resolves
     // initLocale() has already updated the store. Components that use t.* also check locale.
@@ -177,9 +172,19 @@ export class Component extends (isBrowser ? HTMLElement : class {}) {
     }
   }
 
-  disconnectedCallback() { this.#ac?.abort(); this.#subs.forEach(fn => fn()); this.unmount?.(); }
+  disconnectedCallback() { this.#ac?.abort(); this.#subs.forEach(fn => fn()); this.#subs = []; this.unmount?.(); }
+
+  // Queue one render for the end of the current task. Several local/store writes
+  // in a row (this.local.a = 1; this.local.b = 2) cost a single re-render; call
+  // update() directly when the DOM must be current on the next line.
+  #schedule() {
+    if (this.#queued) return;
+    this.#queued = true;
+    queueMicrotask(() => { if (this.#queued && this.isConnected) this.update(); else this.#queued = false; });
+  }
 
   update() {
+    this.#queued = false;
     if (!this.shadowRoot || this.#hydrating || !this.#tpl) return;
     const active = this.shadowRoot.activeElement;
     const focus = active ? { sel: active.id ? `#${active.id}` : `${active.tagName}[name="${active.name}"]`, start: active.selectionStart, end: active.selectionEnd } : null;

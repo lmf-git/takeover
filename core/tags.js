@@ -1,4 +1,4 @@
-// Custom-element tag → source-directory resolution.
+// Custom-element tag → source-file resolution.
 //
 // Every place that has to turn a tag into a file path shares this module: the
 // browser auto-loader (core/loader.js), the Node SSR renderer
@@ -7,10 +7,11 @@
 //
 // The registry itself is *discovered*, never hand-maintained: core/scan.js walks
 // app/ and components/ for `define('<tag>', …)` calls and maps each tag to the
-// directory that declares it. That result reaches consumers as window.__TAGS__
-// (browser), a direct argument (Node SSR), or _ssr-config.json (edge adapters).
-// Core therefore carries no project-specific tag names, and a tag whose folder
-// doesn't match the naming convention needs no configuration anywhere.
+// file stem that declares it ('home-cta' → 'components/HomeCTA/HomeCTA'). That
+// result reaches consumers as window.__TAGS__ (browser), a direct argument
+// (Node SSR), or _ssr-config.json (edge adapters). Core therefore carries no
+// project-specific tag names, and a tag whose folder or file doesn't match the
+// naming convention needs no configuration anywhere.
 
 /** Matches `define('my-tag', …)` and `customElements.define('my-tag', …)`. */
 export const DEFINE_RE = /\bdefine\(\s*['"]([a-z][a-z0-9]*(?:-[a-z0-9]+)+)['"]/g;
@@ -22,31 +23,29 @@ export const pascalFor = tag =>
 /**
  * Convention-based guess, used only when a tag is absent from the registry —
  * an element defined at runtime, or a consumer that received no registry.
- * Pages live in app/, everything else in components/.
+ * Pages live in app/, everything else in components/; the file is named after
+ * its folder.
  */
-export const fallbackDir = tag => tag.endsWith('-page')
-  ? `app/${pascalFor(tag.replace(/-page$/, ''))}`
-  : `components/${pascalFor(tag)}`;
+export const fallbackStem = tag => {
+  const name = pascalFor(tag.replace(/-page$/, ''));
+  return `${tag.endsWith('-page') ? 'app' : 'components'}/${name}/${name}`;
+};
 
-/** Resolve a tag to its source directory: 'home-cta' → 'components/HomeCTA'. */
-export const dirForTag = (tag, registry) => (registry && registry[tag]) || fallbackDir(tag);
-
-/** File stem inside that directory: 'app/_Layout' → '_Layout'. */
-export const baseName = dir => dir.slice(dir.lastIndexOf('/') + 1);
+/** Resolve a tag to its extension-less source path: 'home-cta' → 'components/HomeCTA/HomeCTA'. */
+export const stemForTag = (tag, registry) => (registry && registry[tag]) || fallbackStem(tag);
 
 /**
  * Root-relative URLs for every file a tag may own. Callers pick what they need:
  * the loader wants `js`, the SSR renderers want `html` / `moduleCss` / `css`.
  */
 export function pathsForTag(tag, registry) {
-  const dir = dirForTag(tag, registry);
-  const base = baseName(dir);
+  const stem = stemForTag(tag, registry);
   return {
-    dir,
-    base,
-    js: `/${dir}/${base}.js`,
-    html: `/${dir}/${base}.html`,
-    moduleCss: `/${dir}/${base}.module.css`,
-    css: `/${dir}/${base}.css`,
+    stem,
+    dir: stem.slice(0, stem.lastIndexOf('/')),
+    js: `/${stem}.js`,
+    html: `/${stem}.html`,
+    moduleCss: `/${stem}.module.css`,
+    css: `/${stem}.css`,
   };
 }

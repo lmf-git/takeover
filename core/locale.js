@@ -23,13 +23,42 @@ export function rankLanguages(header) {
     .map(e => e.code);
 }
 
+/** Read one cookie's (decoded) value out of a Cookie header, or null. */
+export function readCookie(cookieHeader, name) {
+  for (const part of (cookieHeader || '').split(';')) {
+    const eq = part.indexOf('=');
+    if (eq === -1 || part.slice(0, eq).trim() !== name) continue;
+    const raw = part.slice(eq + 1).trim();
+    try { return decodeURIComponent(raw); } catch { return raw; }
+  }
+  return null;
+}
+
 /** Read the `locale` cookie out of a Cookie header. Returns a primary subtag or null. */
 export function localeFromCookie(cookieHeader) {
-  const m = (cookieHeader || '').match(/(?:^|;\s*)locale=([^;]+)/);
-  if (!m) return null;
-  let raw = m[1];
-  try { raw = decodeURIComponent(raw); } catch {}
-  return primary(raw) || null;
+  return primary(readCookie(cookieHeader, 'locale')) || null;
+}
+
+/**
+ * Per-request SSR state shared by every adapter: the active locale's messages,
+ * `site` (the default <title>/description from app.config.yml — a page's own
+ * `metadata` wins), and whether the visitor carries the session cookie named by
+ * `auth.cookie`.
+ *
+ * The cookie check is presence only. It decides whether to server-render a
+ * `requiresAuth` page or redirect to /login — a routing convenience, not access
+ * control: whatever the page loads must still be authorised by the API it calls.
+ */
+export function requestState(defaults, { locale, messages, cookie, config }) {
+  const { title, description } = config.site || {};
+  const authCookie = config.auth?.cookie;
+  return {
+    ...defaults,
+    site: { ...(title && { title }), ...(description && { description }) },
+    locale,
+    messages,
+    ...(authCookie && { isAuthenticated: !!readCookie(cookie, authCookie) }),
+  };
 }
 
 /**

@@ -229,7 +229,8 @@ export async function bundle(entryAbs, root, { minify = false, transform = null 
 
   const code = parts.join('');
   const hash = createHash('sha256').update(code).digest('hex').slice(0, 8);
-  return { code, hash };
+  // `modules` lets the build know which imports the registry can satisfy.
+  return { code, hash, modules: order };
 }
 
 // ─── Dependency list (for preload generation) ─────────────────────────────────

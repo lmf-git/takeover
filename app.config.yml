@@ -7,6 +7,20 @@
 # still runs with discovered locales and no preloads.
 # ─────────────────────────────────────────────────────────────────────────────
 
+site:
+  # Public origin of the deployed site. When set, `yarn build` writes sitemap.xml
+  # from the route table and points robots.txt at it. Omit to emit neither.
+  url: https://takeover.dev
+  # <title> and meta description for pages that declare no `static metadata`.
+  title: Takeover
+  description: Zero-dependency full-stack framework built on Web Components.
+
+# Name of the session cookie your backend sets. When a request carries it, SSR
+# renders `requiresAuth` pages (and seeds `isAuthenticated` in the store) instead
+# of redirecting to /login. Presence only — authorise the data in your API.
+# auth:
+#   cookie: session
+
 locales:
   # Supported locale codes. Omit (or set `auto`) to discover from locales/*.json.
   supported: [en, es, fr]

@@ -24,7 +24,7 @@ This README is the overview. The [developer guide in `docs/`](docs/README.md) is
 | [8. Routing and navigation](docs/08-routing-and-navigation.md) | Folder-to-route rules, the Router element, navigation API, guards |
 | [9. Build and deployment](docs/09-build-and-deploy.md) | The ten build steps, the output trees, bundler, minifier, hosts |
 | [10. Recipes](docs/10-recipes.md) | Step-by-step changes: pages, components, routes, auth, locales, deploys |
-| [11. Gotchas](docs/11-gotchas.md) | Verified pitfalls with causes and fixes, including a path-traversal hole |
+| [11. Gotchas](docs/11-gotchas.md) | Verified pitfalls with causes and fixes |
 | [12. Reference](docs/12-reference.md) | Config keys, window globals, exports, dev endpoints, numbers |
 
 ---
@@ -67,11 +67,12 @@ yarn clean          # remove dist/
 | --- | --- | --- |
 | `yarn dev` | `node core/server/index.js` | Set `PORT` to change the port |
 | `yarn build` | `node core/server/build.js` | 0.1–0.3 s on this repo |
-| `yarn preview`, `yarn start` | `NODE_ENV=production node core/server/index.js` | The dev server without the watcher. It serves the **source tree**, not `dist/` |
+| `yarn preview`, `yarn start` | `NODE_ENV=production node core/server/index.js` | SSR from the build in `dist/` — run `yarn build` first |
+| `yarn test` | `node --test` | Unit tests in `test/` |
 | `yarn preview:csr` | `node core/server/static.js` | Static server with an SPA fallback over `dist/client` (`PORT`, `CSR_ROOT` override) |
 | `yarn deploy:cloudflare` | `yarn build && wrangler pages deploy` | Run `wrangler login` first |
 
-Yarn is only a script runner here; `npm run dev` or the raw `node` commands work the same. Restart `yarn dev` after editing templates, CSS or `app.config.yml`: the SSR template cache and the config live as long as the process (see [Dev server and live reload](#dev-server-and-live-reload)).
+Yarn is only a script runner here; `npm run dev` or the raw `node` commands work the same. Restart `yarn dev` after editing `app.config.yml` (read once per process); everything else is picked up live (see [Dev server and live reload](#dev-server-and-live-reload)).
 
 → More: [Getting started](docs/02-getting-started.md)
 
@@ -180,6 +181,12 @@ locales are also inlined as `window.__LOCALE_CONFIG__` so the client i18n layer
 matches the server without hardcoding the list. The file is read once per process, so
 restart `yarn dev` after editing it.
 
+Three more optional keys: `site.url` (the public origin — the build then writes
+`sitemap.xml` from the route table), `site.title` / `site.description` (the `<title>` and
+meta description for pages without `static metadata`), and `auth.cookie` (the name of your
+session cookie — a request that carries it gets `requiresAuth` pages server-rendered
+instead of a redirect to `/login`).
+
 → More: [Reference](docs/12-reference.md#appconfigyml)
 
 ---
@@ -226,7 +233,7 @@ The script can live inside a `<script>` tag at the bottom of the `.html` file (e
 <p>{{description}}</p>
 
 <script>
-import { Component, define } from '/core/component.js';  // root-absolute: required in production
+import { Component, define } from '/core/component.js';
 
 export default class AboutPage extends Component {
   static templateUrl = '/app/About/About.html';
@@ -239,9 +246,9 @@ define('about-page', AboutPage);
 ```
 
 Page statics must be **literal object expressions**: the server never imports the class,
-it finds them in the source with a regex and `eval`s them. Prefer `static local` over
-`static ssrProps` for template data — `ssrProps` only reaches the server render, so a
-client-side navigation to the page would show `{{description}}` as literal text.
+it finds them in the source with a regex and `eval`s them. `static local` is the page's
+initial state; `static ssrProps` is fixed data for its template — both render the same on
+the server and on the client (the Router hands `ssrProps` to the page as `pageProps`).
 
 → More: [Routing and navigation](docs/08-routing-and-navigation.md)
 
@@ -266,14 +273,14 @@ for elements added later (it watches with a `MutationObserver` and a patched `at
 
 Server-rendered content stays visible throughout; only the JS upgrade waits. Without
 server-rendered content (client-side render, or a parent re-render) there's nothing to show
-in the meantime, so a lazy import runs right away. Write custom elements **empty** in
-templates (`<x-y></x-y>`): SSR only expands elements with no children.
+in the meantime, so a lazy import runs right away. A custom element may have children
+(`<x-card><p>…</p></x-card>`): SSR adds the shadow root and leaves them as slotted light DOM.
 
 ### Tag → file mapping
 
 Resolution is **discovered, not configured**. At dev-server start and at build time,
 `core/scan.js` walks `app/` and `components/` for `define('<tag>', …)` calls and maps each
-tag to the directory that declares it. The result is inlined as `window.__TAGS__` for the
+tag to the file that declares it. The result is inlined as `window.__TAGS__` for the
 browser loader, passed directly to the Node SSR renderer, and written to
 `_ssr-config.json` for the edge adapters — one registry, three consumers, no hand-kept
 override table anywhere.
@@ -411,7 +418,7 @@ Templates use `{{ }}` expressions evaluated against `props` (store state + local
   <a href="/login" route>Login</a>
 {{/if}}
 
-<!-- Loops: a top-level array; item fields are inserted unescaped -->
+<!-- Loops: a top-level array; item fields are HTML-escaped -->
 {{#each items}}
   <li>{{this.name}} — {{@index}}</li>
 {{/each}}
@@ -429,11 +436,11 @@ Templates use `{{ }}` expressions evaluated against `props` (store state + local
 <button @click="save">Save</button>
 ```
 
-The evaluator is a set of regex passes, not a JavaScript parser. Verified limits: an
-expression that evaluates to `undefined` stays on the page as literal `{{expr}}` (`null`
-prints `null`); at most 10 `{{#if}}` blocks resolve per render; `{{#each}}` can't nest or
-take a dotted path; there are no parentheses. Compute anything non-trivial in JS and expose
-the result as a prop.
+Expressions are parsed with JavaScript's precedence (`?:`, `||`, `&&`, comparisons,
+arithmetic, `!`, parentheses) but are not JavaScript: only a safelist of string/array
+methods can be called. An expression that evaluates to `undefined` stays on the page as
+literal `{{expr}}` (`null` prints `null`), and `{{#each}}` can't nest or take a dotted
+path. Compute anything non-trivial in JS and expose the result as a prop.
 
 Prop bindings (experimental) pass JavaScript values (not strings) to child custom elements:
 
@@ -523,7 +530,7 @@ getLocale();                      // → 'es'
    omit the key / set `supported: auto` and the new file is picked up automatically)
 3. Add a switch control in `components/Navigation/Navigation.html` + `.js` (the language
    buttons there call `setLocale('en' | 'es' | 'fr')`)
-4. Restart `yarn dev`
+4. Restart `yarn dev` if you edited `app.config.yml`
 
 The supported list and default locale are defined once in `app.config.yml`; the
 server, the deploy adapters, and the client i18n layer all read from it (no
@@ -590,10 +597,10 @@ page/component modules are hashed too, and the original → hashed map is inline
 `window.__M__`, which is what makes `max-age=31536000, immutable` safe for `/app/*` and
 `/components/*`.
 
-Two production-only rules follow from the registry rewrite: lazy modules (everything in
-`app/` and `components/`) may only **statically** import modules that are in the core bundle
-— load anything else, such as `/lib/validate.js`, with `await import()` — and inline
-`<script>` blocks in page `.html` files must import with root-absolute paths.
+Lazy modules (everything in `app/` and `components/`) import as usual: a static import
+of a bundled module is read from the registry, and one of anything else — such as
+`/lib/validate.js` — becomes a fetch through `window.__M__`. Relative and root-absolute
+specifiers both work, including in the inline `<script>` of a page.
 
 → More: [Build and deployment](docs/09-build-and-deploy.md)
 
@@ -601,20 +608,19 @@ Two production-only rules follow from the registry rewrite: lazy modules (everyt
 
 ## Dev server and live reload
 
-The dev server watches `app/`, `components/`, `core/`, and `lib/` with `fs.watch` (recursive,
-50ms debounce) and messages connected browsers over a hand-rolled WebSocket. The client
-knows three strategies — CSS hot-swap, full reload, and re-importing a changed component —
-but as the code stands today:
+The dev server watches `app/`, `components/`, `core/`, `lib/`, `locales/`, `globals.css`
+and `index.html` with `fs.watch` (50ms debounce) and messages connected browsers over a
+hand-rolled WebSocket:
 
 | You change | What happens |
 |---|---|
-| A `.js` or `.html` file | The page reloads (the re-import path falls back to `location.reload()`) |
-| A `*.module.css` file or `globals.css` | Nothing — reload by hand |
-| A template or stylesheet that SSR renders | The server keeps serving the cached copy until `yarn dev` restarts |
+| `globals.css` | The inlined stylesheet is swapped in place — no reload |
+| Anything else that's watched | The page reloads, server-rendered from the new source (rendering runs in a worker thread that is replaced on every change, so `core/` and `lib/` edits count too) |
 
-New pages and components need no restart; the route and tag tables are rebuilt on every change.
+Custom elements can't be redefined, so there is no per-component hot swap. New pages and
+components need no restart; the route and tag tables are rebuilt on every change.
 
-→ Why, and how to fix it: [Gotchas → Dev server](docs/11-gotchas.md#dev-server)
+→ More: [Getting started → The dev loop](docs/02-getting-started.md#the-dev-loop)
 
 ---
 
@@ -719,10 +725,11 @@ where an SSR runtime isn't available; prefer SSR everywhere else.
 
 ### Node (`yarn start`)
 
-`NODE_ENV=production node core/server/index.js` server-renders straight from the source
-tree: no bundle, no minification, and every file in the checkout is reachable by URL —
-including paths outside it via `../`. Use it for local checks only; don't expose it to the
-internet.
+`NODE_ENV=production node core/server/index.js` server-renders from the build: static
+files come from `dist/client` (hashed modules and fonts cached as `immutable`, everything
+else revalidated), pages are rendered with `dist/server`. Run `yarn build` first — with no
+build it warns and serves the source tree instead. It does no compression or TLS, so put a
+reverse proxy in front of it.
 
 → More: [Build and deployment](docs/09-build-and-deploy.md#deployment-targets)
 
@@ -732,11 +739,8 @@ internet.
 
 [Gotchas](docs/11-gotchas.md) lists every verified pitfall with its cause and fix. The ones most likely to bite:
 
-- **Path traversal in the Node server** — `core/server/index.js` serves any file it can reach, including `../` paths; keep `yarn dev` and `yarn start` on localhost.
-- **Stale SSR in dev** — template and CSS edits need a `yarn dev` restart.
-- **Production-only import errors** — lazy modules can only statically import bundled modules, and page scripts need root-absolute imports.
-- **Nested components render with the page's props on the server** — their own `local` isn't applied until the client renders them.
-- **`$$`, `$&` and `$'` in templates** are rewritten by SSR's string-based component splicing.
+- **An expression that evaluates to `undefined` prints as literal `{{expr}}`** — by design, so a missing key is visible; give optional values a default (`{{name || ''}}`).
+- **Listeners added with raw `addEventListener` in `mount()` stack up** — it runs after every render; use `this.on()` / `this.delegate()`.
 
 ---
 

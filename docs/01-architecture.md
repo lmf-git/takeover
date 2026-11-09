@@ -15,10 +15,10 @@ One renderer core is shared by three server hosts, and every host emits the same
 | Concern | Server | Browser |
 | --- | --- | --- |
 | Route table | Scanned from `app/` (dev: every request; production: once per process) | `window.__ROUTES__` |
-| Tag-to-folder registry | `scanTags()` over `app/` and `components/` | `window.__TAGS__` |
+| Tag-to-file registry | `scanComponents()` over `app/` and `components/` | `window.__TAGS__` |
 | Templates | Read from disk, rendered to strings | Fetched from `templateUrl` (dev) or inlined as `static template` (production) |
 | Component classes | Never imported | Imported and defined as custom elements |
-| Page statics (`metadata`, `local`, `ssrProps`, `requiresAuth`) | Regex-extracted from source and `eval`'d | Read off the class; `ssrProps` is ignored |
+| Page statics (`metadata`, `local`, `ssrProps`, `requiresAuth`) | Regex-extracted from source and `eval`'d | Read off the class; `ssrProps` arrives through the route table as `pageProps` |
 | Locale | `negotiateLocale()` per request | `initLocale()` from the cookie or `navigator.language` |
 | Store | One module instance per process, re-seeded per render | One instance, seeded from `__INITIAL_STATE__` |
 

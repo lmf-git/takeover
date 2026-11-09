@@ -1,14 +1,24 @@
+const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export const createMatcher = pattern => {
   const params = [];
-  const regex = new RegExp('^' + pattern.replace(/:([^/]+)/g, (_, n) => (params.push(n), '([^/]+)')).replace(/\//g, '\\/') + '$');
-  return { regex, params };
+  // Static segments are matched literally (a '.' in a folder name is not a wildcard).
+  const source = pattern.split('/')
+    .map(seg => seg.startsWith(':') ? (params.push(seg.slice(1)), '([^/]+)') : escapeRegex(seg))
+    .join('\\/');
+  return { regex: new RegExp('^' + source + '$'), params };
 };
+
+/** decodeURIComponent that returns the input unchanged on a malformed escape (`%zz`, a lone `%`). */
+export const safeDecode = s => { try { return decodeURIComponent(s); } catch { return s; } };
 
 export function pathFromFile(filePath, basePath = '') {
   const segs = filePath.replace(basePath, '').replace(/\.(html|js)$/, '').split('/').filter(Boolean);
   if (!segs.length) return null;
-  if (segs.length >= 2 && segs.at(-1).toLowerCase() === segs.at(-2).toLowerCase().replace(/^\[(.+)\]$/, '$1'))
-    segs.pop();
+  // A page named after its folder adds no segment: Home/Home → /home,
+  // [slug]/Slug and [slug]/[slug] → /:slug.
+  const bare = s => s.toLowerCase().replace(/^\[(.+)\]$/, '$1');
+  if (segs.length >= 2 && bare(segs.at(-1)) === bare(segs.at(-2))) segs.pop();
   const route = '/' + segs.map(s => { const m = s.match(/^\[(.+)\]$/); return m ? `:${m[1]}` : s.toLowerCase(); }).join('/');
   return route.replace(/^\/home$/, '/');
 }
@@ -32,7 +42,7 @@ export function matchRoute(routes, pathname) {
 
   for (const r of routes.filter(r => r.dynamic && r.matcher)) {
     const m = path.match(r.matcher.regex);
-    if (m) return { route: r, params: Object.fromEntries(r.matcher.params.map((n, i) => [n, decodeURIComponent(m[i + 1])])) };
+    if (m) return { route: r, params: Object.fromEntries(r.matcher.params.map((n, i) => [n, safeDecode(m[i + 1])])) };
   }
 
   const fallback = routes.find(r => r.path === '*');

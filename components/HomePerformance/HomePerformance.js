@@ -56,6 +56,8 @@ export default class HomePerformance extends Component {
       }
     }, { threshold: 0.25 });
     obs.observe(section);
+    // Dropped with the render that created it (re-render or removal).
+    this.signal?.addEventListener('abort', () => obs.disconnect(), { once: true });
   }
 
   #animateRings() {

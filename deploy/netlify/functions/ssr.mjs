@@ -10,14 +10,23 @@ process.env.NODE_ENV = 'production';
 // Locale negotiation list comes from app.config.yml (copied into dist/server at
 // build); the negotiation itself is core/locale.js, shared with the dev server and
 // the Cloudflare worker so all three resolve the same language. Both modules are
-// loaded at runtime via pathToFileURL — same pattern as entry-server below, so the
+// loaded at runtime via pathToFileURL — same pattern as entry-server, so the
 // Netlify bundler doesn't need to trace the paths.
 let runtimePromise;
 const getRuntime = async () => {
   runtimePromise ??= Promise.all([
     import(pathToFileURL(join(serverRoot, 'core/config.mjs')).href),
     import(pathToFileURL(join(serverRoot, 'core/locale.mjs')).href),
-  ]).then(([cfg, loc]) => ({ locales: cfg.loadConfig(serverRoot).locales, negotiateLocale: loc.negotiateLocale }));
+    import(pathToFileURL(join(serverRoot, 'core/server/entry-server.mjs')).href),
+  ]).then(([cfg, loc, entry]) => ({
+    locales: cfg.loadConfig(serverRoot).locales,
+    negotiateLocale: loc.negotiateLocale,
+    render: entry.render,
+    // Read once per function instance, not once per request.
+    template: readFileSync(join(root, 'dist/client/_template.html'), 'utf-8'),
+  }))
+    // A failed load must not be memoised — the next request tries again.
+    .catch(e => { runtimePromise = undefined; throw e; });
   return runtimePromise;
 };
 
@@ -28,17 +37,16 @@ export async function handler(event) {
   const ext = extname(event.path);
   if (ext && ext !== '.html') return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, body: 'Not found' };
 
-  const template = readFileSync(join(root, 'dist/client/_template.html'), 'utf-8');
-  const { render } = await import(pathToFileURL(join(root, 'dist/server/core/server/entry-server.mjs')).href);
-  const { locales, negotiateLocale } = await getRuntime();
+  const { locales, negotiateLocale, render, template } = await getRuntime();
   const headers = event.headers || {};
+  const cookie = headers['cookie'] || headers['Cookie'] || '';
   const locale = negotiateLocale({
-    cookie: headers['cookie'] || headers['Cookie'],
+    cookie,
     acceptLanguage: headers['accept-language'] || headers['Accept-Language'],
     supported: locales.supported,
     fallback: locales.default,
   });
-  const result = await render(event.path + (event.rawQuery ? `?${event.rawQuery}` : ''), { locale });
+  const result = await render(event.path + (event.rawQuery ? `?${event.rawQuery}` : ''), { locale, cookie });
 
   if (result.redirect) return { statusCode: 302, headers: { Location: result.redirect } };
 

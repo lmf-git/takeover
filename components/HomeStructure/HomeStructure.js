@@ -3,20 +3,14 @@ import { Component, define } from '../../core/component.js';
 export default class HomeStructure extends Component {
   static templateUrl = '/components/HomeStructure/HomeStructure.html';
 
-  mount() {
-    this._handleClick = this._onTreeClick.bind(this);
-    this.shadowRoot.addEventListener('click', this._handleClick);
-  }
-
-  unmount() {
-    this.shadowRoot?.removeEventListener('click', this._handleClick);
-  }
-
-  _onTreeClick(e) {
-    const row = e.target.closest('.tree-row[data-folder]');
-    if (!row) return;
-    row.classList.toggle('collapsed');
-    this._applyVisibility();
+  // bind() runs after every render, and delegate() ties the listener to that
+  // render — so a re-render (a locale switch) replaces it instead of stacking a
+  // second one on the shadow root, which made each click toggle twice.
+  bind() {
+    this.delegate('click', '.tree-row[data-folder]', row => {
+      row.classList.toggle('collapsed');
+      this._applyVisibility();
+    });
   }
 
   // Recompute every row's visibility from collapsed ancestors. Rows are in

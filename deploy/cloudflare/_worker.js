@@ -4,16 +4,18 @@
 // This adapter has no node:fs, so it can't read app.config.yml or walk the source
 // tree the way core/server/entry-server.js does. Everything it needs that isn't
 // per-request comes from _ssr-config.json, emitted by build.js: the supported
-// locale list and the discovered tag → directory registry. Locale negotiation
-// itself is the shared implementation in core/locale.js, so this target resolves
-// the same language as the dev server and the Netlify function.
+// locale list, site defaults, the discovered tag → source-file registry and each
+// component's `static local`. Locale negotiation and request state are the shared
+// implementations in core/locale.js, so this target renders the same page as the
+// dev server and the Netlify function.
 import { createRenderer } from './core/server/ssr.js';
 import { createMatcher, withNotFound } from './core/routes.js';
-import { negotiateLocale } from './core/locale.js';
-import { dirForTag, baseName } from './core/tags.js';
+import { negotiateLocale, requestState } from './core/locale.js';
+import { pathsForTag } from './core/tags.js';
+import { cacheControl, IMMUTABLE } from './core/cache.js';
 import store from './lib/store.js';
 
-const FALLBACK_CONFIG = { locales: { supported: ['en'], default: 'en' }, tags: {} };
+const FALLBACK_CONFIG = { locales: { supported: ['en'], default: 'en' }, site: {}, auth: {}, tags: {}, locals: {} };
 
 // Per-isolate memoisation. Promises (not resolved values) so concurrent requests
 // share one fetch instead of racing to populate the same cache.
@@ -23,9 +25,8 @@ const localeCache = new Map();
 const makeResolvePaths = tags => tag => {
   // The router is structural — the renderer splices the matched page into it.
   if (tag === 'app-router') return null;
-  const dir = dirForTag(tag, tags);
-  const base = baseName(dir);
-  return { tpl: `/${dir}/${base}.html`, css: `/${dir}/${base}.module.css`, plainCss: `/${dir}/${base}.css` };
+  const paths = pathsForTag(tag, tags);
+  return { tpl: paths.html, css: paths.moduleCss, plainCss: paths.css };
 };
 
 export default {
@@ -37,7 +38,17 @@ export default {
     // but .html marks a file — the same rule as the dev server and the Netlify adapter.
     const ext = url.pathname.match(/\.[^/.]+$/)?.[0];
     const isTemplateFile = url.pathname.endsWith('.html') && (url.pathname.startsWith('/app/') || url.pathname.startsWith('/components/'));
-    if ((ext && ext !== '.html') || isTemplateFile) return env.ASSETS.fetch(url);
+    if ((ext && ext !== '.html') || isTemplateFile) {
+      const res = await env.ASSETS.fetch(request);
+      // Content-hashed modules and fonts never change under the same URL. The
+      // policy is set here (shared with the Node server via core/cache.js) rather
+      // than in a _headers file, so it holds whatever the platform does for
+      // responses that pass through a worker.
+      if (!res.ok || cacheControl(url.pathname) !== IMMUTABLE) return res;
+      const cached = new Response(res.body, res);
+      cached.headers.set('Cache-Control', IMMUTABLE);
+      return cached;
+    }
 
     try {
       configPromise ??= asset('/_ssr-config.json')
@@ -52,6 +63,7 @@ export default {
           return res.text();
         },
         resolvePaths: makeResolvePaths(config.tags),
+        locals: config.locals,
       });
 
       // routes.json carries no wildcard entry — withNotFound adds the 404 fallback,
@@ -82,7 +94,7 @@ export default {
       const otherLocales = {};
       await Promise.all(supported.filter(l => l !== locale).map(async l => { otherLocales[l] = await loadLocale(l); }));
 
-      const state = { ...store.defaults, locale, messages };
+      const state = requestState(store.defaults, { locale, messages, cookie: request.headers.get('cookie'), config });
       const result = await rendererRef(url.pathname + url.search, routes, state, { otherLocales, localeConfig: config.locales });
 
       if (result.redirect) {
@@ -112,7 +124,9 @@ export default {
         },
       });
     } catch (e) {
-      return new Response(`<h1>500</h1><pre>${e.stack}</pre>`, { status: 500, headers: { 'Content-Type': 'text/html' } });
+      // The stack goes to the worker log (wrangler tail), not to the visitor.
+      console.error('[SSR]', e);
+      return new Response('<h1>500</h1><p>Internal Server Error</p>', { status: 500, headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
     }
   }
 };

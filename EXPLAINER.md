@@ -103,16 +103,16 @@ app.config.yml           locales + critical-path preloads
 | Concern | Server (Node / Worker) | Browser |
 |---|---|---|
 | Route table | built by scanning `app/` | inlined as `window.__ROUTES__` |
-| Tag → directory registry | built by scanning for `define()` calls | inlined as `window.__TAGS__` |
+| Tag → source-file registry | built by scanning for `define()` calls | inlined as `window.__TAGS__` |
 | Templates | read from disk, rendered to strings | fetched (dev) or inlined by build (prod) |
 | Stylesheets | read from disk, scoped, embedded in the DSD | fetched (dev) or inlined by build (prod) |
 | Components | **never instantiated** — only their `.html` is rendered | instantiated as custom elements |
 | Static config (`metadata`, `ssrProps`, `requiresAuth`) | extracted from source text by regex + `eval` | read off the class |
 | Locale negotiation | `core/locale.js`, per request | `lib/i18n.js`, from the inlined globals |
-| Store | one module-level instance per process, reset per render | one instance, seeded from `__INITIAL_STATE__` |
+| Store | not used for request data — each render gets its own state object | one instance, seeded from `__INITIAL_STATE__` |
 
 The third row is the load-bearing trick: **SSR never imports page/component modules.**
-`core/server/entry-server.js:57` (`buildRoutes`) reads each page's `.html`, pulls out the
+`core/scan.js` (`scanPages`, shared by the dev server, the SSR entry and the build) reads each page's `.html`, pulls out the
 `<script>` block (or the sibling `.js`), and extracts `static local`, `static ssrProps`,
 `static metadata` and `static requiresAuth` with a brace-balancing scanner + `eval`. That
 avoids ever executing browser code (`HTMLElement`, `customElements`, `window`) on the
@@ -141,8 +141,10 @@ computed `static metadata = buildMeta()` will not be seen by SSR.
    explicit user choice, and what the previous response rendered) wins; otherwise
    `Accept-Language` is ranked by q-value; unsupported codes fall back to
    `config.locales.default`. Only codes in `app.config.yml`'s supported list are accepted.
-3. **Render** (`renderSSR`, `index.js:104`): imports `entry-server.js` with a `?t=` cache
-   bust (so edits to SSR code take effect without restarting), calls `render(url, {locale})`.
+3. **Render** (`renderSSR` in `index.js`): calls `render(url, {locale, cookie})` on the SSR
+   entry. In production that is a plain import; in dev it runs in a worker thread
+   (`ssr-worker.js`) that is replaced after every source change, so the next request sees
+   new code everywhere in the import graph.
 4. **Assemble the HTML** by substituting into `index.html`'s placeholder comments:
 
    | Placeholder | Filled with |
@@ -172,7 +174,8 @@ The returned `render(url, routes, state)`:
    consumer calls it, so the Node entry, the client Router and the edge adapters all fall
    back identically instead of each host inventing its own 404.
 2. Enforce `requiresAuth` by returning `{ redirect: '/login?from=…' }`.
-3. Build `props`: `state` + `ssrProps` + `{ path, params, query, timestamp, year, t }`.
+3. Build `props`: `state` + the page's `static local` + `ssrProps` + `{ path, params, query, timestamp, year, t }`.
+   Nested components get the same props with their own `static local` on top.
    `t` is `state.messages` — that's how `{{t.nav.docs}}` resolves server-side.
 4. Load and render `app-layout`'s template.
 5. Render the page component, then **recursively expand nested custom elements**
@@ -184,7 +187,7 @@ The returned `render(url, routes, state)`:
    `initialStateScript` and `headMeta`.
 
 CSS handling mirrors the client exactly: `Foo.module.css` gets every `.class` rewritten to
-`.class_<tag>` (`processCSS`, `ssr.js:12`) and the resulting map is exposed to the template
+`.class_<tag>` (`scopeCSS` in `core/template.js`, the same function the client calls) and the resulting map is exposed to the template
 as `$css`; a plain `Foo.css` is concatenated unscoped. `<style>` blocks inside the template
 are hoisted into the shadow root's `<style>`. See §6a for the full CSS story.
 
@@ -278,15 +281,16 @@ recursive-descent-ish `evaluate()` for expressions.
 |---|---|
 | `{{expr}}` | evaluate, HTML-escape |
 | `{{{expr}}}` | evaluate, raw |
-| `{{#if cond}}…{{else}}…{{/if}}` | conditional (loop-resolved, max 10 nesting passes) |
-| `{{#each items}}…{{/each}}` | iteration; `{{this}}`, `{{this.key}}`, `{{@index}}` |
+| `{{#if cond}}…{{else}}…{{/if}}` | conditional; nests to any depth |
+| `{{#each items}}…{{/each}}` | iteration; `{{this}}`, `{{this.key}}`, `{{@index}}`; values escaped |
 | `{{$css.card}}` / `{{$c('a','b')}}` | scoped CSS-module class names |
 | `{{t.nav.docs}}` | translation lookup |
 | `:prop="expr"` on a child element | pass a **JS value** (not a string) as a property |
 
-**Expression grammar** (`evaluate`, `template.js:6`), tried in order: literals →
-negation → ternary → comparison → `&&` / `||` → arithmetic → whitelisted method calls →
-index access → string literal → number → `.length` → dotted path lookup.
+**Expression grammar** (`evaluate` in `template.js`): a tokenizer and a recursive-descent
+parser with JavaScript's precedence — ternary, `||`, `&&`, comparison, `+ -`, `* /`, unary
+`! -`, then member access, index access, whitelisted method calls and parentheses. Parsed
+expressions are cached per source string, so a template is parsed once however often it renders.
 
 Method calls are restricted to a safelist: `split, join, slice, toUpperCase, toLowerCase,
 trim, charAt, substring, replace` (`template.js:2`). There is no `new Function`, no `with`,
@@ -298,10 +302,9 @@ also evaluated server-side.
 - An unresolvable expression renders **as literal text** (`{{foo.bar}}` stays visible).
   That's why a missing locale catalogue shows raw mustaches rather than blanks, and why the
   CSR shell bakes in the message catalogues (§8).
-- `{{#each}}` only accepts a bare identifier, not a path.
-- `{{#if}}` inside `{{#each}}` is handled by a separate, more restrictive regex that can't
-  contain nested `{{`.
-- `{{#if}}` nesting is bounded at 10 resolution passes.
+- `{{#each}}` only accepts a bare identifier, not a path, and can't nest. Each item renders
+  the block through the normal pipeline with its fields in scope; the output is held aside so
+  item values are never scanned for `{{…}}` a second time.
 
 **Prop bindings** are a two-step dance. `extractPropBindings` strips `:count="localCount"`
 off the child tag, stashes the expression, and stamps `data-prop-bind="__bind_0"` on the
@@ -415,8 +418,8 @@ On connect:
    `e.target` check. The same handler sends in-page `a[href^="#"]` clicks on any page
    through `scrollToHash` (below), and a `popstate` that keeps the pathname + search (only
    the `#fragment` moved) scrolls instead of re-rendering the page.
-4. Wire `pointerover` on `a[route]` to **preload** the target route's module and template on
-   hover (once per href).
+4. Wire `pointerover` on `a[route]` (found through `composedPath()`, since links live in
+   shadow roots) to **preload** the target route's module and template on hover (once per href).
 5. **Hydrate or navigate**: if the outlet's first child already has a `shadowRoot`, the page
    was server-rendered — import its module (so `customElements.define` upgrades the existing
    element) and stop. Otherwise, run a full client navigation.
@@ -444,7 +447,7 @@ section hydrating mid-scroll pushes the target down, it re-aims once the scroll 
 Anything that is not eagerly imported by the entry gets loaded on demand:
 
 - **Tag → path** goes through `window.__TAGS__`, the discovered registry (§9a).
-  `pathsForTag` (`core/tags.js`) turns `home-cta` → `components/HomeCTA` →
+  `pathsForTag` (`core/tags.js`) turns `home-cta` → `components/HomeCTA/HomeCTA` →
   `/components/HomeCTA/HomeCTA.js`. Tags absent from the registry fall back to the
   `kebab-case` → `PascalCase` convention.
 - In production the resolved path is run through `window.__M__`, the build's
@@ -474,12 +477,13 @@ words (`HomeQuickStart`) and internal capitals (`NotFound` — `notfound-page` l
 `Notfound`, which only resolves on a case-insensitive filesystem like macOS's).
 
 Rather than three hand-maintained override tables, the mapping is **discovered**.
-`scanTags` (`core/scan.js`) walks `app/` and `components/` for `define('<tag>', …)` calls
-and records the directory that declares each one:
+`scanComponents` (`core/scan.js`) walks `app/` and `components/` for `define('<tag>', …)` calls
+and records the file that declares each one, without its extension (plus each component's
+`static local`, which is how nested components get their initial state during SSR):
 
 ```json
-{ "app-footer": "components/Footer", "home-cta": "components/HomeCTA",
-  "notfound-page": "app/NotFound", "app-layout": "app/_Layout", … }
+{ "app-footer": "components/Footer/Footer", "home-cta": "components/HomeCTA/HomeCTA",
+  "notfound-page": "app/NotFound/NotFound", "app-layout": "app/_Layout/_Layout", … }
 ```
 
 It differs from `scanDir` deliberately: it reads `.html` too (tags are often defined in an
@@ -492,11 +496,11 @@ Distribution:
 | Consumer | Gets the registry via |
 |---|---|
 | `core/loader.js` (browser) | `window.__TAGS__`, inlined by the dev server and the build |
-| `core/server/entry-server.js` | `await scanTags(root)` at module load, so `resolvePaths` stays sync |
+| `core/server/entry-server.js` | `await scanComponents(root)` at module load, so `resolvePaths` stays sync |
 | `deploy/cloudflare/_worker.js` | `_ssr-config.json`, emitted by the build (no `node:fs` at the edge) |
 
-All three resolve through the same `dirForTag` / `baseName` helpers in `core/tags.js`.
-Adding a component with an awkward folder name now requires no configuration anywhere.
+All three resolve through the same `pathsForTag` helper in `core/tags.js`.
+Adding a component with an awkward folder or file name requires no configuration anywhere.
 
 ---
 
@@ -545,8 +549,9 @@ back to returning the key itself.
 1. **Bundle** `core/server/entry-client.js` and its entire static import graph into one
    IIFE (`bundle.js`). Written to `_assets/core.<hash>.js` *and* inlined into the HTML.
 2. **Copy + transform + minify** `app/`, `components/`, `core/`, `lib/` into `dist/client/`.
-   - `app/` and `components/` get their static imports **rewritten to `globalThis.__r(…)`**,
-     the bundle's module registry. When the loader lazily imports `HomeFooter.js`, it
+   - `app/` and `components/` get their static imports of bundled modules **rewritten to
+     `globalThis.__r(…)`**, the bundle's module registry (imports of anything outside the
+     bundle become a top-level `await import()` routed through `window.__M__`). When the loader lazily imports `HomeFooter.js`, it
      reuses the already-loaded `/core/component.js` from the registry instead of fetching it
      again. This is what removes the "critical request chain" warning for lazy modules.
    - Every `static templateUrl = '/x.html'` is replaced by `static template = "<html>"`
@@ -554,7 +559,9 @@ back to returning the key itself.
      folded in as `static cssModuleText` / `static cssText` — **the minified source, not a
      URL**. So in production a component performs zero template and zero CSS fetches, and
      no unhashed stylesheet ends up under the `immutable` cache rules.
-   - Only `.js` and (when minifying) `.css` are read as text; everything else is
+   - Of `core/`, only the runtime modules are copied; the Node-only ones (the build, the
+     servers, `config.js`, `scan.js`) stay out of the public web root.
+   - Only `.js` and (when minifying) `.css` / template `.html` are read as text; everything else is
      `copyFile`'d byte-for-byte. Reading a `.woff2` as UTF-8 corrupts it.
 3. **Extract inline `<script>` blocks** from `.html` files. Pages emit `Foo.script.js`;
    components emit `Foo.js` (so the loader's natural tag→path rule still resolves) unless an
@@ -569,7 +576,7 @@ back to returning the key itself.
    the SSR adapter to fill.
 6. **Build `index.html`** — the CSR shell (§12).
 7. Copy locales (client + server), `public/` (flattened to the client root, so `/fonts/…`
-   works), `app.config.yml` to both roots, and `deploy/cloudflare/_worker.js` → `_worker.js`.
+   works), `app.config.yml` to the server root, and `deploy/cloudflare/_worker.js` → `_worker.js`.
 8. Emit `routes.json`, `_manifest.json`, and `_ssr-config.json` — the latter carrying the
    normalized locale config plus the tag registry, for adapters that can't read
    `app.config.yml` or walk the source tree.
@@ -644,7 +651,7 @@ as literal mustaches until the first fetch resolves (§6).
 
 `yarn preview:csr` (`core/server/static.js`, port 4399) serves `dist/client/` with a **SPA
 catch-all**: any extension-less path that isn't a real file falls back to `/index.html`. It
-also rejects path traversal and sends `immutable` caching for everything except HTML. Real
+also rejects path traversal and sends `immutable` caching for hashed files and fonts only. Real
 hosts express the same rule as a rewrite (`/* /index.html 200`, `try_files $uri /index.html`).
 
 What you give up vs. SSR: blank first paint until the bundle runs, no server locale
@@ -654,16 +661,21 @@ negotiation, and no-JS crawlers see an empty shell.
 
 ## 13. HMR
 
-`setupWatcher` (`index.js:46`) puts a recursive `fs.watch` on `app/`, `components/`,
-`core/`, `lib/`, filtered to `.js` / `.html` / `.css`, with a 50 ms per-file debounce
-(editors write temp files and fire several events per save). The route cache is invalidated
-on every change. Then one of three messages is broadcast over the hand-rolled WebSocket:
+`setupWatcher` (`index.js`) puts a recursive `fs.watch` on `app/`, `components/`, `core/`,
+`lib/` and `locales/`, filtered to `.js` / `.html` / `.css` / `.json`, plus a watch on the
+repo root for `globals.css` and `index.html`, with a 50 ms per-file debounce (editors fire
+several events per save, and save through dot-prefixed temp files, which are ignored). Every
+change bumps a version counter, so the next request starts a fresh SSR worker thread — new
+route table, new tag registry, empty template cache, and new code for `core/` and `lib/` too. Then one of two messages is broadcast
+over the hand-rolled WebSocket:
 
 | Changed | Message | Client behaviour |
 |---|---|---|
-| `.css` | `css` | cache-bust matching `<link>`s; refetch and swap the inline `globals.css` `<style>` |
-| `core/**`, `lib/**` | `reload` | `location.reload()` — those modules are already cached by the browser |
-| anything else | `update` | re-import with `?t=<now>`, then call `disconnectedCallback()`/`connectedCallback()` on every matching element; reload if none found or the import fails |
+| `globals.css` | `css` | refetch it and replace the contents of the inlined `<style data-hmr="globals">` |
+| anything else | `reload` | `location.reload()` |
+
+There is no per-component hot swap: a custom element can't be redefined, and a component's
+template and styles live in shadow roots built by the module that owns them.
 
 The HMR client script is injected into the SSR response in dev only, and reconnects on a
 1 s timer if the socket closes.
@@ -703,7 +715,7 @@ locales from the same source the dev server used.
 
 | Target | Mechanism |
 |---|---|
-| **Node** | `NODE_ENV=production node core/server/index.js` — same server as dev, no HMR, `immutable` caching for non-HTML |
+| **Node** | `NODE_ENV=production node core/server/index.js` — serves `dist/client` and renders with `dist/server` (falls back to the source tree if there is no build); no HMR, `immutable` caching for hashed files and fonts |
 | **Cloudflare Pages** | `dist/client/_worker.js`. Static extensions and `/app\|/components` `.html` go to `env.ASSETS`; everything else builds a renderer whose `loadFile` is `env.ASSETS.fetch`, then fills `_template.html`. Reads `_ssr-config.json` for locales + tag registry (no `node:fs` at the edge), negotiates via `core/locale.js`, loads catalogues from `/locales/*.json`, and memoises config/routes/locales per isolate as **promises** so concurrent requests share one fetch. `wrangler.toml` sets `nodejs_compat`. |
 | **Netlify** | `netlify.toml` serves static paths directly and rewrites `/*` to `deploy/netlify/functions/ssr.mjs`, which sets `SSR_ROOT=dist/server`, negotiates via the built `core/locale.mjs`, and imports the built `entry-server.mjs`. |
 

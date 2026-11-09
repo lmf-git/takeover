@@ -1,12 +1,12 @@
 import { readFile, writeFile, readdir, mkdir, rm, copyFile, stat } from 'node:fs/promises';
 import { join, dirname, extname, relative, resolve as pathResolve } from 'node:path';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { pathFromFile } from '../routes.js';
-import { scanTags } from '../scan.js';
-import { escapeHtml } from '../template.js';
+import { scanComponents, scanPages, clientRoute } from '../scan.js';
+import { escapeHtml, jsonForScript } from '../template.js';
 import { bundle } from './bundle.js';
-import { minifyJS, minifyCSS } from './minify.js';
+import { minifyJS, minifyCSS, minifyTemplateCSS } from './minify.js';
 import { loadConfig } from '../config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,21 +20,22 @@ const cleanDir = dir => rm(dir, { recursive: true, force: true }).catch(() => {}
 const contentHash = s => createHash('sha256').update(s).digest('hex').slice(0, 8);
 
 // ─── Raw-import inlining (dev-only transform preserved for compat) ────────────
-async function transformJS(content, filePath, { rewriteToRegistry = false } = {}) {
+async function transformJS(content, filePath, { bundled = null } = {}) {
   let result = content;
   for (const [full, varName, importPath] of content.matchAll(/import\s+(\w+)\s+from\s+['"](.+)\?raw['"]/g)) {
     try {
       const raw = await readFile(join(dirname(filePath), importPath), 'utf-8');
-      result = result.replace(full, `const ${varName} = ${JSON.stringify(raw)}`);
+      result = result.replace(full, () => `const ${varName} = ${JSON.stringify(raw)}`);
     } catch {}
   }
-  result = await inlineTemplate(result);
-  if (rewriteToRegistry) result = rewriteImportsToRegistry(result, filePath);
-  return result;
+  // Imports are rewritten *before* the template is inlined: the template becomes a
+  // string in this file, and an `import … from` in a code sample must stay text.
+  if (bundled) result = rewriteImports(result, filePath, bundled);
+  return inlineTemplate(result);
 }
 
-// Resolve a static import specifier to its bundle-registry key (the URL that the
-// inlined core bundle registers each module under, e.g. '/core/component.js').
+// Resolve a static import specifier to its root-relative URL — the key the inlined
+// core bundle registers each module under, e.g. '/core/component.js'.
 // Handles both absolute (/x.js) and relative (../x.js) specifiers.
 function resolveToRegistryKey(spec, filePath) {
   if (!spec || spec.startsWith('node:') || (!spec.startsWith('.') && !spec.startsWith('/'))) return null;
@@ -42,42 +43,56 @@ function resolveToRegistryKey(spec, filePath) {
   return '/' + relative(root, abs).replace(/\\/g, '/');
 }
 
-// Rewrite static imports in standalone .js files (components/*, app/*) so they
-// pull pre-bundled modules from globalThis.__r instead of triggering a fresh
-// network fetch for /core/component.js, /core/template.js, etc. Eliminates the
-// dependency-chain Lighthouse warning when these files are lazy-loaded.
-function rewriteImportsToRegistry(src, filePath) {
-  // import { A, B as C } from '...'
-  src = src.replace(/import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]\s*;?/g, (full, names, spec) => {
+const IMPORT_SIDE_RE = /^[ \t]*import\s*['"]([^'"]+)['"]\s*;?/gm;
+const IMPORT_FROM_RE = /^[ \t]*import\s+([\w$\s{},*]+?)\s*from\s*['"]([^'"]+)['"]\s*;?/gm;
+
+// `{ A, B as C }` → `{A,B:C}`
+const destructure = names => names.split(',').map(p => {
+  const [orig, alias] = p.trim().split(/\s+as\s+/);
+  return alias ? `${orig.trim()}:${alias.trim()}` : orig.trim();
+}).filter(Boolean).join(',');
+
+// Rewrite the static imports of a lazily loaded module (components/*, app/*, and
+// the inline <script> of a page) so it reuses what is already on the page:
+//
+//   • a module inside the core bundle → read from the bundle's registry
+//     (globalThis.__r) — no second fetch of /core/component.js and friends;
+//   • any other local module → a top-level `await import()` routed through the
+//     asset manifest (window.__M__), because its file name is content-hashed at
+//     build time and the registry has never heard of it.
+//
+// Bare and node: specifiers are left alone. Relative specifiers are resolved
+// against `filePath`, so `../../core/component.js` works in page scripts too.
+function rewriteImports(src, filePath, bundled) {
+  let n = 0;
+  const load = key => {
+    const k = JSON.stringify(key);
+    return bundled.has(key) ? `globalThis.__r(${k})` : `await import((globalThis.__M__||{})[${k}]||${k})`;
+  };
+
+  src = src.replace(IMPORT_SIDE_RE, (full, spec) => {
+    const key = resolveToRegistryKey(spec, filePath);
+    return key ? `${load(key)};` : full;
+  });
+
+  return src.replace(IMPORT_FROM_RE, (full, clause, spec) => {
     const key = resolveToRegistryKey(spec, filePath);
     if (!key) return full;
-    const parts = names.split(',').map(p => {
-      const [orig, alias] = p.trim().split(/\s+as\s+/);
-      return alias ? `${orig.trim()}:${alias.trim()}` : orig.trim();
-    }).filter(Boolean).join(',');
-    return `const{${parts}}=globalThis.__r(${JSON.stringify(key)});`;
+    const c = clause.trim();
+
+    const ns = c.match(/^\*\s+as\s+([\w$]+)$/);
+    if (ns) return `const ${ns[1]}=${load(key)};`;
+
+    const named = c.match(/^\{([^}]*)\}$/);
+    if (named) return `const{${destructure(named[1])}}=${load(key)};`;
+
+    // import Default from '…'   |   import Default, { A, B as C } from '…'
+    const def = c.match(/^([\w$]+)(?:\s*,\s*\{([^}]*)\})?$/);
+    if (!def) return full;
+    const tmp = `__i${n++}`;
+    return `const ${tmp}=${load(key)},${def[1]}=${tmp}.default??${tmp}` +
+      (def[2] ? `,{${destructure(def[2])}}=${tmp}` : '') + ';';
   });
-  // import Default from '...'  (and  import Default, { ... } from '...')
-  src = src.replace(/import\s+(\w+)(?:\s*,\s*\{([^}]+)\})?\s*from\s*['"]([^'"]+)['"]\s*;?/g, (full, def, named, spec) => {
-    const key = resolveToRegistryKey(spec, filePath);
-    if (!key) return full;
-    const tmp = `__m_${key.replace(/[^a-z0-9]/gi, '_')}`;
-    let out = `const ${tmp}=globalThis.__r(${JSON.stringify(key)});const ${def}=${tmp}.default??${tmp};`;
-    if (named) {
-      out += named.split(',').map(p => {
-        const [orig, alias] = p.trim().split(/\s+as\s+/);
-        return `const ${alias || orig}=${tmp}.${orig.trim()};`;
-      }).join('');
-    }
-    return out;
-  });
-  // import 'side-effect'
-  src = src.replace(/import\s*['"]([^'"]+)['"]\s*;?/g, (full, spec) => {
-    const key = resolveToRegistryKey(spec, filePath);
-    if (!key) return full;
-    return `globalThis.__r(${JSON.stringify(key)});`;
-  });
-  return src;
 }
 
 // Replace `static templateUrl = '/path.html'` with `static template = "<inlined>"`,
@@ -96,11 +111,13 @@ async function inlineTemplate(jsCode) {
   const tplUrl = match[1];
   const tplPath = join(root, tplUrl);
   try {
-    const html = (await readFile(tplPath, 'utf-8'))
+    // <style> blocks are a third of the template bytes; minify them here, since
+    // the string ends up in the JS the browser downloads.
+    const html = minifyTemplateCSS((await readFile(tplPath, 'utf-8'))
       .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-      .trim();
+      .trim());
     const templateDecl = `static template = ${JSON.stringify(html)};`;
-    let result = jsCode.replace(match[0], templateDecl);
+    let result = jsCode.replace(match[0], () => templateDecl);
 
     // [static field, declaration regex, sibling suffix] for the scoped and plain sheets
     const sheets = [
@@ -118,8 +135,8 @@ async function inlineTemplate(jsCode) {
       const decl = `static ${field} = ${JSON.stringify(minifyCSS(css))};`;
       // Replace the author's URL declaration, or append after the template.
       result = declared
-        ? result.replace(declared[0], decl)
-        : result.replace(templateDecl, `${templateDecl}\n  ${decl}`);
+        ? result.replace(declared[0], () => decl)
+        : result.replace(templateDecl, () => `${templateDecl}\n  ${decl}`);
     }
     return result;
   } catch {
@@ -128,25 +145,28 @@ async function inlineTemplate(jsCode) {
 }
 
 // ─── Copy + minify individual files ─────────────────────────────────────────
-async function copyDir(src, dest, opts = {}) {
+async function copyDir(src, dest, opts = {}, rel = '') {
   // minifyCss defaults to doMinify, but the server copy sets it independently:
-  // SSR reads .module.css off disk and embeds it in the shadow root of every
-  // response, so it must be minified even though server JS is left readable.
-  const { transformContent = null, renameJsToMjs = false, doMinify = false, minifyCss = doMinify } = opts;
+  // SSR reads templates and .module.css off disk and embeds their CSS in the shadow
+  // root of every response, so it must be minified even though server JS is left
+  // readable. `skip(relativePath)` leaves a file out of the copy.
+  const { transformContent = null, renameJsToMjs = false, doMinify = false, minifyCss = doMinify, skip = null } = opts;
   await ensureDir(dest);
   for (const entry of await readdir(src, { withFileTypes: true })) {
     const srcPath = join(src, entry.name);
     let destPath = join(dest, entry.name);
+    const relPath = rel ? `${rel}/${entry.name}` : entry.name;
 
     if (entry.isDirectory()) {
       if (!entry.name.startsWith('.') && !['node_modules', 'dist'].includes(entry.name))
-        await copyDir(srcPath, destPath, opts);
+        await copyDir(srcPath, destPath, opts, relPath);
     } else if (entry.isFile()) {
+      if (skip?.(relPath)) continue;
       const ext = extname(entry.name);
-      // Only .js (transform/minify/rename) and minified .css are processed as text.
-      // Everything else — fonts, images, etc. — must be copied byte-for-byte;
-      // reading binary as UTF-8 corrupts it (invalid bytes → U+FFFD, size inflates).
-      const needsText = ext === '.js' || (ext === '.css' && minifyCss);
+      // Only .js (transform/minify/rename) and minified .css / template <style> are
+      // processed as text. Everything else — fonts, images, etc. — must be copied
+      // byte-for-byte; reading binary as UTF-8 corrupts it (invalid bytes → U+FFFD).
+      const needsText = ext === '.js' || ((ext === '.css' || ext === '.html') && minifyCss);
 
       if (!needsText) {
         await ensureDir(dirname(destPath));
@@ -161,6 +181,7 @@ async function copyDir(src, dest, opts = {}) {
         if (doMinify) content = minifyJS(content);
       }
       if (ext === '.css' && minifyCss) content = minifyCSS(content);
+      if (ext === '.html' && minifyCss) content = minifyTemplateCSS(content);
 
       if (renameJsToMjs && ext === '.js') {
         destPath = destPath.replace(/\.js$/, '.mjs');
@@ -175,51 +196,21 @@ async function copyDir(src, dest, opts = {}) {
   }
 }
 
-// Rewrite static imports in extracted route scripts to use globalThis.__r,
-// pulling modules from the already-loaded core bundle's registry instead of
-// triggering a new network fetch. Dynamic imports and exports stay intact.
-function rewriteStaticImports(src) {
-  // import { A, B as C } from '/path.js'
-  src = src.replace(/import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"];?/g, (_, names, path) => {
-    const parts = names.split(',').map(p => {
-      const [orig, alias] = p.trim().split(/\s+as\s+/);
-      return alias ? `${orig.trim()}:${alias.trim()}` : orig.trim();
-    }).join(',');
-    return `const{${parts}}=globalThis.__r(${JSON.stringify(path)});`;
-  });
-  // import Default from '/path.js'  (and  import Default, { ... } from '/path.js')
-  src = src.replace(/import\s+(\w+)(?:\s*,\s*\{([^}]+)\})?\s*from\s*['"]([^'"]+)['"];?/g, (_, def, named, path) => {
-    const tmp = `__m_${path.replace(/[^a-z0-9]/gi, '_')}`;
-    let out = `const ${tmp}=globalThis.__r(${JSON.stringify(path)});const ${def}=${tmp}.default??${tmp};`;
-    if (named) {
-      const parts = named.split(',').map(p => {
-        const [orig, alias] = p.trim().split(/\s+as\s+/);
-        return `const ${alias || orig}=${tmp}.${orig.trim()};`;
-      }).join('');
-      out += parts;
-    }
-    return out;
-  });
-  // import 'side-effect'
-  src = src.replace(/import\s*['"]([^'"]+)['"];?/g, (_, path) => `globalThis.__r(${JSON.stringify(path)});`);
-  return src;
-}
-
 // ─── Script extraction from .html files ─────────────────────────────────────
 // preferJs: emit .js (not .script.js) when no explicit .js source file exists.
 // Used for components/ so loader.js can import them at their natural .js path.
 // Pages (app/) always use .script.js to distinguish from route-registered .js files.
-async function extractScripts(srcDir, destDir, doMinify = false, preferJs = false) {
+async function extractScripts(srcDir, destDir, bundled, doMinify = false, preferJs = false) {
   for (const entry of await readdir(srcDir, { withFileTypes: true })) {
     const srcPath = join(srcDir, entry.name), destPath = join(destDir, entry.name);
     if (entry.isDirectory() && !entry.name.startsWith('.')) {
-      await extractScripts(srcPath, destPath, doMinify, preferJs);
+      await extractScripts(srcPath, destPath, bundled, doMinify, preferJs);
     } else if (entry.name.endsWith('.html')) {
       const match = (await readFile(srcPath, 'utf-8')).match(/<script\b[^>]*>([\s\S]*?)<\/script>/i);
       if (match) {
         const hasExplicitJs = preferJs && await stat(srcPath.replace('.html', '.js')).then(() => true).catch(() => false);
         const outPath = destPath.replace('.html', preferJs && !hasExplicitJs ? '.js' : '.script.js');
-        let js = rewriteStaticImports(match[1].trim());
+        let js = rewriteImports(match[1].trim(), srcPath, bundled);
         js = await inlineTemplate(js);
         if (doMinify) js = minifyJS(js);
         await ensureDir(dirname(outPath));
@@ -252,66 +243,13 @@ async function hashAndCollect(dir, urlPrefix, manifest) {
 }
 
 // ─── routes.json generation ──────────────────────────────────────────────────
+// Page discovery is shared with the dev server and the SSR entry (core/scan.js
+// scanPages); the build only swaps in the content-hashed module URL.
 async function generateRoutesJson(appPath, manifest = {}) {
-  const routes = [];
-
-  async function scan(dir, base = '') {
-    for (const item of await readdir(dir, { withFileTypes: true })) {
-      const itemPath = join(dir, item.name);
-      const relative$1 = base ? `${base}/${item.name}` : item.name;
-
-      if (item.isDirectory() && !item.name.startsWith('_') && !item.name.startsWith('.')) {
-        await scan(itemPath, relative$1);
-      } else if (item.isFile() && item.name.endsWith('.html') && !item.name.startsWith('_')) {
-        const routePath = pathFromFile(relative$1.replace('.html', '.js'), '');
-        if (!routePath) continue;
-
-        const html = await readFile(itemPath, 'utf-8');
-        const hasEmbedded = /<script\b[^>]*>[\s\S]*?<\/script>/i.test(html);
-
-        let script = html.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i)?.[1] || '';
-        if (!script) {
-          for (const ext of ['.mjs', '.js']) {
-            try { script = await readFile(itemPath.replace('.html', ext), 'utf-8'); break; } catch {}
-          }
-        }
-
-        let metadata = null, ssrProps = {}, requiresAuth = false;
-        if (script) {
-          try {
-            const extractObj = (src, prefix) => {
-              const m = src.match(new RegExp(`static\\s+${prefix}\\s*=\\s*\\{`));
-              if (!m) return null;
-              let start = m.index + m[0].length - 1, depth = 1, i = start + 1;
-              while (i < src.length && depth > 0) { if (src[i] === '{') depth++; else if (src[i] === '}') depth--; i++; }
-              return src.slice(start, i);
-            };
-            const localObj = extractObj(script, 'local');
-            const ssrObj = extractObj(script, 'ssrProps');
-            const m2 = script.match(/static\s+metadata\s*=\s*(\{[^}]+\})/);
-            const m3 = script.match(/static\s+requiresAuth\s*=\s*(true|false)/);
-            if (localObj) ssrProps = { ...ssrProps, ...eval(`(${localObj})`) };
-            if (ssrObj) ssrProps = { ...ssrProps, ...eval(`(${ssrObj})`) };
-            if (m2) metadata = eval(`(${m2[1]})`);
-            if (m3) requiresAuth = m3[1] === 'true';
-          } catch {}
-        }
-
-        const originalModule = `/app/${relative$1.replace('.html', hasEmbedded ? '.script.js' : '.js')}`;
-        routes.push({
-          path: routePath,
-          component: relative$1.split('/').pop().replace('.html', '').toLowerCase() + '-page',
-          module: manifest[originalModule] || originalModule,
-          dynamic: routePath.includes(':'),
-          ...(metadata && { metadata }),
-          ...(Object.keys(ssrProps).length && { ssrProps }),
-          ...(requiresAuth && { requiresAuth })
-        });
-      }
-    }
-  }
-  await scan(appPath);
-  return routes;
+  return (await scanPages(appPath)).map(page => {
+    const module = `/app/${page.relative.replace('.html', page.hasEmbeddedScript ? '.script.js' : '.js')}`;
+    return clientRoute(page, manifest[module] || module);
+  });
 }
 
 // ─── Build ───────────────────────────────────────────────────────────────────
@@ -327,10 +265,11 @@ async function build() {
   // 1. Bundle the client entry + all static imports into a single hashed file
   console.log('[build] Bundling core...');
   const entryAbs = join(root, 'core/server/entry-client.js');
-  const { code: bundleCode, hash: bundleHash } = await bundle(entryAbs, root, {
+  const { code: bundleCode, hash: bundleHash, modules } = await bundle(entryAbs, root, {
     minify: true,
     transform: src => inlineTemplate(src),
   });
+  const bundled = new Set(modules);
 
   // The bundle is inlined directly into the HTML template below — no separate
   // network request, no chain depth=2 critical-path warning. We still emit the
@@ -343,21 +282,25 @@ async function build() {
   // app/ and components/ are dynamically imported by loader.js/Router after the core
   // bundle has run. Rewriting their static imports to globalThis.__r avoids re-fetching
   // /core/component.js, /lib/store.js, etc. when each lazy component module is loaded.
-  // core/ and lib/ stay untouched: they're either already inlined in the bundle or
-  // need to remain plain ESM for the dev server.
+  // core/ and lib/ stay plain ESM: a lazy module may import one the bundle doesn't
+  // contain (/lib/validate.js), and the Cloudflare worker imports the SSR renderer.
   const serverTransform = (content, path, ext) => ext === '.js' ? transformJS(content, path) : content;
-  const clientLazyTransform = (content, path, ext) => ext === '.js' ? transformJS(content, path, { rewriteToRegistry: true }) : content;
+  const clientLazyTransform = (content, path, ext) => ext === '.js' ? transformJS(content, path, { bundled }) : content;
+  // dist/client is the public web root. Of core/, the browser and the worker only
+  // ever load the runtime modules — the Node-only pieces (the build itself, the dev
+  // server, the config/scan code that imports node:fs) have no business being served.
+  const serverOnlyCore = rel => rel === 'config.js' || rel === 'scan.js' || (rel.startsWith('server/') && rel !== 'server/ssr.js');
   await Promise.all([
     copyDir(join(root, 'app'), join(clientDist, 'app'), { transformContent: clientLazyTransform, doMinify: true }),
     copyDir(join(root, 'components'), join(clientDist, 'components'), { transformContent: clientLazyTransform, doMinify: true }),
-    copyDir(join(root, 'core'), join(clientDist, 'core'), { transformContent: serverTransform, doMinify: true }),
+    copyDir(join(root, 'core'), join(clientDist, 'core'), { transformContent: serverTransform, doMinify: true, skip: serverOnlyCore }),
     copyDir(join(root, 'lib'), join(clientDist, 'lib'), { transformContent: serverTransform, doMinify: true }),
   ]);
 
   // 3. Extract + minify embedded scripts from .html files
   // Pages (app/) → .script.js; components/ → .js when no explicit .js source exists
-  await extractScripts(join(root, 'app'), join(clientDist, 'app'), true);
-  await extractScripts(join(root, 'components'), join(clientDist, 'components'), true, true);
+  await extractScripts(join(root, 'app'), join(clientDist, 'app'), bundled, true);
+  await extractScripts(join(root, 'components'), join(clientDist, 'components'), bundled, true, true);
 
   // 3b. Content-hash lazy-loaded modules. Original-URL → hashed-URL map is
   // inlined into HTML as window.__M__ so loader.js / Router.js can translate
@@ -389,12 +332,12 @@ async function build() {
   // Inline routes + asset manifest into HTML so the Router doesn't need a
   // separate fetch and the loader can resolve hashed component URLs.
   // The dependency-chain gate point — saves a full round-trip on first paint.
-  const routesScript = `<script>window.__ROUTES__=${JSON.stringify(routes)}</script>`;
-  const manifestScript = `<script>window.__M__=${JSON.stringify(assetManifest)}</script>`;
-  // Discovered tag → directory registry (core/scan.js scanTags), so core/loader.js
-  // resolves folders the kebab→PascalCase convention can't reproduce.
-  const tags = await scanTags(root);
-  const tagsScript = `<script>window.__TAGS__=${JSON.stringify(tags)}</script>`;
+  const routesScript = `<script>window.__ROUTES__=${jsonForScript(routes)}</script>`;
+  const manifestScript = `<script>window.__M__=${jsonForScript(assetManifest)}</script>`;
+  // Discovered tag → source-file registry (core/scan.js scanComponents), so
+  // core/loader.js resolves files the kebab→PascalCase convention can't reproduce.
+  const { tags, locals } = await scanComponents(root);
+  const tagsScript = `<script>window.__TAGS__=${jsonForScript(tags)}</script>`;
 
   let template = await readFile(join(root, 'index.html'), 'utf-8');
   // Inline the bundle into a <script type="module">. Eliminates the separate JS
@@ -435,15 +378,19 @@ async function build() {
   const otherLocales = Object.fromEntries(
     config.locales.supported.filter(l => l !== defaultLocale).map(l => [l, localeMessages[l]])
   );
-  const csrState =
-    `<script>window.__INITIAL_STATE__=${JSON.stringify({ locale: defaultLocale, messages: localeMessages[defaultLocale] || {} })}</script>` +
-    (Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${JSON.stringify(otherLocales)}</script>` : '') +
-    `<script>window.__LOCALE_CONFIG__=${JSON.stringify(config.locales)}</script>`;
   // Static <head> meta for the shell. CSR can't negotiate per-route on the server,
-  // so we bake in the home route's metadata: crawlers (and the first paint, before
-  // the bundle runs) get a real title + description. The client meta sync in
-  // entry-client.js then keeps these current as the Router navigates.
-  const homeMeta = routes.find(r => r.path === '/')?.metadata || {};
+  // so we bake in the home route's metadata over the site defaults: crawlers (and
+  // the first paint, before the bundle runs) get a real title + description. The
+  // client meta sync in entry-client.js then keeps these current as the Router navigates.
+  const siteMeta = {
+    ...(config.site.title && { title: config.site.title }),
+    ...(config.site.description && { description: config.site.description }),
+  };
+  const homeMeta = { ...siteMeta, ...routes.find(r => r.path === '/')?.metadata };
+  const csrState =
+    `<script>window.__INITIAL_STATE__=${jsonForScript({ site: siteMeta, meta: homeMeta, locale: defaultLocale, messages: localeMessages[defaultLocale] || {} })}</script>` +
+    (Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${jsonForScript(otherLocales)}</script>` : '') +
+    `<script>window.__LOCALE_CONFIG__=${jsonForScript(config.locales)}</script>`;
   const csrHeadMeta = [
     homeMeta.title && `<title>${escapeHtml(homeMeta.title)}</title>`,
     homeMeta.description && `<meta name="description" content="${escapeHtml(homeMeta.description)}">`,
@@ -464,6 +411,21 @@ async function build() {
   // 7. Public assets (copied flat to client root so /fonts/... works)
   await copyDir(join(root, 'public'), clientDist).catch(() => {});
 
+  // 7b. sitemap.xml, generated from the route table so it can't drift from the
+  // pages that exist. Needs the public origin (site.url in app.config.yml);
+  // without one nothing is emitted. Left out: dynamic routes (their URLs depend on
+  // data the build doesn't have) and requiresAuth pages (a crawler only gets a redirect).
+  if (config.site.url) {
+    const urls = routes.filter(r => !r.dynamic && !r.requiresAuth && r.component !== 'notfound-page')
+      .map(r => `  <url><loc>${escapeHtml(config.site.url + r.path)}</loc></url>`);
+    await writeFile(join(clientDist, 'sitemap.xml'),
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
+    const robotsPath = join(clientDist, 'robots.txt');
+    const robots = existsSync(robotsPath) ? await readFile(robotsPath, 'utf-8') : 'User-agent: *\nAllow: /\n';
+    if (!/^sitemap:/im.test(robots))
+      await writeFile(robotsPath, `${robots.trimEnd()}\n\nSitemap: ${config.site.url}/sitemap.xml\n`);
+  }
+
   // 8. Server-side copy (for SSR) — .mjs renamed for CF workers
   const serverOpts = { transformContent: serverTransform, renameJsToMjs: true, minifyCss: true };
   await Promise.all([
@@ -479,17 +441,24 @@ async function build() {
   await copyFile(join(root, 'deploy/cloudflare/_worker.js'), join(clientDist, '_worker.js')).catch(() => {});
 
   // 10b. Project config — entry-server reads it at runtime (SSR_ROOT=dist/server)
-  // to negotiate locales. Copied to both roots so any adapter can find it.
+  // to negotiate locales. Server root only: dist/client is public, and the edge
+  // adapter gets what it needs from _ssr-config.json below.
   for (const name of ['app.config.yml', 'app.config.yaml']) {
     await copyFile(join(root, name), join(serverDist, name)).catch(() => {});
-    await copyFile(join(root, name), join(clientDist, name)).catch(() => {});
   }
 
   // 10c. Runtime config for edge adapters that can't read app.config.yml or walk
   // the source tree (the Cloudflare worker has no node:fs). Everything an SSR
-  // runtime needs that isn't per-request: the negotiated locale list and the
-  // discovered tag registry. The Node/Netlify path derives both directly instead.
-  await writeFile(join(clientDist, '_ssr-config.json'), JSON.stringify({ locales: config.locales, tags }, null, 2));
+  // runtime needs that isn't per-request: the locale list, the site defaults, the
+  // session-cookie name, the discovered tag registry and each component's
+  // `static local`. The Node/Netlify path derives all of it directly instead.
+  await writeFile(join(clientDist, '_ssr-config.json'), JSON.stringify({
+    locales: config.locales,
+    site: { title: config.site.title, description: config.site.description },
+    auth: config.auth,
+    tags,
+    locals,
+  }, null, 2));
 
   // 11. Manifest for debugging
   const manifest = {

@@ -4,10 +4,9 @@ Each recipe lists every file to touch, in order; none needs a configuration chan
 
 ## Add a page
 
-1. Create `app/Pricing/Pricing.html` with markup, a `<style>` block and an inline `<script>` that imports from `/core/component.js` (root-absolute), sets `static templateUrl = '/app/Pricing/Pricing.html'` and a literal `static metadata`, and ends with `define('pricing-page', PricingPage)`. The full file is in [Routing and navigation](08-routing-and-navigation.md#a-page-file).
+1. Create `app/Pricing/Pricing.html` with markup, a `<style>` block and an inline `<script>` that imports from `/core/component.js`, sets `static templateUrl = '/app/Pricing/Pricing.html'` and a literal `static metadata`, and ends with `define('pricing-page', PricingPage)`. The full file is in [Routing and navigation](08-routing-and-navigation.md#a-page-file).
 2. Link to it with `<a href="/pricing" route>Pricing</a>`.
-3. Restart `yarn dev` after later template edits, or SSR keeps serving the cached version.
-4. Add the URL to `public/sitemap.xml` by hand if it should be indexed.
+3. For a sitemap, set `site.url` in `app.config.yml`: the build then writes `sitemap.xml` with every static route, this one included.
 
 ## Add a component
 
@@ -53,9 +52,6 @@ Edit the imports at the top of `core/server/entry-client.js`. Whatever is import
 
 Put the `woff2` in `public/fonts/`, declare it with `@font-face` and `font-display: swap` in `globals.css`, and list it under `preload.fonts` in `app.config.yml`. Preload only faces used above the fold.
 
-## Persist the theme toggle
-
-`index.html` reads `localStorage.theme` before first paint, but `components/Navigation/Navigation.js` never writes it. Add `localStorage.setItem('theme', next)` to `#toggleTheme()` to keep the choice across reloads.
 
 ## Deploy
 

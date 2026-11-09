@@ -40,22 +40,24 @@ A route entry is `{ path, component, module, dynamic, matcher }`, plus `metadata
 | `lib/async.js` | `debounce`, `throttle`, `delay`, `retry`, `timeout`, `parallel`, `deferred`, `once`, `memoize` |
 | `lib/index.js` | Re-exports all of the above except `scrollToHash` and the i18n functions |
 
-Only `store`, `i18n`, `nav` and `meta` are in the core bundle; see [Gotchas](11-gotchas.md#production-build) before importing the others statically from lazy modules.
+Only `store`, `i18n`, `nav` and `meta` are in the core bundle; a lazy module that imports one of the others gets it as a separate request.
 
 ## `core/` exports
 
 | Module | Exports |
 | --- | --- |
 | `core/component.js` | `Component`, `define`, `navigate`, `loadTemplate`, `scopeCSS`, `store` |
-| `core/template.js` | `renderWithExpressions`, `render`, `extractPropBindings`, `evaluatePropBindings`, `escapeHtml` |
+| `core/template.js` | `renderWithExpressions`, `render`, `evaluate`, `extractPropBindings`, `evaluatePropBindings`, `escapeHtml`, `jsonForScript`, `scopeCSS`, `extractStyles` |
 | `core/context.js` | `Store` |
-| `core/routes.js` | `createMatcher`, `pathFromFile`, `withNotFound`, `matchRoute` |
-| `core/tags.js` | `DEFINE_RE`, `pascalFor`, `fallbackDir`, `dirForTag`, `baseName`, `pathsForTag` |
-| `core/locale.js` | `rankLanguages`, `localeFromCookie`, `negotiateLocale` |
-| `core/scan.js` (Node) | `scanDir`, `scanTags`, `scanRoutes` |
+| `core/routes.js` | `createMatcher`, `pathFromFile`, `withNotFound`, `matchRoute`, `safeDecode` |
+| `core/tags.js` | `DEFINE_RE`, `pascalFor`, `fallbackStem`, `stemForTag`, `pathsForTag` |
+| `core/cache.js` | `cacheControl`, `IMMUTABLE` |
+| `core/locale.js` | `rankLanguages`, `readCookie`, `localeFromCookie`, `negotiateLocale`, `requestState` |
+| `core/scan.js` (Node) | `scanDir`, `scanComponents`, `scanTags`, `scanPages`, `clientRoute`, `scanRoutes` |
+| `core/server/http.js` (Node) | `mime`, `parseUrl`, `resolveInside`, `cacheControl`, `sendFile` |
 | `core/config.js` (Node) | `loadConfig` |
-| `core/server/ssr.js` | `createRenderer({ loadFile, resolvePaths })` |
-| `core/server/entry-server.js` (Node) | `render(url, { locale })`, `getClientRoutes()` |
+| `core/server/ssr.js` | `createRenderer({ loadFile, resolvePaths, locals })` |
+| `core/server/entry-server.js` (Node) | `render(url, { locale, cookie })`, `getClientData()` |
 | `core/server/bundle.js` | `bundle(entry, root, { minify, transform })`, `getDeps` |
 | `core/server/minify.js` | `minifyJS`, `minifyCSS` |
 | `core/server/ws.js` | `WebSocketServer` |
@@ -78,10 +80,9 @@ Only `store`, `i18n`, `nav` and `meta` are in the core bundle; see [Gotchas](11-
 | --- | --- |
 | Core bundle | 17 modules, 59.9 KB minified, inline in every HTML response |
 | SSR HTML for `/` (dev, unminified) | 172 KB |
-| `_template.html`, CSR `index.html` | 68 KB, 76 KB |
+| `_template.html`, CSR `index.html` | 70 KB, 79 KB |
 | Production build time | 0.1 to 0.3 s |
 | Nested render passes | 50 at most |
-| `{{#if}}` blocks per render | 10 at most |
 | Router wait for nested elements | 3 s |
 | Lazy-load root margin | 200 px |
 | Loader start | After `load`, in an idle callback with a 500 ms timeout |

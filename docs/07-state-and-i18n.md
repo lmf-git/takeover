@@ -27,7 +27,7 @@ Change detection is by key and by reference:
 - A nested write fires `change:user.name` but not `change:user`, so a component subscribed to `user` won't re-render. Subscribe to the exact path, or replace the top-level value.
 - Templates read the whole current store at render time, so a key you display but don't subscribe to stays stale until something else re-renders the component.
 
-The framework ships no domain actions. Put them in your own module over the store, for example `lib/session.js` exporting `login()` that calls `store.set({ user, isAuthenticated: true })`, and import it from an eagerly loaded module so lazy components can import it too (see [Gotchas](11-gotchas.md#production-build)).
+The framework ships no domain actions. Put them in your own module over the store, for example `lib/session.js` exporting `login()` that calls `store.set({ user, isAuthenticated: true })`. Any module can import it; importing it from an eagerly loaded one (such as `app/_Layout/_Layout.js`) puts it in the core bundle instead of a separate request.
 
 ## Local state
 

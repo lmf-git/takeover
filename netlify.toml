@@ -31,6 +31,15 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# dist/client/index.html is the client-rendered shell for static hosts. Netlify
+# serves an existing file before a non-forced rewrite, so without `force` the
+# home page would be that shell instead of the server-rendered page.
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/ssr"
+  status = 200
+  force = true
+
 # Serve static assets directly (not through SSR)
 [[redirects]]
   from = "/robots.txt"

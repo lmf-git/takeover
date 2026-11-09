@@ -10,10 +10,10 @@ URLs map to folders under `app/`, and `<app-router>` swaps pages into its `#outl
 | `app/About/About.html` | `/about` | `about-page` |
 | `app/Blog/Post/Post.html` | `/blog/post` | `post-page` |
 | `app/Users/[id]/User/User.html` | `/users/:id/user` | `user-page` |
-| `app/NotFound/NotFound.html` | `/notfound`, plus `*` with status 404 | `notfound-page` |
+| `app/NotFound/NotFound.html` | `/notfound`, plus `*`; both with status 404 | `notfound-page` |
 | `app/_Layout/_Layout.html` | none: the root shell | `app-layout` |
 
-The rules live in `pathFromFile()` (`core/routes.js`): segments are lowercased, a last segment that repeats its folder is dropped, `[name]` becomes `:name`, `/home` becomes `/`, and anything starting with `_` is skipped. Routes whose **last** segment is a parameter don't fit: `app/Items/[slug]/[slug].html` yields `/items/:slug/:slug` and an invalid tag. Give dynamic routes a static last segment, as in `/users/:id/user` (details in [Gotchas](11-gotchas.md#rendering)).
+The rules live in `pathFromFile()` (`core/routes.js`): segments are lowercased, a last segment that repeats its folder is dropped, `[name]` becomes `:name`, `/home` becomes `/`, and anything starting with `_` is skipped. A route can end in a parameter: `app/Items/[slug]/Slug.html` (or `[slug]/[slug].html`) is `/items/:slug`. The page's tag is whatever its script passes to `define()`; the file name is only the fallback.
 
 `matchRoute()` strips a trailing slash, tries exact static paths, then dynamic patterns in scan order (each `:param` matches `[^/]+`, URI-decoded), then the `*` route that `withNotFound()` clones from `notfound-page`. Every host and the client call `withNotFound()`, so a 404 renders the same page everywhere.
 
@@ -26,7 +26,7 @@ The rules live in `pathFromFile()` (`core/routes.js`): segments are lowercased, 
 <p>{{tagline}}</p>
 
 <script>
-import { Component, define } from '/core/component.js';  // root-absolute: required in production
+import { Component, define } from '/core/component.js';  // relative paths work too
 
 export default class PricingPage extends Component {
   static templateUrl = '/app/Pricing/Pricing.html';
@@ -46,9 +46,9 @@ In dev the inline script is served as `/app/Pricing/Pricing.html?script`; the bu
 
 1. Reads routes from `window.__ROUTES__` (falling back to `/routes.json`, then `/api/routes`) and adds the NotFound fallback.
 2. Listens for `popstate`, the window `navigate` event, and document clicks. Clicks are resolved through `composedPath()`, so `<a href="/x" route>` works inside any shadow root.
-3. Hydrates: if `#outlet` already holds a server-rendered page, it imports that page's module and stops; otherwise it navigates.
+3. Hydrates: if `#outlet` already holds a server-rendered page, it gives it the same `pageProps`, imports that page's module and stops; otherwise it navigates.
 
-A client navigation runs `beforeEach`, matches the route, checks `requiresAuth`, imports the page module, creates the page element with `pageProps = { path, params, query }`, scrolls to the top, replaces the outlet's children, waits up to 3 s for nested custom elements to be defined, then calls `afterEach`. The router element dispatches `loading` events (`detail: { loading, path }`) around each navigation.
+A client navigation runs `beforeEach` (before the address bar changes, so returning `false` leaves both the page and the history untouched), matches the route, checks `requiresAuth`, imports the page module, creates the page element with `pageProps = { ...ssrProps, path, params, query }`, resets the head metadata to the site defaults plus the route's own, scrolls to the top, replaces the outlet's children, waits up to 3 s for nested custom elements to be defined, then calls `afterEach`. The router element dispatches `loading` events (`detail: { loading, path }`) around each navigation.
 
 ## Navigating from code
 
@@ -80,7 +80,7 @@ Router.afterEach = (to, from) => {};        // to = { path, params, query }
 Router.onError = (error, to) => {};
 ```
 
-Set hooks in a module that loads before the first navigation, such as `app/_Layout/_Layout.js`. `static requiresAuth = true` on a page redirects to `/login?from=<path>` when `store.get('isAuthenticated')` is falsy, both in the Router and in SSR. The repo has no login page and no auth state, so you supply both; SSR cannot see client-side auth, so a protected page always redirects on a direct load.
+Set hooks in a module that loads before the first navigation, such as `app/_Layout/_Layout.js`. `static requiresAuth = true` on a page redirects to `/login?from=<path>` when `store.get('isAuthenticated')` is falsy, both in the Router and in SSR. The repo has no login page and no auth state, so you supply both. For direct loads, tell SSR which cookie means "signed in" with `auth.cookie` in `app.config.yml`: a request that carries it gets the page rendered with `isAuthenticated: true` in the store, and one without is redirected. With no `auth.cookie` set, SSR cannot tell and always redirects. The check is presence only — a routing convenience, not access control; the API behind the page must still authorise its data.
 
 ## In-page anchors
 

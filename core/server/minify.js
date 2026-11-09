@@ -20,8 +20,25 @@ export function minifyJS(src) {
   let i = 0;
   const n = src.length;
   let last = ''; // last emitted token value for regex disambiguation
+  let ws = false, nl = false; // whitespace / a line break seen since the last token
 
-  const eat = (s) => { out += s; last = s; };
+  // Can the previous token end a statement, and can `s` start one? Only then does
+  // JavaScript insert a semicolon at a line break — so only then must the break
+  // survive. Dropping it would glue `const a = 1\nconst b = 2` into a syntax error.
+  const endsStatement = () => /[\w$)\]}'"`]/.test(out[out.length - 1]) || last === '++' || last === '--' || (last.length > 1 && last[0] === '/');
+  const startsStatement = s => /[\w$'"{!~]/.test(s[0]) || s === '++' || s === '--';
+
+  const eat = (s) => {
+    if (out) {
+      const prev = out[out.length - 1];
+      if (nl && endsStatement() && startsStatement(s)) out += '\n';
+      // Two words need a space; so do `a + +b` / `a - -b`, or they become `++` / `--`.
+      else if (ws && ((isWord(prev) && isWord(s[0])) || ((prev === '+' || prev === '-') && s[0] === prev))) out += ' ';
+    }
+    ws = nl = false;
+    out += s;
+    last = s;
+  };
 
   function readStr(q) {
     let s = q; i++;
@@ -84,16 +101,16 @@ export function minifyJS(src) {
 
     // Whitespace
     if (/\s/.test(c)) {
-      let nl = false;
+      // Only recorded here; eat() decides what (if anything) the gap becomes.
+      ws = true;
       while (i < n && /\s/.test(src[i])) { if (src[i] === '\n') nl = true; i++; }
-      // Need space between two word tokens; newline can act as semicolon in some spots
-      if (out && i < n && isWord(out[out.length-1]) && isWord(src[i])) out += ' ';
       continue;
     }
 
     // Single-line comment
     if (c === '/' && src[i+1] === '/') {
       while (i < n && src[i] !== '\n') i++;
+      ws = true;
       continue;
     }
 
@@ -104,6 +121,8 @@ export function minifyJS(src) {
       while (i < n && !(src[i] === '*' && src[i+1] === '/')) i++;
       i += 2;
       if (keep) out += src.slice(start, i);
+      ws = true;
+      if (src.slice(start, i).includes('\n')) nl = true;
       continue;
     }
 
@@ -141,13 +160,36 @@ export function minifyJS(src) {
   return out.trim();
 }
 
+// Quoted strings are lifted out before the whitespace passes and restored after,
+// so `content: "a  b"` and `url("x y.png")` come through byte-for-byte.
+const MARK = String.fromCharCode(1);
+const MARK_RE = new RegExp(`${MARK}(\\d+)${MARK}`, 'g');
+
 export function minifyCSS(src) {
+  const strings = [];
+  let depth = 0;
   return src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\*[\s\S]*?\*\/|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g,
+      s => (s[0] === '/' ? '' : `${MARK}${strings.push(s) - 1}${MARK}`))
     .replace(/\s+/g, ' ')
-    .replace(/\s*([{}:;,>~+])\s*/g, '$1')
+    .replace(/\s*([{};,>~])\s*/g, '$1')
+    // After a colon only: `a :hover` (any hovered descendant) is not `a:hover`.
+    .replace(/:\s+/g, ':')
+    // `+` is a sibling combinator in selectors but an operator inside calc()/clamp(),
+    // where the surrounding spaces are required: `calc(1px + 2px)`.
+    .replace(/\(|\)|\s*\+\s*/g, s => {
+      if (s === '(') { depth++; return s; }
+      if (s === ')') { depth--; return s; }
+      if (depth > 0) return /^\s+\+\s+$/.test(s) ? ' + ' : s;
+      return '+';
+    })
     .replace(/;}/g, '}')
     .replace(/\(\s+/g, '(')
     .replace(/\s+\)/g, ')')
-    .trim();
+    .trim()
+    .replace(MARK_RE, (_, i) => strings[i]);
 }
+
+/** Minify the <style> blocks of a component template; markup is left untouched. */
+export const minifyTemplateCSS = html =>
+  html.replace(/<style>([\s\S]*?)<\/style>/gi, (_, css) => `<style>${minifyCSS(css)}</style>`);

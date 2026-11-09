@@ -33,7 +33,7 @@ This guide was checked against the code at commit `e35311b` (Oct 21, 2026) by re
 | 8 | [Routing and navigation](08-routing-and-navigation.md) | Folder-to-route rules, the Router element, navigation API, guards |
 | 9 | [Build and deployment](09-build-and-deploy.md) | The ten build steps, the output trees, bundler, minifier, deploy targets |
 | 10 | [Recipes](10-recipes.md) | Step-by-step changes: pages, components, routes, auth, locales, deploys |
-| 11 | [Gotchas](11-gotchas.md) | Verified pitfalls, including a path-traversal hole in the Node server |
+| 11 | [Gotchas](11-gotchas.md) | Verified pitfalls with causes and fixes |
 | 12 | [Reference](12-reference.md) | Config keys, window globals, exports, dev endpoints, numbers |
 
 ## Diagrams

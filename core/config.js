@@ -9,7 +9,9 @@
 // Shape after normalization:
 //   {
 //     locales: { supported: string[], default: string },
-//     preload: { fonts: string[], modules: string[] }
+//     preload: { fonts: string[], modules: string[] },
+//     site: { url: string | null, title: string | null, description: string | null },
+//     auth: { cookie: string | null }
 //   }
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -109,10 +111,12 @@ function discoverFonts(root) {
 
 // ─── Normalization ────────────────────────────────────────────────────────────
 
+const text = v => (typeof v === 'string' && v.trim() ? v.trim() : null);
+
 function normalize(raw, root) {
   const localesCfg = raw.locales || {};
   let supported = localesCfg.supported;
-  if (!Array.isArray(supported) || supported === 'auto') supported = discoverLocales(root);
+  if (!Array.isArray(supported)) supported = discoverLocales(root); // omitted or `auto`
   if (!supported.length) supported = ['en'];
   const wanted = localesCfg.default;
   const fallback = wanted && supported.includes(wanted) ? wanted : supported[0];
@@ -124,9 +128,18 @@ function normalize(raw, root) {
   if (fonts === 'auto') fonts = discoverFonts(root);
   else if (!Array.isArray(fonts)) fonts = [];
 
+  // site.url: the public origin, used by the build to emit sitemap.xml. Optional.
+  const siteUrl = typeof raw.site?.url === 'string' && /^https?:\/\//.test(raw.site.url)
+    ? raw.site.url.replace(/\/+$/, '')
+    : null;
+
   return {
     locales: { supported, default: fallback },
     preload: { fonts, modules: Array.isArray(preload.modules) ? preload.modules : [] },
+    site: { url: siteUrl, title: text(raw.site?.title), description: text(raw.site?.description) },
+    // auth.cookie: name of the session cookie. When a request carries it, SSR
+    // renders `requiresAuth` pages instead of redirecting to /login.
+    auth: { cookie: text(raw.auth?.cookie) },
   };
 }
 

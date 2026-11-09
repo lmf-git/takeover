@@ -15,7 +15,8 @@ The README asks for Node 18 or newer. On Linux use Node 20+, because the dev ser
 | --- | --- | --- |
 | `yarn dev` | `node core/server/index.js` | SSR from source, file watcher, WebSocket live reload, port 3000 |
 | `yarn build` | `node core/server/build.js` | Production build into `dist/client` and `dist/server` |
-| `yarn preview`, `yarn start` | `NODE_ENV=production node core/server/index.js` | The same server without the watcher and with year-long cache headers. It serves the **source tree**, not `dist/` |
+| `yarn preview`, `yarn start` | `NODE_ENV=production node core/server/index.js` | SSR from the build in `dist/`: hashed modules, the inlined bundle, no watcher. Run `yarn build` first; without one it warns and falls back to the source tree |
+| `yarn test` | `node --test` | Unit tests for the template engine, minifier, routing and server helpers (`test/`) |
 | `yarn preview:csr` | `node core/server/static.js` | Static server over `dist/client` with an SPA fallback, port 4399 |
 | `yarn clean` | an inline `rm` of `dist/` | Delete build output |
 | `yarn deploy:cloudflare` | `yarn build && wrangler pages deploy` | Build and upload to Cloudflare Pages (run `wrangler login` first) |
@@ -25,28 +26,28 @@ The README asks for Node 18 or newer. On Linux use Node 20+, because the dev ser
 | Variable | Read by | Default | Effect |
 | --- | --- | --- | --- |
 | `PORT` | `core/server/index.js`, `core/server/static.js` | 3000, 4399 | Listen port |
-| `NODE_ENV=production` | `core/server/index.js`, `core/server/entry-server.js` | unset | No watcher or WebSocket; `Cache-Control: public, max-age=31536000` on every non-HTML file; page module URLs looked up in `_assets-manifest.json` |
+| `NODE_ENV=production` | `core/server/index.js`, `core/server/entry-server.js` | unset | No watcher or WebSocket; serves `dist/` when a build exists; `immutable` caching for hashed files and fonts, `no-cache` for everything else; no stack traces in error pages |
 | `SSR_ROOT` | `core/server/entry-server.js` | repo root | Where SSR reads `app/`, `components/`, `locales/` and the config. The Netlify function sets it to `dist/server` |
 | `CSR_ROOT` | `core/server/static.js` | `dist/client` | Folder the CSR preview serves |
 
-## The dev loop, as it actually behaves
+## The dev loop
 
-- **Saving a `.js` or `.html` file reloads the page.** The watcher sends an `update` message, the client's hot re-import fails, and it falls back to `location.reload()` (details in [Gotchas](11-gotchas.md#dev-server)).
-- **The reloaded page can still show old markup.** `core/server/ssr.js` caches templates and CSS per tag for the life of the process, so template and CSS edits reach server-rendered HTML only after you restart `yarn dev`.
-- **Saving `*.module.css` or `globals.css` does nothing.** Restart and reload.
+- **Saving a file under `app/`, `components/`, `core/`, `lib/` or `locales/` reloads the page**, and the reload is server-rendered from the new source: rendering runs in a worker thread that the watcher replaces after every change, so template, CSS and framework edits all show up immediately.
+- **Saving `globals.css` swaps the stylesheet in place**, without a reload.
 - **New pages and components need no restart**: route and tag tables are rebuilt on every change.
-- **Config edits need a restart**: `app.config.yml` is read once per process.
+- **Config edits need a restart**: `app.config.yml` is read once per process. So do edits to the dev server itself (`core/server/index.js`, `http.js`, `ws.js`).
 
-Practical rule: keep `yarn dev` running for logic changes; restart it after template, CSS or config edits.
+The dev server serves only `app/`, `components/`, `core/`, `lib/`, `locales/`, `globals.css` and `public/`; nothing else in the checkout is reachable by URL.
 
 ## Seeing real production output locally
 
-`yarn preview` does not serve the build. To run what you deploy:
+To run what you deploy:
 
 1. `yarn build`.
-2. CSR target: `yarn preview:csr`, then open `http://localhost:4399`.
-3. SSR on Cloudflare's runtime: `wrangler pages dev dist/client`.
-4. SSR on Netlify's runtime: the Netlify CLI's `netlify serve`.
+2. SSR on Node: `yarn start`, then open `http://localhost:3000`.
+3. CSR target: `yarn preview:csr`, then open `http://localhost:4399`.
+4. SSR on Cloudflare's runtime: `wrangler pages dev dist/client`.
+5. SSR on Netlify's runtime: the Netlify CLI's `netlify serve`.
 
 Steps 3 and 4 use the platforms' own CLIs and were not run for this guide.
 

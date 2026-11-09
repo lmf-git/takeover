@@ -1,6 +1,6 @@
 # Templates and styling
 
-Templates are HTML with `{{ }}` holes, evaluated by a small regex-based interpreter (`core/template.js`) that runs identically on server and client, with no compiler and no `eval`.
+Templates are HTML with `{{ }}` holes, evaluated by a small interpreter (`core/template.js`: a tokenizer and a recursive-descent parser) that runs identically on server and client, with no compiler and no `eval`.
 
 ## Syntax
 
@@ -9,7 +9,7 @@ Templates are HTML with `{{ }}` holes, evaluated by a small regex-based interpre
 | `{{expr}}` | Evaluate and HTML-escape |
 | `{{{expr}}}` | Evaluate and insert raw |
 | `{{#if cond}}…{{else}}…{{/if}}` | Conditional; nesting works |
-| `{{#each items}}…{{/each}}` | Loop over a top-level array: `{{this}}`, `{{this.key}}` or `{{key}}`, `{{@index}}` |
+| `{{#each items}}…{{/each}}` | Loop over a top-level array: `{{this}}`, `{{this.key}}` or `{{key}}`, `{{@index}}`; values are HTML-escaped |
 | `{{t.section.key}}` | Message from the active catalogue |
 | `{{$css.name}}` | Scoped class name from the component's CSS Module |
 | `@click="method"` | Call `this.method(event)`; also `@submit`, `@input`, `@change`, `@keydown`, `@keyup` |
@@ -18,15 +18,15 @@ Templates are HTML with `{{ }}` holes, evaluated by a small regex-based interpre
 
 ## Expressions
 
-The evaluator tries, in order: `true`, `false`, `null`, `undefined`; `!x`; `a ? b : c`; comparisons (`===`, `!==`, `==`, `!=`, `<`, `>`, `<=`, `>=`); `&&` and `||`; arithmetic on numbers (`+` also concatenates strings); `x.method(arg)` for `split`, `join`, `slice`, `toUpperCase`, `toLowerCase`, `trim`, `charAt`, `substring` and `replace` with at most one literal argument; `x[0]`; string and number literals; `.length`; dotted paths.
+Expressions follow JavaScript's precedence, lowest to highest: `a ? b : c`; `||`; `&&`; comparisons (`===`, `!==`, `==`, `!=`, `<`, `>`, `<=`, `>=`); `+` `-`; `*` `/`; unary `!` and `-`; then member access (`a.b`, `a[0]`), method calls and parentheses. Operands are `true`, `false`, `null`, `undefined`, numbers, quoted strings and dotted paths.
 
-Behaviour worth knowing, each confirmed by running the evaluator:
-
-- A value of `undefined` leaves the literal `{{expr}}` in the output; `null` prints `null` and `false` prints `false`.
-- `{{#each}}` takes a bare top-level name (`items`, not `user.items`), inserts item fields **unescaped**, and cannot nest.
-- Inside `{{#each}}`, `{{#if field}}` sees the item only when its body has no `{{…}}`; otherwise the condition is read from the outer props, and the block usually disappears.
-- At most **10** `{{#if}}` blocks are resolved per render; the 11th onward print as raw text.
-- There are no parentheses, precedence follows the regex order, and a string literal containing `+` evaluates to an empty string. Compute anything non-trivial in JS and expose the result as a prop.
+- **Methods** are limited to `split`, `join`, `slice`, `toUpperCase`, `toLowerCase`, `trim`, `charAt`, `substring` and `replace`; anything else evaluates to `undefined`. The only callable top-level name is `$c('a', 'b')`.
+- **`+`** adds two numbers and otherwise concatenates as strings; `-`, `*` and `/` need two numbers, and dividing by zero gives `0`.
+- **`.length`** of anything that is not an array or a string is `0`, so `{{#if items.length}}` is safe before `items` exists.
+- **Hyphenated keys** work in paths (`{{t.some-key}}`). Write subtraction with spaces (`count - 1`); `count-1` is tried as a key first and as a subtraction only if no such key exists.
+- A value of `undefined` leaves the literal `{{expr}}` in the output; `null` prints `null` and `false` prints `false`. Only a template's own props resolve: `{{constructor}}` stays as written.
+- `{{#each}}` takes a bare top-level name (`items`, not `user.items`) and cannot nest. Each item renders the block with its fields in scope, so `{{#if field}}` inside the loop sees the item, and item values are never scanned for `{{…}}` again.
+- `{{#if}}` blocks nest to any depth and there is no limit on how many a template holds.
 
 ## What a template can see
 
@@ -34,16 +34,20 @@ Behaviour worth knowing, each confirmed by running the evaluator:
 | --- | --- | --- |
 | Store keys: `locale`, `messages`, `meta`, yours | Yes | Yes |
 | The page's `local` | Yes | Yes |
-| The page's `ssrProps` | Yes | **No** |
-| A nested component's own `local` | **No** | Yes |
-| `params`, `query` | Yes | Only after client-side navigation |
+| The page's `ssrProps` | Yes | Yes (through `pageProps`) |
+| A component's own `local` | Yes (its initial `static local`) | Yes |
+| `params`, `query` | Yes | Yes, on pages |
 | `path` | Full URL including the query string | `location.pathname` |
 | `t` | Active catalogue | Active catalogue |
 | `$css` | Yes | Yes |
-| `$c(...)` | No | Present, but the evaluator cannot call it |
+| `$c(...)` | Yes | Yes |
 | `redirectFrom`, `timestamp`, `year` | Yes | No |
 
-On the server, nested components render with the **page's** props plus their own `$css`. Anything that must look the same before and after hydration should come from the store or the page's `local`.
+On the server, a nested component renders with the page's props, its own `static local` on top, and its own `$css`. On the client it sees the store and its own `local` only, so don't rely on a page's `local` or `ssrProps` leaking into its children: pass data down through the store or a `:prop` binding.
+
+A custom element in a template may have children (`<x-card><p>…</p></x-card>`). The server adds the element's shadow root and keeps the children as light DOM, which the component places with `<slot>`.
+
+In CSS Modules, class names are rewritten everywhere except inside comments, quoted strings and `url(…)`.
 
 ## Events and prop bindings
 

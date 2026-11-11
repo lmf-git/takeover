@@ -518,19 +518,24 @@ every adapter emits them identically rather than assembling its own:
 
 - `__INITIAL_STATE__` — the active locale + its messages
 - `__LOCALES__` — **the other supported catalogues**, inlined
-- `__LOCALE_CONFIG__` — the supported/default list
+- `__LOCALE_CONFIG__` — the supported/default list, plus `served`: the locale this response
+  was rendered in
 
-**Client** (`initLocale`, `lib/i18n.js:58`) resolves in this order:
+**Client** (`initLocale`, `lib/i18n.js`) resolves in this order:
 
-1. Cookie, else `navigator.language`, normalised and validated against the supported list.
-2. *Fast path 1* — SSR already rendered that locale and the store has a non-empty catalogue:
-   do nothing.
+1. Cookie, else `served` (the locale the server rendered), else the first supported entry of
+   `navigator.languages`, else the default.
+2. *Fast path 1* — the store already holds that locale with a non-empty catalogue: do
+   nothing. After SSR this is always the case.
 3. *Fast path 2* — a different locale, but it's in `__LOCALES__`: switch **synchronously**.
+   Only the client-rendered shell gets here on load.
 4. Otherwise `fetch('/locales/<code>.json')`.
 
-Paths 2 and 3 are why a Lighthouse run (which sends `en-US`) against an `es`-default
-response doesn't add a network hop to the critical chain, and why switching language is
-instant. `setLocale()` also writes a year-long `locale` cookie so the *next* SSR request
+A server-rendered page is never switched on load. A Lighthouse run has `navigator.language`
+`en-US` but sends no `Accept-Language`, so it gets the `es` default; flipping it to `en` in
+the browser used to re-render the whole page, which recreated every `loading="lazy"`
+section without its shadow root and imported all of them at once. `__LOCALES__` is what
+makes switching language instant. `setLocale()` also writes a year-long `locale` cookie so the *next* SSR request
 renders the right language directly.
 
 The `messages` store key is special-cased in `Component.connectedCallback`: if a component
@@ -806,7 +811,8 @@ Most of the odd-looking code in this repo is one of these decisions:
 | Lazy modules rewritten to `globalThis.__r` | lazy imports don't re-fetch core |
 | Initial loader scan deferred to `requestIdleCallback` | off-screen imports stop counting against LCP |
 | `IntersectionObserver` for `loading="lazy"` | below-fold JS never runs until needed |
-| Non-active locales inlined as `__LOCALES__` | language mismatch/switch costs no network hop |
+| Non-active locales inlined as `__LOCALES__` | a language switch costs no network hop |
+| Client keeps the server-rendered locale (`served`) | no post-hydration re-render, so lazy sections stay lazy |
 | Store seeded at module-eval time | first `connectedCallback` sees final state — no hydration reflow |
 | SSR-drift check instead of unconditional re-render | hydration usually writes zero DOM |
 | Declarative Shadow DOM | shadow roots exist before JS; hydration never replaces DOM |

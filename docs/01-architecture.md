@@ -19,7 +19,7 @@ One renderer core is shared by three server hosts, and every host emits the same
 | Templates | Read from disk, rendered to strings | Fetched from `templateUrl` (dev) or inlined as `static template` (production) |
 | Component classes | Never imported | Imported and defined as custom elements |
 | Page statics (`metadata`, `local`, `ssrProps`, `requiresAuth`) | Regex-extracted from source and `eval`'d | Read off the class; `ssrProps` arrives through the route table as `pageProps` |
-| Locale | `negotiateLocale()` per request | `initLocale()` from the cookie or `navigator.language` |
+| Locale | `negotiateLocale()` per request | `initLocale()` keeps the server's choice; the CSR shell uses the cookie or `navigator.languages` |
 | Store | One module instance per process, re-seeded per render | One instance, seeded from `__INITIAL_STATE__` |
 
 Because the server never imports component classes, component modules may touch `window`, `HTMLElement` and `customElements` at the top level; `Component` itself extends `HTMLElement` only when `window` exists. The price is that page statics must be literal objects that SSR can read out of the source text.

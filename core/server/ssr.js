@@ -98,11 +98,13 @@ export function createRenderer({ loadFile, resolvePaths, locals = {} }) {
   /**
    * @param {Object} [options]
    * @param {Object} [options.otherLocales] Supported locales *other* than the active
-   *   one, inlined as window.__LOCALES__ so a client/server locale mismatch (or a
-   *   language switch) resolves synchronously instead of adding a fetch to the
-   *   critical chain. The active locale's messages already ride in __INITIAL_STATE__.
+   *   one, inlined as window.__LOCALES__ so a language switch resolves synchronously
+   *   instead of fetching. The active locale's messages already ride in __INITIAL_STATE__.
    * @param {Object} [options.localeConfig] { supported, default } from app.config.yml,
    *   inlined as window.__LOCALE_CONFIG__ so client negotiation matches the server's.
+   *   The locale this response was rendered in rides along as `served`: initLocale()
+   *   keeps it instead of re-deciding from navigator.language, so hydration never
+   *   starts by re-rendering the page in another language.
    * @returns {Promise<Object>} { redirect } or { status, appHtml, headMeta, ... }.
    *   status is 404 when nothing but the NotFound fallback matched — adapters must send
    *   it, or every missing URL (llms.txt, /.well-known/*) reads as a real 200 page.
@@ -111,7 +113,7 @@ export function createRenderer({ loadFile, resolvePaths, locals = {} }) {
     const { otherLocales = null, localeConfig = null } = options;
     const localesScript =
       (otherLocales && Object.keys(otherLocales).length ? `<script>window.__LOCALES__=${jsonForScript(otherLocales)}</script>` : '') +
-      (localeConfig ? `<script>window.__LOCALE_CONFIG__=${jsonForScript(localeConfig)}</script>` : '');
+      (localeConfig ? `<script>window.__LOCALE_CONFIG__=${jsonForScript({ ...localeConfig, ...(state.locale && { served: state.locale }) })}</script>` : '');
 
     const [pathname, search] = url.split('?');
     const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');

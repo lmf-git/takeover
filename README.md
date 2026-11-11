@@ -547,7 +547,8 @@ language for the same request. The `locale` cookie (an explicit user choice) win
 The negotiated locale pre-renders the page, and three globals are inlined so the client
 never flashes: `__INITIAL_STATE__` (active locale + its messages), `__LOCALES__` (the other
 supported catalogues, so a switch needs no fetch) and `__LOCALE_CONFIG__` (the supported
-list, so client negotiation matches the server's). The Netlify and Cloudflare adapters send
+list plus `served`, the locale this response was rendered in, which the client keeps
+instead of re-deciding from `navigator.language`). The Netlify and Cloudflare adapters send
 `Vary: Accept-Language, Cookie`; the Node server does not.
 
 → More: [State and i18n](docs/07-state-and-i18n.md#how-a-language-is-chosen)

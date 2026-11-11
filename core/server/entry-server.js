@@ -92,8 +92,7 @@ export async function render(url, { locale = config.locales.default, cookie = ''
   // before this one read them back (a French page with English state).
   const messages = await loadServerLocale(locale);
   // Non-active supported locales ride along inline (see ssr.js render options) so
-  // a client/server mismatch — Lighthouse running en-US against an es-default
-  // response — resolves synchronously instead of adding a fetch to the critical chain.
+  // a language switch resolves synchronously instead of fetching its catalogue.
   const otherLocales = {};
   await Promise.all(
     SUPPORTED_LOCALES.filter(l => l !== locale)
